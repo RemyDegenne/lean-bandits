@@ -25,6 +25,7 @@ noncomputable
 def regret (ν : Kernel α ℝ) (k : ℕ → α) (t : ℕ) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (k s))[id]
 
+/-- Gap of an arm `a`: difference between the highest mean of the arms and the mean of `a`. -/
 noncomputable
 def gap (ν : Kernel α ℝ) (a : α) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
 
@@ -33,6 +34,7 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
 open Classical in
+/-- Number of times arm `a` was pulled up to time `t`. -/
 noncomputable def pullCount (k : ℕ → α) (a : α) (t : ℕ) : ℕ := #(filter (fun s ↦ k s = a) (range t))
 
 lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ) :
@@ -54,8 +56,11 @@ lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
   simp_rw [sum_pullCount_mul, regret, gap, sum_sub_distrib]
   simp
 
-variable [Fintype α] [Nonempty α] {c : ℝ} {μ : α → ℝ} {N : α → ℕ} {a : α}
+section BestArm
 
+variable [Fintype α] [Nonempty α]
+
+/-- Arm with the highest mean. -/
 noncomputable def bestArm (ν : Kernel α ℝ) : α :=
   (exists_max_image univ (fun a ↦ (ν a)[id]) (univ_nonempty_iff.mpr inferInstance)).choose
 
@@ -69,5 +74,6 @@ lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   refine le_antisymm ?_ (le_ciSup (f := fun a ↦ (ν a)[id]) (by simp) (bestArm ν))
   exact ciSup_le le_bestArm
 
+end BestArm
 
 end Bandits

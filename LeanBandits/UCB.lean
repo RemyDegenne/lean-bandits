@@ -34,7 +34,7 @@ lemma le_ucb (a : α) :
 
 lemma gap_ucbArm_le_two_mul_ucbWidth
     (h_best : (ν (bestArm ν))[id] ≤ μ (bestArm ν) + ucbWidth c N t (bestArm ν))
-    (ha : μ (ucbArm c μ N t) - ucbWidth c N t (ucbArm c μ N t) ≤ (ν (ucbArm c μ N t))[id]) :
+    (h_ucb : μ (ucbArm c μ N t) - ucbWidth c N t (ucbArm c μ N t) ≤ (ν (ucbArm c μ N t))[id]) :
     gap ν (ucbArm c μ N t) ≤ 2 * ucbWidth c N t (ucbArm c μ N t) := by
   rw [gap_eq_bestArm_sub, sub_le_iff_le_add']
   calc (ν (bestArm ν))[id]
@@ -43,13 +43,13 @@ lemma gap_ucbArm_le_two_mul_ucbWidth
   _ ≤ (ν (ucbArm c μ N t))[id] + 2 * ucbWidth c N t (ucbArm c μ N t) := by
     rw [two_mul, ← add_assoc]
     gcongr
-    rwa [sub_le_iff_le_add] at ha
+    rwa [sub_le_iff_le_add] at h_ucb
 
 lemma N_ucbArm_le
     (h_best : (ν (bestArm ν))[id] ≤ μ (bestArm ν) + ucbWidth c N t (bestArm ν))
-    (ha : μ (ucbArm c μ N t) - ucbWidth c N t (ucbArm c μ N t) ≤ (ν (ucbArm c μ N t))[id]) :
+    (h_ucb : μ (ucbArm c μ N t) - ucbWidth c N t (ucbArm c μ N t) ≤ (ν (ucbArm c μ N t))[id]) :
     N (ucbArm c μ N t) ≤ 4 * c * log t / gap ν (ucbArm c μ N t) ^ 2 := by
-  have h_gap := gap_ucbArm_le_two_mul_ucbWidth h_best ha
+  have h_gap := gap_ucbArm_le_two_mul_ucbWidth h_best h_ucb
   rw [ucbWidth] at h_gap
   sorry
 

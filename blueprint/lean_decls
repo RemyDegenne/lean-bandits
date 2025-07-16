@@ -1,0 +1,11 @@
+Bandits.Bandit
+Bandits.Bandit.measure
+Bandits.arm
+Bandits.reward
+Bandits.hist
+Bandits.condDistrib_reward
+Bandits.condDistrib_arm
+Bandits.regret
+Bandits.gap
+Bandits.pullCount
+Bandits.regret_eq_sum_pullCount_mul_gap

@@ -1,3 +1,84 @@
 \chapter{Bandit algorithms}
 
 \section{Explore-Then-Commit}
+
+Note: times start at 0 to be consistent with Lean.
+
+Note: we will describe the algorithm by writing $A_t = ...$, but our formal bandit model needs a policy $\pi_t$ that gives the distribution of the arm to pull. What me mean is that $\pi_t$ is a Dirac distribution at that arm.
+
+\begin{definition}[Explore-Then-Commit algorithm]\label{def:etcAlgorithm}
+The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is defined as follows:
+\begin{enumerate}
+  \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),
+  \item compute $\hat{A}_m^* = \arg\max_{a \in [K]} \hat{\mu}_a$, where $\hat{\mu}_a = \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t$ is the empirical mean of the rewards for arm $a$,
+  \item for $t \ge Km$, $A_t = \hat{A}_m^*$ (pull the empirical best arm).
+\end{enumerate}
+\end{definition}
+
+
+\begin{lemma}\label{lem:pullCount_etcAlgorithm}
+  \uses{def:etcAlgorithm, def:pullCount}
+For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ and any time $t \ge Km$, we have
+\begin{align*}
+  N_{t,a}
+  &= m + (t - Km) \mathbb{I}\{\hat{A}_m^* = a\}
+  \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\begin{theorem}\label{thm:regret_etc_le}
+  \uses{def:etcAlgorithm, def:regret}
+Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regret after $T$ pulls with $T \ge Km$ is bounded by
+\begin{align*}
+  \mathbb{E}[R_T]
+  &\le m \sum_{a=1}^K \Delta_a + (T - Km) \sum_{a=1}^K \Delta_a \exp\left(- \frac{m \Delta_a^2}{4}\right)
+  \: .
+\end{align*}
+\end{theorem}
+
+\begin{proof}
+  \uses{lem:regret_eq_sum_pullCount_mul_gap}
+By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
+It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
+It suffices to prove that
+\begin{align*}
+  \mathbb{E}[N_{T,a}]
+  &\le m + (T - Km) \exp\left(- \frac{m \Delta_a^2}{4}\right)
+  \: .
+\end{align*}
+By definition of the Explore-Then-Commit algorithm (or by Lemma~\ref{lem:pullCount_etcAlgorithm}),
+\begin{align*}
+  N_{T,a}
+  &= m + (T - Km) \mathbb{I}\{\hat{A}_m^* = a\}
+  \: .
+\end{align*}
+It thus suffices to prove the inequality $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$ for $\Delta_a > 0$.
+\begin{align*}
+  \mathbb{P}(\hat{A}_m^* = a)
+  &\le \mathbb{P}(\hat{\mu}_a \ge \hat{\mu}_{a^*})
+  \\
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t \ge \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a^*) X_t\right)
+  \: .
+\end{align*}
+TODO: here we need to state in a rigorous way that the empirical means are means of $m$ i.i.d. samples $Y_{a,i}$ and $Y_{a^*,i}$ from the distributions $\nu(a)$ and $\nu(a^*)$.
+\begin{align*}
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m Y_{a,i} \ge \frac{1}{m} \sum_{i=1}^m Y_{a^*,i}\right)
+  \\
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  \: .
+\end{align*}
+$Y_{a,i} - Y_{a^*,i} + \Delta_a = (Y_{a,i} - \mu_a) - (Y_{a^*,i} - \mu_{a^*})$ has mean 0 and is 2-sub-Gaussian, since $Y_{a,i}-\mu_a$ and $Y_{a^*,i} - \mu_{a^*}$ are 1-sub-Gaussian and independent.
+By Hoeffding's inequality, we have
+\begin{align*}
+  \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  &\le \exp\left(- \frac{m \Delta_a^2}{4}\right)
+  \: .
+\end{align*}
+This concludes the proof.
+\end{proof}

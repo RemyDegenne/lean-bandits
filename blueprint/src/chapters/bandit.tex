@@ -1,1 +1,132 @@
 \chapter{Stochastic multi-armed bandits}
+
+\section{Bandit model and probability space}
+
+
+\begin{definition}[Bandit]\label{def:bandit}
+  \leanok
+  \lean{Bandits.Bandit}
+The interaction of an algorithm with a stochastic bandit with arms in $\mathcal{A}$ (a measurable space) and real rewards is described by the following data:
+\begin{itemize}
+  \item $\nu : \mathcal{A} \rightsquigarrow \mathbb{R}$, a Markov kernel, conditional distribution of the rewards given the arm pulled,
+  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathbb{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the arm to pull at time $t+1$ given the history of previous pulls and rewards,
+  \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first arm to pull.
+\end{itemize}
+\end{definition}
+
+
+\begin{definition}[Bandit probability space]\label{def:Bandit.measure}
+  \uses{def:bandit}
+  \leanok
+  \lean{Bandits.Bandit.measure}
+By an application of the Ionescu-Tulcea theorem, a bandit $\mathcal{B} = (\nu, \pi, P_0)$ defines a probability distribution on the space $\Omega := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
+We denote that distribution by $\mathbb{P}$.
+TODO: explain how the probability distribution is constructed.
+\end{definition}
+
+
+\begin{definition}[Arms, rewards and history]\label{def:armAndReward}
+  \leanok
+  \lean{Bandits.arm, Bandits.reward, Bandits.hist}
+For $t \in \mathbb{N}$, we denote by $A_t$ the arm pulled at time $t$ and by $X_t$ the reward received at time $t$.
+Formally, these are measurable functions on $\Omega = (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, defined by $A_t(\omega) = \omega_{t,1}$ and $X_t(\omega) = \omega_{t,2}$.
+We denote by $H_t \in (\mathcal{A} \times \mathbb{R})^{t+1}$ the history of pulls and rewards up to and including time $t$, that is $H_t = ((A_0, X_0), \ldots, (A_t, X_t))$.
+Formally, $H_t(\omega) = (\omega_0, \ldots, \omega_t)$.
+\end{definition}
+
+
+\begin{lemma}\label{lem:condDistrib_reward}
+  \uses{def:Bandit.measure,def:armAndReward}
+  \leanok
+  \lean{Bandits.condDistrib_reward}
+The conditional distribution of the reward $X_t$ given the arm $A_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\nu(A_t)$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:law_arm_zero}
+  \uses{def:Bandit.measure,def:armAndReward}
+The law of the arm $A_0$ in the bandit probability space $(\Omega, \mathbb{P})$ is $P_0$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:condDistrib_arm}
+  \uses{def:Bandit.measure,def:armAndReward}
+  \leanok
+  \lean{Bandits.condDistrib_arm}
+The conditional distribution of the arm $A_{t+1}$ given the history $H_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\pi_t(H_t)$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\section{Regret and other bandit quantities}
+
+\begin{definition}\label{def:armMean}
+  \uses{def:bandit}
+  \leanok % no actual Lean def, but we don't need one
+For an arm $a \in \mathcal{A}$, we denote by $\mu_a$ the mean of the rewards for that arm, that is $\mu_a = \nu(a)[X]$.
+We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mathcal{A}} \mu_a$.
+\end{definition}
+
+
+\begin{definition}[Regret]\label{def:regret}
+  \uses{def:armMean}
+  \leanok
+  \lean{Bandits.regret}
+The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:
+\begin{align*}
+  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t} \: .
+\end{align*}
+\end{definition}
+
+
+\begin{definition}\label{def:gap}
+  \uses{def:armMean}
+  \leanok
+  \lean{Bandits.gap}
+For an arm $a \in \mathcal{A}$, its gap is defined as the difference between the mean of the best arm and the mean of that arm: $\Delta_a = \mu^* - \mu_a$.
+\end{definition}
+
+
+\begin{definition}\label{def:pullCount}
+  \uses{def:bandit}
+  \leanok
+  \lean{Bandits.pullCount}
+For an arm $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that arm $a$ has been pulled before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
+\end{definition}
+
+
+\begin{lemma}\label{lem:regret_eq_sum_pullCount_mul_gap}
+  \uses{def:regret,def:gap,def:pullCount}
+  \leanok
+  \lean{Bandits.regret_eq_sum_pullCount_mul_gap}
+For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the arms and their gaps:
+\begin{align*}
+  R_T = \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+  \leanok
+\begin{align*}
+  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t}
+  &= T \mu^* - \sum_{a \in \mathcal{A}} \sum_{t=0}^{T-1} \mathbb{I}\{A_t = a\} \mu_a
+  \\
+  &= T \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
+  \\
+  &= \sum_{a \in \mathcal{A}} N_{T,a} \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
+  \\
+  &= \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
+  \: .
+\end{align*}
+\end{proof}

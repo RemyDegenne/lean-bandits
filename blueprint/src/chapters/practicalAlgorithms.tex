@@ -1,0 +1,12 @@
+\chapter{Practical Algorithms}
+
+The algorithms presented in the previous chapters are theoretical algorithms, in the very basic sense that they perform operations on real numbers to decide what they will sample, and those numbers are not representable in a computer. In practice, we need to use floating point numbers (or bounded integers or rationals), both for the algorithm and for the rewards that are sampled from the environment.
+
+We will want to perform experiments about the algorithms for which we have theoretical guarantees, and that means using an implementation of the algorithms that can actually run on a computer.
+However if we use \texttt{float} in the specification of the algorithms, we won't be able to prove anything, because those numbers lack any good algebraic properties.
+
+Our strategy to resolve that conflict is to describe first the algorithm as a function of real numbers, and then automatically generate a version of the algorithm that uses floating point numbers, by using a translation tactic (similar to \texttt{to\_additive}).
+The result is that we have only one hand-written algorithm, and even though the theorems don't directly apply to the floating point version, we are assured that the only difference between the experimental and theoretical algorithms is the result of the translation tactic.
+This is in stark contrast with the situation in the literature, where the theoretical algorithm is specified in pseudo-code in LaTeX and the experiments are done on a separately written implementation, typically in Python. The experimental version may or may not be also implementing a series of tricks or optimizations of constants.
+
+TODO: describe the translation tactic. It should basically be like \texttt{to\_additive}.

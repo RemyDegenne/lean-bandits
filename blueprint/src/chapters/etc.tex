@@ -43,7 +43,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regr
 \end{theorem}
 
 \begin{proof}
-  \uses{lem:regret_eq_sum_pullCount_mul_gap}
+  \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm}
 By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
 It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
 It suffices to prove that

@@ -130,3 +130,69 @@ For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the ar
   \: .
 \end{align*}
 \end{proof}
+
+
+\section{Alternative model}
+
+The description of the bandit model above considers that at time $t$, a reward $X_t$ is generated, depending on the arm $A_t$ pulled at that time.
+An alternative way to talk about that process is to imagine that there is a stream of rewards from each arm, and that the algorithm sees the first, then second, etc. reward from the arms at it pulls them.
+We introduce definitions to talk about the $n^{th}$ reward of an arm, and the time at which that reward is pulled.
+
+\begin{definition}\label{def:timeOfPull}
+  \uses{def:pullCount}
+For an arm $a \in \mathcal{A}$ and a time $n \in \mathbb{N}$, we denote by $T_{n,a}$ the time at which arm $a$ was pulled for the $n$-th time, that is $T_{n,a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = n\}$.
+Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
+\end{definition}
+
+
+\begin{definition}\label{def:altReward}
+  \uses{def:timeOfPull}
+For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of everything else.
+We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when pulling arm $a$ for the $n$-th time if that time is finite, and equal to $Z_{n,a}$ otherwise.
+\end{definition}
+
+TODO: that definition requires changing the probability space to $\Omega \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$.
+
+\begin{lemma}\label{lem:timeOfPull_pullCount_le}
+  \uses{def:timeOfPull,def:pullCount}
+$T_{N_{t, a}, a} \le t - 1 < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+\end{lemma}
+
+\begin{proof}
+By definition, $T_{N_{t,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t,a}\} \le t - 1 < \infty$.
+\end{proof}
+
+
+\begin{lemma}\label{lem:timeOfPull_pullCount_eq}
+  \uses{def:timeOfPull,def:pullCount}
+$T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:altReward_pullCount}
+  \uses{def:altReward,def:pullCount}
+$Y_{N_{t+1,A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+\end{lemma}
+
+\begin{proof}
+  \uses{lem:timeOfPull_pullCount_eq}
+By Lemma~\ref{lem:timeOfPull_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < \infty$, so $Y_{N_{t+1,A_t}, A_t} = X_{T_{N_{t+1,A_t}, A_t}} = X_t$.
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:sum_altReward}
+  \uses{def:altReward,def:pullCount}
+\begin{align*}
+  \sum_{n=1}^{N_{t, a}} Y_{n, a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} X_s
+  \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}

@@ -153,6 +153,26 @@ We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mat
 
 TODO: that definition requires changing the probability space to $\Omega \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$.
 
+\begin{lemma}\label{lem:iid_altReward}
+  \uses{def:altReward}
+The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent and identically distributed random variables, with distribution $\nu(a)$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:indepednent_altReward}
+  \uses{def:altReward}
+For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb{R}^{\mathbb{N}}$ be the sequence of rewards obtained from pulling arm $a$. Then the sequences $(Y^{(a)})_{a \in \mathcal{A}}$ are independent.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
 \begin{lemma}\label{lem:timeOfPull_pullCount_le}
   \uses{def:timeOfPull,def:pullCount}
 $T_{N_{t, a}, a} \le t - 1 < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.

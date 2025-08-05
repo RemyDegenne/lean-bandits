@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import Mathlib
+import LeanBandits.Bandit
 
 /-!
 # Regret
@@ -34,8 +35,58 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
 open Classical in
-/-- Number of times arm `a` was pulled up to time `t`. -/
+/-- Number of times arm `a` was pulled up to time `t` (excluding `t`). -/
 noncomputable def pullCount (k : ℕ → α) (a : α) (t : ℕ) : ℕ := #(filter (fun s ↦ k s = a) (range t))
+
+open Classical in
+lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
+  fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
+
+lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
+    pullCount k (k t) (t + 1) = pullCount k (k t) t + 1 := by
+  simp [pullCount, range_succ, filter_insert]
+
+lemma pullCount_eq_pullCount (k : ℕ → α) (a : α) (t : ℕ) (h : k t ≠ a) :
+    pullCount k a (t + 1) = pullCount k a t := by
+  simp [pullCount, range_succ, filter_insert, h]
+
+/-- Number of steps until arm `a` was pulled exactly `m` times. -/
+noncomputable
+def stepsUntil (k : ℕ → α) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount k a (s + 1) = m})
+
+lemma stepsUntil_pullCount_le (k : ℕ → α) (a : α) (t : ℕ) :
+    stepsUntil k a (pullCount k a (t + 1)) ≤ t := by
+  rw [stepsUntil]
+  exact csInf_le (OrderBot.bddBelow _) ⟨t, rfl, rfl⟩
+
+lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
+    stepsUntil k (k t) (pullCount k (k t) (t + 1)) = t := by
+  apply le_antisymm (stepsUntil_pullCount_le k (k t) t)
+  suffices ∀ t', pullCount k (k t) (t' + 1) = pullCount k (k t) t + 1 → t ≤ t' by
+    simpa [stepsUntil, pullCount_eq_pullCount_add_one]
+  exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
+
+noncomputable
+def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
+  match (stepsUntil (arm · h) a m) with
+  | ⊤ => z m a
+  | (n : ℕ) => reward n h
+
+lemma rewardByCount_of_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
+    rewardByCount (arm t h) (pullCount (arm · h) (arm t h) t + 1) h z = reward t h := by
+  rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
+
+open Classical in
+lemma sum_rewardByCount_eq_sum_reward (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
+    ∑ m ∈ Icc 1 (pullCount (arm · h) a t), rewardByCount a m h z =
+      ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0 := by
+  induction' t with t ht
+  · simp [pullCount]
+  by_cases hta : arm t h = a
+  · rw [← hta] at ht ⊢
+    rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
+    rw [sum_range_succ, if_pos rfl, rewardByCount_of_pullCount_add_one_eq_reward]
+  · rwa [pullCount_eq_pullCount _ _ _ hta, sum_range_succ, if_neg hta, add_zero]
 
 lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ) :
     ∑ a, pullCount k a t * f a = ∑ s ∈ range t, f (k s) := by

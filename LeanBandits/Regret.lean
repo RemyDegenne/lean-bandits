@@ -66,18 +66,19 @@ lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
     simpa [stepsUntil, pullCount_eq_pullCount_add_one]
   exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
 
+/-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable
 def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
   match (stepsUntil (arm · h) a m) with
   | ⊤ => z m a
   | (n : ℕ) => reward n h
 
-lemma rewardByCount_of_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
+lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     rewardByCount (arm t h) (pullCount (arm · h) (arm t h) t + 1) h z = reward t h := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
 
-open Classical in
-lemma sum_rewardByCount_eq_sum_reward (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
+lemma sum_rewardByCount_eq_sum_reward [DecidableEq α]
+    (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     ∑ m ∈ Icc 1 (pullCount (arm · h) a t), rewardByCount a m h z =
       ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0 := by
   induction' t with t ht
@@ -85,7 +86,7 @@ lemma sum_rewardByCount_eq_sum_reward (a : α) (t : ℕ) (h : ℕ → α × ℝ)
   by_cases hta : arm t h = a
   · rw [← hta] at ht ⊢
     rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
-    rw [sum_range_succ, if_pos rfl, rewardByCount_of_pullCount_add_one_eq_reward]
+    rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
   · rwa [pullCount_eq_pullCount _ _ _ hta, sum_range_succ, if_neg hta, add_zero]
 
 lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ) :

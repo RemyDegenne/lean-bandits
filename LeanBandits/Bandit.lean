@@ -76,10 +76,13 @@ noncomputable
 def trajMeasure (b : Bandit α) : Measure (ℕ → α × ℝ) :=
   (b.traj 0) ∘ₘ ((b.p0 ⊗ₘ b.ν).map (MeasurableEquiv.piIicZero _).symm)
 
+/-- Measure of an infinite stream of rewards from each arm. -/
 noncomputable
 def streamMeasure (b : Bandit α) : Measure (ℕ → α → ℝ) :=
   Measure.infinitePi fun _ ↦ Measure.infinitePi b.ν
 
+/-- Joint distribution of the sequence of arm pulled and rewards, and a stream of independent
+rewards from all arms. -/
 noncomputable
 def measure (b : Bandit α) : Measure ((ℕ → α × ℝ) × (ℕ → α → ℝ)) :=
   (b.trajMeasure).prod (b.streamMeasure)
@@ -112,6 +115,7 @@ def reward (n : ℕ) (h : ℕ → α × ℝ) : ℝ := (h n).2
 `ℕ → α × ℝ`. -/
 def hist (n : ℕ) (h : ℕ → α × ℝ) : Iic n → α × ℝ := fun i ↦ h i
 
+/-- Filtration of the bandit process. -/
 def ℱ (α : Type*) [MeasurableSpace α] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × ℝ)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × ℝ)

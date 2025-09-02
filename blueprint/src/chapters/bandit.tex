@@ -140,6 +140,8 @@ We introduce definitions to talk about the $n^{th}$ reward of an arm, and the ti
 
 \begin{definition}\label{def:timeOfPull}
   \uses{def:pullCount}
+  \leanok
+  \lean{Bandits.stepsUntil}
 For an arm $a \in \mathcal{A}$ and a time $n \in \mathbb{N}$, we denote by $T_{n,a}$ the time at which arm $a$ was pulled for the $n$-th time, that is $T_{n,a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = n\}$.
 Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
 \end{definition}
@@ -147,6 +149,8 @@ Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
 
 \begin{definition}\label{def:altReward}
   \uses{def:timeOfPull}
+  \leanok
+  \lean{Bandits.rewardByCount}
 For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of everything else.
 We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when pulling arm $a$ for the $n$-th time if that time is finite, and equal to $Z_{n,a}$ otherwise.
 \end{definition}
@@ -175,7 +179,9 @@ For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb
 
 \begin{lemma}\label{lem:timeOfPull_pullCount_le}
   \uses{def:timeOfPull,def:pullCount}
-$T_{N_{t, a}, a} \le t - 1 < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+  \leanok
+  \lean{Bandits.stepsUntil_pullCount_le}
+$T_{N_{t+1, a}, a} \le t < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
 \end{lemma}
 
 \begin{proof}
@@ -185,6 +191,8 @@ By definition, $T_{N_{t,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t,a}
 
 \begin{lemma}\label{lem:timeOfPull_pullCount_eq}
   \uses{def:timeOfPull,def:pullCount}
+  \leanok
+  \lean{Bandits.stepsUntil_pullCount_eq}
 $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
 \end{lemma}
 
@@ -195,7 +203,9 @@ $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
 
 \begin{lemma}\label{lem:altReward_pullCount}
   \uses{def:altReward,def:pullCount}
-$Y_{N_{t+1,A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+  \leanok
+  \lean{Bandits.rewardByCount_pullCount_add_one_eq_reward}
+$Y_{N_{t+1, A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
 \end{lemma}
 
 \begin{proof}
@@ -207,6 +217,8 @@ By Lemma~\ref{lem:timeOfPull_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < 
 
 \begin{lemma}\label{lem:sum_altReward}
   \uses{def:altReward,def:pullCount}
+  \leanok
+  \lean{Bandits.sum_rewardByCount_eq_sum_reward}
 \begin{align*}
   \sum_{n=1}^{N_{t, a}} Y_{n, a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} X_s
   \: .

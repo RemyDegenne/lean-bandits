@@ -20,8 +20,11 @@ variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {k : ℕ �
 
 variable [Fintype α] [Nonempty α] {c : ℝ} {μ : α → ℝ} {N : α → ℕ} {a : α}
 
+/-- The exploration bonus of the UCB algorithm, which corresponds to the width of
+a confidence interval. -/
 noncomputable def ucbWidth (c : ℝ) (N : α → ℕ) (t : ℕ) (a : α) : ℝ := √(c * log t / N a)
 
+/-- The arm pulled by the UCB algorithm. -/
 noncomputable
 def ucbArm (c : ℝ) (μ : α → ℝ) (N : α → ℕ) (t : ℕ) : α :=
   (exists_max_image univ (fun a ↦ μ a + ucbWidth c N t a)

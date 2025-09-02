@@ -9,3 +9,9 @@ Bandits.regret
 Bandits.gap
 Bandits.pullCount
 Bandits.regret_eq_sum_pullCount_mul_gap
+Bandits.stepsUntil
+Bandits.rewardByCount
+Bandits.stepsUntil_pullCount_le
+Bandits.stepsUntil_pullCount_eq
+Bandits.rewardByCount_pullCount_add_one_eq_reward
+Bandits.sum_rewardByCount_eq_sum_reward

@@ -31,13 +31,13 @@ reward distributions. -/
 structure Bandit (α : Type*) [MeasurableSpace α] where
   /-- Conditional distribution of the rewards given the arm pulled. -/
   ν : Kernel α ℝ
-  hν : IsMarkovKernel ν
+  [hν : IsMarkovKernel ν]
   /-- Policy or sampling rule: distribution of the next pull. -/
   policy : (n : ℕ) → Kernel (Iic n → α × ℝ) α
-  h_policy n : IsMarkovKernel (policy n)
+  [h_policy : ∀ n, IsMarkovKernel (policy n)]
   /-- Distribution of the first pull. -/
   p0 : Measure α
-  hp0 : IsProbabilityMeasure p0
+  [hp0 : IsProbabilityMeasure p0]
 
 instance (b : Bandit α) : IsMarkovKernel b.ν := b.hν
 instance (b : Bandit α) (n : ℕ) : IsMarkovKernel (b.policy n) := b.h_policy n

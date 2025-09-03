@@ -134,8 +134,24 @@ noncomputable
 def etcKernel (hK : 0 < K) (m n : ℕ) : Kernel (Iic n → Fin K × ℝ) (Fin K) :=
   Kernel.deterministic (etcArm hK m n) (by fun_prop)
 
+instance (hK : 0 < K) (m n : ℕ) : IsMarkovKernel (etcKernel hK m n) := by
+  unfold etcKernel
+  infer_instance
+
 /-- The measure describing the first pull of the ETC algorithm. -/
 noncomputable
 def etcP0 (hK : 0 < K) : Measure (Fin K) := Measure.dirac ⟨0, hK⟩
+
+instance (hK : 0 < K) : IsProbabilityMeasure (etcP0 hK) := by
+  unfold etcP0
+  infer_instance
+
+/-- A bandit interaction between the ETC algorithm and an environment given by reward
+distributions. -/
+noncomputable
+def ETCBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] : Bandit (Fin K) where
+  ν := ν
+  policy := etcKernel hK m
+  p0 := etcP0 hK
 
 end Bandits

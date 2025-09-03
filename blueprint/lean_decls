@@ -18,5 +18,4 @@ Bandits.sum_rewardByCount_eq_sum_reward
 ProbabilityTheory.HasSubgaussianMGF
 ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
 Bandits.etcNextArm
-Bandits.etcKernel
-Bandits.etcP0
+Bandits.etcAlgorithm

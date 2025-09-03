@@ -7,6 +7,8 @@ Note: times start at 0 to be consistent with Lean.
 Note: we will describe the algorithm by writing $A_t = ...$, but our formal bandit model needs a policy $\pi_t$ that gives the distribution of the arm to pull. What me mean is that $\pi_t$ is a Dirac distribution at that arm.
 
 \begin{definition}[Explore-Then-Commit algorithm]\label{def:etcAlgorithm}
+  \leanok
+  \lean{Bandits.etcKernel, Bandits.etcP0}
 The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is defined as follows:
 \begin{enumerate}
   \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),

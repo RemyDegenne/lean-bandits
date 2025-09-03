@@ -8,7 +8,7 @@ Note: we will describe the algorithm by writing $A_t = ...$, but our formal band
 
 \begin{definition}[Explore-Then-Commit algorithm]\label{def:etcAlgorithm}
   \leanok
-  \lean{Bandits.etcKernel, Bandits.etcP0}
+  \lean{Bandits.etcNextArm, Bandits.etcKernel, Bandits.etcP0}
 The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is defined as follows:
 \begin{enumerate}
   \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),

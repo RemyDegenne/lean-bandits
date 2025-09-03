@@ -110,9 +110,9 @@ lemma measurable_empMeanETC (m n : ℕ) (a : Fin K) :
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
-/-- Arm pulled by the ETC algorithm. -/
+/-- Arm pulled by the ETC algorithm at time `n + 1`. -/
 noncomputable
-def etcArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
+def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m - 1 then
     ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
@@ -121,9 +121,9 @@ def etcArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
     else (h ⟨n - 1, by simp⟩).1
 
 @[fun_prop]
-lemma measurable_etcArm (hK : 0 < K) (m n : ℕ) : Measurable (etcArm hK m n) := by
+lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK m n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  unfold etcArm
+  unfold etcNextArm
   simp only [dite_eq_ite]
   refine Measurable.ite (by simp) (by fun_prop) ?_
   refine Measurable.ite (by simp) ?_ (by fun_prop)
@@ -132,7 +132,7 @@ lemma measurable_etcArm (hK : 0 < K) (m n : ℕ) : Measurable (etcArm hK m n) :=
 /-- The Explore-Then-Commit Kernel, which describes the arm pulled by the ETC algorithm. -/
 noncomputable
 def etcKernel (hK : 0 < K) (m n : ℕ) : Kernel (Iic n → Fin K × ℝ) (Fin K) :=
-  Kernel.deterministic (etcArm hK m n) (by fun_prop)
+  Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
 
 instance (hK : 0 < K) (m n : ℕ) : IsMarkovKernel (etcKernel hK m n) := by
   unfold etcKernel
@@ -153,5 +153,14 @@ def ETCBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel �
   ν := ν
   policy := etcKernel hK m
   p0 := etcP0 hK
+
+lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
+    arm 0 =ᵐ[(ETCBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
+  sorry
+
+lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
+    (n : ℕ) :
+    arm (n + 1) =ᵐ[(ETCBandit hK m ν).trajMeasure] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+  sorry
 
 end Bandits

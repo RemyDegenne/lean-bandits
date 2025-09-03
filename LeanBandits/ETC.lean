@@ -50,14 +50,19 @@ noncomputable
 def etcP0 (hK : 0 < K) : Measure (Fin K) := Measure.dirac ⟨0, hK⟩
 deriving IsProbabilityMeasure
 
-/-- A bandit interaction between the ETC algorithm and an environment given by reward
-distributions. -/
+/-- The Explore-Then-Commit algorithm. -/
+noncomputable
+def etcAlgorithm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
+    Algorithm (Fin K) ℝ where
+  policy := etcKernel hK m
+  p0 := etcP0 hK
+
+/-- A bandit interaction between the ETC algorithm and an environment. -/
 noncomputable
 def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     Bandit (Fin K) ℝ where
   ν := ν
-  policy := etcKernel hK m
-  p0 := etcP0 hK
+  toAlgorithm := etcAlgorithm hK m ν
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     arm 0 =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by

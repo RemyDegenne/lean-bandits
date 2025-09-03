@@ -26,18 +26,21 @@ variable {α R : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R}
 
 section MeasureSpace
 
-/-- A bandit interaction between an agent described by a policy and an environment given by
-reward distributions. -/
-structure Bandit (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
-  /-- Conditional distribution of the rewards given the arm pulled. -/
-  ν : Kernel α R
-  [hν : IsMarkovKernel ν]
+/-- A stochastic, sequential algorithm. -/
+structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
   /-- Policy or sampling rule: distribution of the next pull. -/
   policy : (n : ℕ) → Kernel (Iic n → α × R) α
   [h_policy : ∀ n, IsMarkovKernel (policy n)]
   /-- Distribution of the first pull. -/
   p0 : Measure α
   [hp0 : IsProbabilityMeasure p0]
+
+/-- A bandit interaction between an agent described by a policy and an environment given by
+reward distributions. -/
+structure Bandit (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] extends Algorithm α R where
+  /-- Conditional distribution of the rewards given the arm pulled. -/
+  ν : Kernel α R
+  [hν : IsMarkovKernel ν]
 
 instance (b : Bandit α R) : IsMarkovKernel b.ν := b.hν
 instance (b : Bandit α R) (n : ℕ) : IsMarkovKernel (b.policy n) := b.h_policy n

@@ -53,15 +53,15 @@ deriving IsProbabilityMeasure
 /-- A bandit interaction between the ETC algorithm and an environment given by reward
 distributions. -/
 noncomputable
-def ETCBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] : Bandit (Fin K) where
+def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] : Bandit (Fin K) where
   ν := ν
   policy := etcKernel hK m
   p0 := etcP0 hK
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    arm 0 =ᵐ[(ETCBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
-  suffices h : (ETCBandit hK m ν).trajMeasure.map (arm 0) = etcP0 hK by
-    have h_eq : ∀ᵐ x ∂((ETCBandit hK m ν).trajMeasure.map (arm 0)), x = ⟨0, hK⟩ := by
+    arm 0 =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
+  suffices h : (etcBandit hK m ν).trajMeasure.map (arm 0) = etcP0 hK by
+    have h_eq : ∀ᵐ x ∂((etcBandit hK m ν).trajMeasure.map (arm 0)), x = ⟨0, hK⟩ := by
       simp [etcP0, h]
     refine ae_of_ae_map ?_ h_eq
     fun_prop
@@ -70,7 +70,7 @@ lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKer
 
 lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     (n : ℕ) :
-    arm (n + 1) =ᵐ[(ETCBandit hK m ν).trajMeasure] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+    arm (n + 1) =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
   sorry
 
 end Bandits

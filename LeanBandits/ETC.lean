@@ -89,6 +89,10 @@ namespace Bandits
 
 variable {K : ℕ}
 
+-- TODO: when defining the kernel of an algorithm, we use `Iic n → α × ℝ` as the history type.
+-- But for all the defs in the regret file, we use `ℕ → α × ℝ` as the history type.
+-- Should we unify this?
+
 /-- The empirical mean of arm `a` at time `n` but weighted by `m`.
 We will use it only for `n = K * m - 1`, time for which there is indeed `m` samples for each arm,
 but for reasons that have to do with type equalities we define it for arbitrary `n`. -/
@@ -98,13 +102,12 @@ def empMeanETC (m n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) :=
 
 @[fun_prop]
 lemma measurable_empMeanETC (m n : ℕ) (a : Fin K) :
-    Measurable (fun h : Iic n → Fin K × ℝ ↦ empMeanETC m n h a) := by
-  simp only [empMeanETC]
+    Measurable (fun h ↦ empMeanETC m n h a) := by
+  unfold empMeanETC
   have h_meas s :
       Measurable (fun (h : Iic n → Fin K × ℝ) ↦ if (h s).1 = a then (h s).2 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    change MeasurableSet ((fun h : Iic n → Fin K × ℝ ↦ (h s).1) ⁻¹' {a})
-    exact MeasurableSet.preimage (measurableSet_singleton _) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
 /-- Arm pulled by the ETC algorithm. -/
@@ -112,13 +115,10 @@ noncomputable
 def etcArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m - 1 then
-    ⟨n % K, Nat.mod_lt _ hK⟩
+    ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
   else
-    if hn_eq : n = K * m - 1 then
-      measurableArgmax (empMeanETC m n) h
-    else
-      have : 0 < n := by grind
-      (h ⟨n - 1, by simp⟩).1
+    if hn_eq : n = K * m - 1 then measurableArgmax (empMeanETC m n) h
+    else (h ⟨n - 1, by simp⟩).1
 
 @[fun_prop]
 lemma measurable_etcArm (hK : 0 < K) (m n : ℕ) : Measurable (etcArm hK m n) := by
@@ -133,5 +133,9 @@ lemma measurable_etcArm (hK : 0 < K) (m n : ℕ) : Measurable (etcArm hK m n) :=
 noncomputable
 def etcKernel (hK : 0 < K) (m n : ℕ) : Kernel (Iic n → Fin K × ℝ) (Fin K) :=
   Kernel.deterministic (etcArm hK m n) (by fun_prop)
+
+/-- The measure describing the first pull of the ETC algorithm. -/
+noncomputable
+def etcP0 (hK : 0 < K) : Measure (Fin K) := Measure.dirac ⟨0, hK⟩
 
 end Bandits

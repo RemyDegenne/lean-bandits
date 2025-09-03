@@ -40,7 +40,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \i
 \end{lemma}
 
 \begin{proof}
-  \uses{lem:sum_altReward, thm:hoeffding}
+  \uses{lem:iid_altReward, lem:independent_altReward, lem:sum_altReward, thm:hoeffding}
 \begin{align*}
   \mathbb{P}(\hat{A}_m^* = a)
   &\le \mathbb{P}(\hat{\mu}_a \ge \hat{\mu}_{a^*})

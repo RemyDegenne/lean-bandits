@@ -1,1 +1,25 @@
 \chapter{Concentration inequalities}
+
+\begin{definition}\label{def:subGaussian}
+  \mathlibok
+  \lean{ProbabilityTheory.HasSubgaussianMGF}
+TODO
+\end{definition}
+
+
+\begin{theorem}\label{thm:hoeffding}
+  \uses{def:subGaussian}
+  \mathlibok
+  \lean{ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun}
+Let $X_1, \ldots, X_n$ be independent random variables such that $X_i$ is $\sigma_i^2$-sub-Gaussian for $i \in [n]$.
+Then for any $t \ge 0$, we have
+\begin{align*}
+  \mathbb{P}\left(\sum_{i=1}^n X_i \ge t\right)
+  &\le \exp\left(- \frac{t^2}{2 \sum_{i=1}^n \sigma_i^2}\right)
+  \: .
+\end{align*}
+\end{theorem}
+
+\begin{proof}
+
+\end{proof}

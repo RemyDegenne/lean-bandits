@@ -31,6 +31,39 @@ For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]
 \end{proof}
 
 
+\begin{lemma}\label{lem:prob_etc_error_le_exp}
+  \uses{def:etcAlgorithm}
+Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ with $\Delta_a > 0$, we have $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$.
+\end{lemma}
+
+\begin{proof}
+  \uses{lem:sum_altReward, thm:hoeffding}
+\begin{align*}
+  \mathbb{P}(\hat{A}_m^* = a)
+  &\le \mathbb{P}(\hat{\mu}_a \ge \hat{\mu}_{a^*})
+  \\
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t \ge \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a^*) X_t\right)
+  \: .
+\end{align*}
+By Lemma~\ref{lem:sum_altReward}, the empirical means are means of $m$ i.i.d. samples $Y_{a,i}$ and $Y_{a^*,i}$ from the distributions $\nu(a)$ and $\nu(a^*)$.
+\begin{align*}
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m Y_{a,i} \ge \frac{1}{m} \sum_{i=1}^m Y_{a^*,i}\right)
+  \\
+  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  \: .
+\end{align*}
+$Y_{a,i} - Y_{a^*,i} + \Delta_a = (Y_{a,i} - \mu_a) - (Y_{a^*,i} - \mu_{a^*})$ has mean 0 and is 2-sub-Gaussian, since $Y_{a,i}-\mu_a$ and $Y_{a^*,i} - \mu_{a^*}$ are 1-sub-Gaussian and independent.
+By Hoeffding's inequality, we have
+\begin{align*}
+  \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  &\le \exp\left(- \frac{m \Delta_a^2}{4}\right)
+  \: .
+\end{align*}
+This concludes the proof.
+\end{proof}
+
+
 \begin{theorem}\label{thm:regret_etc_le}
   \uses{def:etcAlgorithm, def:regret}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -43,7 +76,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regr
 \end{theorem}
 
 \begin{proof}
-  \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm}
+  \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm, lem:prob_etc_error_le_exp}
 By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
 It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
 It suffices to prove that
@@ -59,26 +92,5 @@ By definition of the Explore-Then-Commit algorithm (or by Lemma~\ref{lem:pullCou
   \: .
 \end{align*}
 It thus suffices to prove the inequality $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$ for $\Delta_a > 0$.
-\begin{align*}
-  \mathbb{P}(\hat{A}_m^* = a)
-  &\le \mathbb{P}(\hat{\mu}_a \ge \hat{\mu}_{a^*})
-  \\
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t \ge \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a^*) X_t\right)
-  \: .
-\end{align*}
-TODO: here we need to state in a rigorous way that the empirical means are means of $m$ i.i.d. samples $Y_{a,i}$ and $Y_{a^*,i}$ from the distributions $\nu(a)$ and $\nu(a^*)$.
-\begin{align*}
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m Y_{a,i} \ge \frac{1}{m} \sum_{i=1}^m Y_{a^*,i}\right)
-  \\
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
-  \: .
-\end{align*}
-$Y_{a,i} - Y_{a^*,i} + \Delta_a = (Y_{a,i} - \mu_a) - (Y_{a^*,i} - \mu_{a^*})$ has mean 0 and is 2-sub-Gaussian, since $Y_{a,i}-\mu_a$ and $Y_{a^*,i} - \mu_{a^*}$ are 1-sub-Gaussian and independent.
-By Hoeffding's inequality, we have
-\begin{align*}
-  \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
-  &\le \exp\left(- \frac{m \Delta_a^2}{4}\right)
-  \: .
-\end{align*}
-This concludes the proof.
+This is done in Lemma~\ref{lem:prob_etc_error_le_exp}.
 \end{proof}

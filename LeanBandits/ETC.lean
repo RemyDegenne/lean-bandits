@@ -39,36 +39,24 @@ lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK
   refine Measurable.ite (by simp) ?_ (by fun_prop)
   exact measurable_measurableArgmax fun a ↦ by fun_prop
 
-/-- The Explore-Then-Commit Kernel, which describes the arm pulled by the ETC algorithm. -/
-noncomputable
-def etcKernel (hK : 0 < K) (m n : ℕ) : Kernel (Iic n → Fin K × ℝ) (Fin K) :=
-  Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
-deriving IsMarkovKernel
-
-/-- The measure describing the first pull of the ETC algorithm. -/
-noncomputable
-def etcP0 (hK : 0 < K) : Measure (Fin K) := Measure.dirac ⟨0, hK⟩
-deriving IsProbabilityMeasure
-
 /-- The Explore-Then-Commit algorithm. -/
 noncomputable
-def etcAlgorithm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    Algorithm (Fin K) ℝ where
-  policy := etcKernel hK m
-  p0 := etcP0 hK
+def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ where
+  policy n := Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
+  p0 := Measure.dirac ⟨0, hK⟩
 
 /-- A bandit interaction between the ETC algorithm and an environment. -/
 noncomputable
 def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     Bandit (Fin K) ℝ where
   ν := ν
-  toAlgorithm := etcAlgorithm hK m ν
+  toAlgorithm := etcAlgorithm hK m
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     arm 0 =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
-  suffices h : (etcBandit hK m ν).trajMeasure.map (arm 0) = etcP0 hK by
+  suffices h : (etcBandit hK m ν).trajMeasure.map (arm 0) = (etcAlgorithm hK m).p0 by
     have h_eq : ∀ᵐ x ∂((etcBandit hK m ν).trajMeasure.map (arm 0)), x = ⟨0, hK⟩ := by
-      simp [etcP0, h]
+      simp [etcAlgorithm, h]
     refine ae_of_ae_map ?_ h_eq
     fun_prop
   -- extract lemma

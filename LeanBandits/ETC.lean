@@ -53,7 +53,8 @@ deriving IsProbabilityMeasure
 /-- A bandit interaction between the ETC algorithm and an environment given by reward
 distributions. -/
 noncomputable
-def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] : Bandit (Fin K) where
+def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
+    Bandit (Fin K) ℝ where
   ν := ν
   policy := etcKernel hK m
   p0 := etcP0 hK

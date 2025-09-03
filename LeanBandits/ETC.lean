@@ -60,6 +60,12 @@ def ETCBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel �
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     arm 0 =ᵐ[(ETCBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
+  suffices h : (ETCBandit hK m ν).trajMeasure.map (arm 0) = etcP0 hK by
+    have h_eq : ∀ᵐ x ∂((ETCBandit hK m ν).trajMeasure.map (arm 0)), x = ⟨0, hK⟩ := by
+      simp [etcP0, h]
+    refine ae_of_ae_map ?_ h_eq
+    fun_prop
+  -- extract lemma
   sorry
 
 lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]

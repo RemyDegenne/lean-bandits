@@ -115,6 +115,15 @@ def reward (n : ℕ) (h : ℕ → α × ℝ) : ℝ := (h n).2
 `ℕ → α × ℝ`. -/
 def hist (n : ℕ) (h : ℕ → α × ℝ) : Iic n → α × ℝ := fun i ↦ h i
 
+@[fun_prop]
+lemma measurable_arm (n : ℕ) : Measurable (arm n (α := α)) := by unfold arm; fun_prop
+
+@[fun_prop]
+lemma measurable_reward (n : ℕ) : Measurable (reward n (α := α)) := by unfold reward; fun_prop
+
+@[fun_prop]
+lemma measurable_hist (n : ℕ) : Measurable (hist n (α := α)) := by unfold hist; fun_prop
+
 /-- Filtration of the bandit process. -/
 def ℱ (α : Type*) [MeasurableSpace α] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × ℝ)) :=

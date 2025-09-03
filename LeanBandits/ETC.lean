@@ -43,18 +43,12 @@ lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK
 noncomputable
 def etcKernel (hK : 0 < K) (m n : ℕ) : Kernel (Iic n → Fin K × ℝ) (Fin K) :=
   Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
-
-instance (hK : 0 < K) (m n : ℕ) : IsMarkovKernel (etcKernel hK m n) := by
-  unfold etcKernel
-  infer_instance
+deriving IsMarkovKernel
 
 /-- The measure describing the first pull of the ETC algorithm. -/
 noncomputable
 def etcP0 (hK : 0 < K) : Measure (Fin K) := Measure.dirac ⟨0, hK⟩
-
-instance (hK : 0 < K) : IsProbabilityMeasure (etcP0 hK) := by
-  unfold etcP0
-  infer_instance
+deriving IsProbabilityMeasure
 
 /-- A bandit interaction between the ETC algorithm and an environment given by reward
 distributions. -/

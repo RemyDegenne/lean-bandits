@@ -59,6 +59,17 @@ lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
 noncomputable
 def stepsUntil (k : ℕ → α) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount k a (s + 1) = m})
 
+lemma stepsUntil_eq_dite (k : ℕ → α) (a : α) (m : ℕ) [Decidable (∃ s, pullCount k a (s + 1) = m)] :
+    stepsUntil k a m =
+      if h : ∃ s, pullCount k a (s + 1) = m then (Nat.find h : ℕ∞) else ⊤ := by
+  unfold stepsUntil
+  split_ifs with h
+  · sorry
+  · push_neg at h
+    suffices {s | pullCount k a (s + 1) = m} = ∅ by simp [this]
+    ext s
+    simpa using (h s)
+
 lemma stepsUntil_pullCount_le (k : ℕ → α) (a : α) (t : ℕ) :
     stepsUntil k a (pullCount k a (t + 1)) ≤ t := by
   rw [stepsUntil]

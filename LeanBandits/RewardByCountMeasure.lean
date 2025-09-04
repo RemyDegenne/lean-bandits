@@ -16,29 +16,13 @@ namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
 
-@[fun_prop]
-lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun k ↦ pullCount k a t) := by
-  simp_rw [pullCount_eq_sum]
-  have h_meas s : Measurable (fun k : ℕ → α ↦ if k s = a then 1 else 0) := by
-    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact (measurableSet_singleton _).preimage (by fun_prop)
+lemma measurable_coe_nat_enat : Measurable (fun n : ℕ ↦ (n : ℕ∞)) := by
   fun_prop
 
+omit [DecidableEq α] [MeasurableSingletonClass α] in
 @[fun_prop]
-lemma measurable_stepsUntil (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
-    Measurable (fun k ↦ stepsUntil k a m) := by
-  sorry
-
-lemma measurable_stepsUntil'' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
-    Measurable (fun ω : (ℕ → α × ℝ) ↦ stepsUntil (arm · ω) a m) :=
-  (measurable_stepsUntil alg ν a m).comp (by fun_prop)
-
-lemma measurable_stepsUntil' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
-    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ stepsUntil (arm · ω.1) a m) :=
-  (measurable_stepsUntil'' alg ν a m).comp measurable_fst
+lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) : Measurable (fun a ↦ (f a : ℕ∞)) :=
+  measurable_coe_nat_enat.comp hf
 
 lemma measurable_toNat : Measurable (fun n : ℕ∞ ↦ n.toNat) :=
   measurable_to_countable fun _ ↦ by simp
@@ -49,25 +33,67 @@ lemma _root_.Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurab
   measurable_toNat.comp hf
 
 @[fun_prop]
-lemma measurable_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
+lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun k ↦ pullCount k a t) := by
+  simp_rw [pullCount_eq_sum]
+  have h_meas s : Measurable (fun k : ℕ → α ↦ if k s = a then 1 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+@[fun_prop]
+lemma measurable_stepsUntil (a : α) (m : ℕ) : Measurable (fun k ↦ stepsUntil k a m) := by
+  classical
+  have h_union : {k' | ∃ s, pullCount k' a (s + 1) = m}
+      = ⋃ s : ℕ, {k' | pullCount k' a (s + 1) = m} := by ext; simp
+  have h_meas_set : MeasurableSet {k' | ∃ s, pullCount k' a (s + 1) = m} := by
+    rw [h_union]
+    exact MeasurableSet.iUnion fun s ↦ (measurableSet_singleton _).preimage (by fun_prop)
+  simp_rw [stepsUntil_eq_dite]
+  suffices Measurable fun k ↦ if h : k ∈ {k' | ∃ s, pullCount k' a (s + 1) = m}
+      then (Nat.find h : ℕ∞) else ⊤ by convert this
+  refine Measurable.dite (s := {k' : ℕ → α | ∃ s, pullCount k' a (s + 1) = m})
+    (f := fun x ↦ (Nat.find x.2 : ℕ∞)) (g := fun _ ↦ ⊤) ?_ (by fun_prop) h_meas_set
+  refine Measurable.coe_nat_enat ?_
+  refine measurable_find _ fun k ↦ ?_
+  suffices MeasurableSet {x : ℕ → α | pullCount x a (k + 1) = m} by
+    have : Subtype.val ''
+          {x : {k' : ℕ → α | ∃ s, pullCount k' a (s + 1) = m} | pullCount x a (k + 1) = m}
+        = {x : ℕ → α | pullCount x a (k + 1) = m} := by
+      ext x
+      simp only [Set.mem_setOf_eq, Set.coe_setOf, Set.mem_image, Subtype.exists, exists_and_left,
+        exists_prop, exists_eq_right_right, and_iff_left_iff_imp]
+      exact fun h ↦ ⟨_, h⟩
+    refine (MeasurableEmbedding.subtype_coe h_meas_set).measurableSet_image.mp ?_
+    rw [this]
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma measurable_stepsUntil'' (a : α) (m : ℕ) :
+    Measurable (fun ω : (ℕ → α × ℝ) ↦ stepsUntil (arm · ω) a m) :=
+  (measurable_stepsUntil a m).comp (by fun_prop)
+
+lemma measurable_stepsUntil' (a : α) (m : ℕ) :
+    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ stepsUntil (arm · ω.1) a m) :=
+  (measurable_stepsUntil'' a m).comp measurable_fst
+
+@[fun_prop]
+lemma measurable_rewardByCount (a : α) (m : ℕ) :
     Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ rewardByCount a m ω.1 ω.2) := by
   simp_rw [rewardByCount_eq_ite]
   refine Measurable.ite ?_ ?_ ?_
-  · exact (measurableSet_singleton _).preimage <| measurable_stepsUntil' alg ν a m
+  · exact (measurableSet_singleton _).preimage <| measurable_stepsUntil' a m
   · fun_prop
   · change Measurable ((fun p : ℕ × (ℕ → α × ℝ) ↦ reward p.1 p.2)
       ∘ (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ ((stepsUntil (arm · ω.1) a m).toNat, ω.1)))
     have : Measurable fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦
         ((stepsUntil (arm · ω.1) a m).toNat, ω.1) :=
-      (measurable_stepsUntil' alg ν a m).toNat.prodMk (by fun_prop)
+      (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
     exact Measurable.comp (by fun_prop) this
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
     (a : α) (m : ℕ) :
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
-  aemeasurable := (measurable_rewardByCount alg ν a m).aemeasurable
   map_eq := by
     sorry
 
@@ -79,8 +105,8 @@ lemma identDistrib_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [
     (a : α) (n m : ℕ) :
     IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ rewardByCount a m ω.1 ω.2)
       (Bandit.measure alg ν) (Bandit.measure alg ν) where
-  aemeasurable_fst := (measurable_rewardByCount alg ν a n).aemeasurable
-  aemeasurable_snd := (measurable_rewardByCount alg ν a m).aemeasurable
+  aemeasurable_fst := by fun_prop
+  aemeasurable_snd := by fun_prop
   map_eq := by
     sorry
 

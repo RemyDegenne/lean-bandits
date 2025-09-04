@@ -100,68 +100,6 @@ The conditional distribution of the arm $A_{t+1}$ given the history $H_t$ in the
 \end{proof}
 
 
-\section{Regret and other bandit quantities}
-
-\begin{definition}\label{def:armMean}
-  \uses{def:bandit}
-  \leanok % no actual Lean def, but we don't need one
-For an arm $a \in \mathcal{A}$, we denote by $\mu_a$ the mean of the rewards for that arm, that is $\mu_a = \nu(a)[X]$.
-We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mathcal{A}} \mu_a$.
-\end{definition}
-
-
-\begin{definition}[Regret]\label{def:regret}
-  \uses{def:armMean}
-  \leanok
-  \lean{Bandits.regret}
-The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:
-\begin{align*}
-  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t} \: .
-\end{align*}
-\end{definition}
-
-
-\begin{definition}\label{def:gap}
-  \uses{def:armMean}
-  \leanok
-  \lean{Bandits.gap}
-For an arm $a \in \mathcal{A}$, its gap is defined as the difference between the mean of the best arm and the mean of that arm: $\Delta_a = \mu^* - \mu_a$.
-\end{definition}
-
-
-\begin{definition}\label{def:pullCount}
-  \uses{def:bandit}
-  \leanok
-  \lean{Bandits.pullCount}
-For an arm $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that arm $a$ has been pulled before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
-\end{definition}
-
-
-\begin{lemma}\label{lem:regret_eq_sum_pullCount_mul_gap}
-  \uses{def:regret,def:gap,def:pullCount}
-  \leanok
-  \lean{Bandits.regret_eq_sum_pullCount_mul_gap}
-For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the arms and their gaps:
-\begin{align*}
-  R_T = \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a \: .
-\end{align*}
-\end{lemma}
-
-\begin{proof}
-  \leanok
-\begin{align*}
-  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t}
-  &= T \mu^* - \sum_{a \in \mathcal{A}} \sum_{t=0}^{T-1} \mathbb{I}\{A_t = a\} \mu_a
-  \\
-  &= T \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
-  \\
-  &= \sum_{a \in \mathcal{A}} N_{T,a} \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
-  \\
-  &= \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
-  \: .
-\end{align*}
-\end{proof}
-
 
 \section{Alternative model}
 
@@ -258,4 +196,68 @@ By Lemma~\ref{lem:stepsUntil_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < 
 
 \begin{proof}\leanok
 
+\end{proof}
+
+
+
+\section{Regret and other bandit quantities}
+
+\begin{definition}\label{def:armMean}
+  \uses{def:bandit}
+  \leanok % no actual Lean def, but we don't need one
+For an arm $a \in \mathcal{A}$, we denote by $\mu_a$ the mean of the rewards for that arm, that is $\mu_a = \nu(a)[X]$.
+We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mathcal{A}} \mu_a$.
+\end{definition}
+
+
+\begin{definition}[Regret]\label{def:regret}
+  \uses{def:armMean}
+  \leanok
+  \lean{Bandits.regret}
+The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:
+\begin{align*}
+  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t} \: .
+\end{align*}
+\end{definition}
+
+
+\begin{definition}\label{def:gap}
+  \uses{def:armMean}
+  \leanok
+  \lean{Bandits.gap}
+For an arm $a \in \mathcal{A}$, its gap is defined as the difference between the mean of the best arm and the mean of that arm: $\Delta_a = \mu^* - \mu_a$.
+\end{definition}
+
+
+\begin{definition}\label{def:pullCount}
+  \uses{def:bandit}
+  \leanok
+  \lean{Bandits.pullCount}
+For an arm $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that arm $a$ has been pulled before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
+\end{definition}
+
+
+\begin{lemma}\label{lem:regret_eq_sum_pullCount_mul_gap}
+  \uses{def:regret,def:gap,def:pullCount}
+  \leanok
+  \lean{Bandits.regret_eq_sum_pullCount_mul_gap}
+For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the arms and their gaps:
+\begin{align*}
+  R_T = \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+  \leanok
+\begin{align*}
+  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t}
+  &= T \mu^* - \sum_{a \in \mathcal{A}} \sum_{t=0}^{T-1} \mathbb{I}\{A_t = a\} \mu_a
+  \\
+  &= T \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
+  \\
+  &= \sum_{a \in \mathcal{A}} N_{T,a} \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
+  \\
+  &= \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
+  \: .
+\end{align*}
 \end{proof}

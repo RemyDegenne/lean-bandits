@@ -64,7 +64,12 @@ lemma stepsUntil_eq_dite (k : ℕ → α) (a : α) (m : ℕ) [Decidable (∃ s, 
       if h : ∃ s, pullCount k a (s + 1) = m then (Nat.find h : ℕ∞) else ⊤ := by
   unfold stepsUntil
   split_ifs with h
-  · sorry
+  · refine le_antisymm ?_ ?_
+    · refine sInf_le ?_
+      simpa using Nat.find_spec h
+    · simp only [le_sInf_iff, Set.mem_image, Set.mem_setOf_eq, forall_exists_index, and_imp,
+        forall_apply_eq_imp_iff₂, Nat.cast_le, Nat.find_le_iff]
+      exact fun n hn ↦  ⟨n, le_rfl, hn⟩
   · push_neg at h
     suffices {s | pullCount k a (s + 1) = m} = ∅ by simp [this]
     ext s

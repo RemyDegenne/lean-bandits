@@ -16,21 +16,15 @@ namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
 
-lemma measurable_coe_nat_enat : Measurable (fun n : ℕ ↦ (n : ℕ∞)) := by
-  fun_prop
-
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 @[fun_prop]
-lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) : Measurable (fun a ↦ (f a : ℕ∞)) :=
-  measurable_coe_nat_enat.comp hf
-
-lemma measurable_toNat : Measurable (fun n : ℕ∞ ↦ n.toNat) :=
-  measurable_to_countable fun _ ↦ by simp
+lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
+    Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 @[fun_prop]
 lemma _root_.Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun a ↦ (f a).toNat) :=
-  measurable_toNat.comp hf
+  Measurable.comp (by fun_prop) hf
 
 @[fun_prop]
 lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun k ↦ pullCount k a t) := by

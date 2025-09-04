@@ -12,24 +12,22 @@ import LeanBandits.Regret
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
 
-namespace ProbabilityTheory
+section Aux
 
-variable {α β Ω F : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω]
-  [Nonempty Ω] [NormedAddCommGroup F] {mα : MeasurableSpace α} {μ : Measure α} [IsFiniteMeasure μ]
+variable {α β Ω : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
+  {mα : MeasurableSpace α} {μ : Measure α} {mβ : MeasurableSpace β}
   {X : α → β} {Y : α → Ω}
-  {mβ : MeasurableSpace β} {s : Set Ω} {t : Set β} {f : β × Ω → F}
 
-lemma condDistrib_comp_map (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+lemma ProbabilityTheory.condDistrib_comp_map [IsFiniteMeasure μ]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
     condDistrib Y X μ ∘ₘ (μ.map X) = μ.map Y := by
-  rw [← Measure.snd_compProd, compProd_map_condDistrib hY]
-  rw [Measure.snd_map_prodMk₀ hX]
+  rw [← Measure.snd_compProd, compProd_map_condDistrib hY, Measure.snd_map_prodMk₀ hX]
 
-omit [IsFiniteMeasure μ] in
-lemma Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
+lemma MeasureTheory.Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
     κ ∘ₘ μ = η ∘ₘ μ :=
   Measure.bind_congr_right h
 
-end ProbabilityTheory
+end Aux
 
 namespace Bandits
 

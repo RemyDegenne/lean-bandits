@@ -122,22 +122,22 @@ def ℱ (α : Type*) [MeasurableSpace α] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
-lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α]
-    [StandardBorelSpace R] [Nonempty R] (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
-    (n : ℕ) :
-    condDistrib (fun h ↦ (arm n h, reward n h)) (hist n) (Bandit.trajMeasure alg ν)
-      = Bandit.stepKernel alg ν n := by
+lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+    condDistrib (fun h ↦ (arm (n + 1) h, reward (n + 1) h)) (hist n) (Bandit.trajMeasure alg ν)
+      =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] Bandit.stepKernel alg ν n := by
   sorry
 
-lemma condDistrib_reward [StandardBorelSpace R] [Nonempty R] (alg : Algorithm α R)
-    (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
-    condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν) = ν := by
+lemma condDistrib_reward [StandardBorelSpace R] [Nonempty R] (alg : Algorithm α R) (ν : Kernel α R)
+    [IsMarkovKernel ν] (n : ℕ) :
+    condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν)
+      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := by
   sorry
 
 lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
-    condDistrib (arm n) (hist n) (Bandit.trajMeasure alg ν) = alg.policy n := by
-  rw [← Bandit.fst_stepKernel alg ν n, ← condDistrib_arm_reward alg ν n]
+    condDistrib (arm (n + 1)) (hist n) (Bandit.trajMeasure alg ν)
+      =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] alg.policy n := by
   sorry
 
 end MeasureSpace

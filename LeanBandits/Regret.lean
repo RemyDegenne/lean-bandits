@@ -18,6 +18,7 @@ open scoped ENNReal NNReal
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {k : ℕ → α} {t : ℕ} {a : α}
+  [DecidableEq α]
 
 /-! ### Definitions of regret, gaps, pull counts -/
 
@@ -30,13 +31,14 @@ def regret (ν : Kernel α ℝ) (k : ℕ → α) (t : ℕ) : ℝ :=
 noncomputable
 def gap (ν : Kernel α ℝ) (a : α) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
 
+omit [DecidableEq α] in
 lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   rw [gap, sub_nonneg]
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
-open Classical in
 /-- Number of times arm `a` was pulled up to time `t` (excluding `t`). -/
-noncomputable def pullCount (k : ℕ → α) (a : α) (t : ℕ) : ℕ := #(filter (fun s ↦ k s = a) (range t))
+noncomputable def pullCount [DecidableEq α] (k : ℕ → α) (a : α) (t : ℕ) : ℕ :=
+  #(filter (fun s ↦ k s = a) (range t))
 
 open Classical in
 lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
@@ -49,6 +51,9 @@ lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
 lemma pullCount_eq_pullCount (k : ℕ → α) (a : α) (t : ℕ) (h : k t ≠ a) :
     pullCount k a (t + 1) = pullCount k a t := by
   simp [pullCount, range_succ, filter_insert, h]
+
+lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
+    pullCount k a t = ∑ s ∈ range t, if k s = a then 1 else 0 := by simp [pullCount]
 
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
@@ -73,11 +78,18 @@ def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α →
   | ⊤ => z m a
   | (n : ℕ) => reward n h
 
+lemma rewardByCount_eq_ite (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
+    rewardByCount a m h z =
+      if (stepsUntil (arm · h) a m) = ⊤ then z m a
+      else reward (stepsUntil (arm · h) a m).toNat h := by
+  unfold rewardByCount
+  cases stepsUntil (arm · h) a m <;> simp
+
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     rewardByCount (arm t h) (pullCount (arm · h) (arm t h) t + 1) h z = reward t h := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
 
-lemma sum_rewardByCount_eq_sum_reward [DecidableEq α]
+lemma sum_rewardByCount_eq_sum_reward
     (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     ∑ m ∈ Icc 1 (pullCount (arm · h) a t), rewardByCount a m h z =
       ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0 := by
@@ -116,10 +128,12 @@ variable [Fintype α] [Nonempty α]
 noncomputable def bestArm (ν : Kernel α ℝ) : α :=
   (exists_max_image univ (fun a ↦ (ν a)[id]) (univ_nonempty_iff.mpr inferInstance)).choose
 
+omit [DecidableEq α] in
 lemma le_bestArm (a : α) : (ν a)[id] ≤ (ν (bestArm ν))[id] :=
   (exists_max_image univ (fun a ↦ (ν a)[id])
     (univ_nonempty_iff.mpr inferInstance)).choose_spec.2 _ (mem_univ a)
 
+omit [DecidableEq α] in
 lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   rw [gap]
   congr

@@ -115,6 +115,12 @@ lemma measurable_reward (n : ℕ) : Measurable (reward n (α := α) (R := R)) :=
   unfold reward; fun_prop
 
 @[fun_prop]
+lemma measurable_reward_prod : Measurable (fun p : ℕ × (ℕ → α × R) ↦ reward p.1 p.2) := by
+  refine measurable_from_prod_countable_right fun n ↦ ?_
+  simp only
+  fun_prop
+
+@[fun_prop]
 lemma measurable_hist (n : ℕ) : Measurable (hist n (α := α) (R := R)) := by unfold hist; fun_prop
 
 /-- Filtration of the bandit process. -/

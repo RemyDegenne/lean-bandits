@@ -1,25 +1,44 @@
 \chapter{Stochastic multi-armed bandits}
 
-\section{Bandit model and probability space}
+\section{Algorithm, bandit and probability space}
 
-TODO: refactor the following to reflect the change in the code.
-
-\begin{definition}[Bandit]\label{def:bandit}
+\begin{definition}[Algorithm]\label{def:algorithm}
   \leanok
-The interaction of an algorithm with a stochastic bandit with arms in $\mathcal{A}$ (a measurable space) and real rewards is described by the following data:
+  \lean{Bandits.Algorithm}
+A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
 \begin{itemize}
-  \item $\nu : \mathcal{A} \rightsquigarrow \mathbb{R}$, a Markov kernel, conditional distribution of the rewards given the arm pulled,
-  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathbb{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the arm to pull at time $t+1$ given the history of previous pulls and rewards,
+  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the arm to pull at time $t+1$ given the history of previous pulls and observations,
   \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first arm to pull.
 \end{itemize}
 \end{definition}
 
 
+The first arm pulled by the algorithm is sampled from $P_0$, the arm pulled at time $1$ is sampled from $\pi_0(H_0)$, where $H_0 \in \mathcal{A} \times \mathcal{R}$ is the data of the first arm pulled and the first observation received, and so on.
+
+
+\begin{definition}[Bandit]\label{def:bandit}
+  \mathlibok
+A stochastic bandit is simply a reward distribution for each arm: a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathbb{R}$, conditional distribution of the rewards given the arm pulled.
+\end{definition}
+
+
+Note: we don't have a Lean definition for a bandit, since it is just a Markov kernel.
+
+An algorithm can interact with a bandit to produce a sequence of arms and rewards: after a time $t$, the history $H_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$ contains the arms pulled and rewards received up to that time,
+\begin{itemize}
+  \item the algorithm chooses an arm $A_{t+1}$ sampled according to its policy $\pi_t(H_t)$,
+  \item the bandit generates a reward $X_{t+1}$ according to the distribution $\nu(A_{t+1})$,
+  \item the history is updated to $H_{t+1} = ((A_0, X_0), \ldots, (A_{t+1}, X_{t+1}))$.
+\end{itemize}
+
+We now want to define a probability space on which we can study the sequences of arms and rewards, and formulate probabilistic statements about the interaction between the algorithm and the bandit.
+
+
 \begin{definition}[Bandit probability space]\label{def:Bandit.measure}
-  \uses{def:bandit}
+  \uses{def:algorithm, def:bandit}
   \leanok
   \lean{Bandits.Bandit.measure}
-By an application of the Ionescu-Tulcea theorem, a bandit $\mathcal{B} = (\nu, \pi, P_0)$ defines a probability distribution on the space $\Omega := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
+By an application of the Ionescu-Tulcea theorem, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution on the space $\Omega := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
 We denote that distribution by $\mathbb{P}$.
 TODO: explain how the probability distribution is constructed.
 \end{definition}
@@ -33,6 +52,18 @@ Formally, these are measurable functions on $\Omega = (\mathcal{A} \times \mathb
 We denote by $H_t \in (\mathcal{A} \times \mathbb{R})^{t+1}$ the history of pulls and rewards up to and including time $t$, that is $H_t = ((A_0, X_0), \ldots, (A_t, X_t))$.
 Formally, $H_t(\omega) = (\omega_0, \ldots, \omega_t)$.
 \end{definition}
+
+
+\begin{remark}[Building vs analyzing algorithms]
+When we describe an algorithm, we give the data of the policies $\pi_t$, which are functions of the partial history up to time $t$, in $(\mathcal{A} \times \mathcal{R})^{t+1}$.
+That means that any tool used to define a policy must be a function defined on $(\mathcal{A} \times \mathcal{R})^{t+1}$.
+For example a definition of the empirical mean of an arm must be a function $t : \mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{t+1} \to \mathbb{R}$.
+
+When we analyze an algorithm, we work on the other hand on the bandit probability space $(\Omega, \mathbb{P})$, in which $\Omega = (\mathcal{A} \times \mathcal{R})^{\mathbb{N}}$ is the full history, which describes the whole sequence of arms and rewards.
+As a stochastic process, the empirical mean of an arm is a function $\mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{\mathbb{N}} \to \mathbb{R}$.
+
+Thus there are two very distinct types of objects: those defined on the partial history, which are used to build algorithms, and those defined on the full history, which are used to analyze algorithms.
+\end{remark}
 
 
 \begin{lemma}\label{lem:condDistrib_reward}
@@ -138,7 +169,7 @@ The description of the bandit model above considers that at time $t$, a reward $
 An alternative way to talk about that process is to imagine that there is a stream of rewards from each arm, and that the algorithm sees the first, then second, etc. reward from the arms at it pulls them.
 We introduce definitions to talk about the $n^{th}$ reward of an arm, and the time at which that reward is pulled.
 
-\begin{definition}\label{def:timeOfPull}
+\begin{definition}\label{def:stepsUntil}
   \uses{def:pullCount}
   \leanok
   \lean{Bandits.stepsUntil}
@@ -147,8 +178,8 @@ Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
 \end{definition}
 
 
-\begin{definition}\label{def:altReward}
-  \uses{def:timeOfPull}
+\begin{definition}\label{def:rewardByCount}
+  \uses{def:stepsUntil}
   \leanok
   \lean{Bandits.rewardByCount}
 For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of everything else.
@@ -157,8 +188,8 @@ We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mat
 
 TODO: that definition requires changing the probability space to $\Omega \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$.
 
-\begin{lemma}\label{lem:iid_altReward}
-  \uses{def:altReward}
+\begin{lemma}\label{lem:iid_rewardByCount}
+  \uses{def:rewardByCount}
 The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent and identically distributed random variables, with distribution $\nu(a)$.
 \end{lemma}
 
@@ -167,8 +198,8 @@ The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent and identically distr
 \end{proof}
 
 
-\begin{lemma}\label{lem:independent_altReward}
-  \uses{def:altReward}
+\begin{lemma}\label{lem:independent_rewardByCount}
+  \uses{def:rewardByCount}
 For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb{R}^{\mathbb{N}}$ be the sequence of rewards obtained from pulling arm $a$. Then the sequences $(Y^{(a)})_{a \in \mathcal{A}}$ are independent.
 \end{lemma}
 
@@ -177,8 +208,8 @@ For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb
 \end{proof}
 
 
-\begin{lemma}\label{lem:timeOfPull_pullCount_le}
-  \uses{def:timeOfPull,def:pullCount}
+\begin{lemma}\label{lem:stepsUntil_pullCount_le}
+  \uses{def:stepsUntil,def:pullCount}
   \leanok
   \lean{Bandits.stepsUntil_pullCount_le}
 $T_{N_{t+1, a}, a} \le t < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
@@ -189,8 +220,8 @@ By definition, $T_{N_{t,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t,a}
 \end{proof}
 
 
-\begin{lemma}\label{lem:timeOfPull_pullCount_eq}
-  \uses{def:timeOfPull,def:pullCount}
+\begin{lemma}\label{lem:stepsUntil_pullCount_eq}
+  \uses{def:stepsUntil,def:pullCount}
   \leanok
   \lean{Bandits.stepsUntil_pullCount_eq}
 $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
@@ -201,22 +232,22 @@ $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
 \end{proof}
 
 
-\begin{lemma}\label{lem:altReward_pullCount}
-  \uses{def:altReward,def:pullCount}
+\begin{lemma}\label{lem:rewardByCount_pullCount}
+  \uses{def:rewardByCount,def:pullCount}
   \leanok
   \lean{Bandits.rewardByCount_pullCount_add_one_eq_reward}
 $Y_{N_{t+1, A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:timeOfPull_pullCount_eq}
-By Lemma~\ref{lem:timeOfPull_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < \infty$, so $Y_{N_{t+1,A_t}, A_t} = X_{T_{N_{t+1,A_t}, A_t}} = X_t$.
+  \uses{lem:stepsUntil_pullCount_eq}
+By Lemma~\ref{lem:stepsUntil_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < \infty$, so $Y_{N_{t+1,A_t}, A_t} = X_{T_{N_{t+1,A_t}, A_t}} = X_t$.
 
 \end{proof}
 
 
-\begin{lemma}\label{lem:sum_altReward}
-  \uses{def:altReward,def:pullCount}
+\begin{lemma}\label{lem:sum_rewardByCount}
+  \uses{def:rewardByCount,def:pullCount}
   \leanok
   \lean{Bandits.sum_rewardByCount_eq_sum_reward}
 \begin{align*}

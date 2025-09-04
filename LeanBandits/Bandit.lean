@@ -124,7 +124,7 @@ lemma measurable_reward_prod : Measurable (fun p : ℕ × (ℕ → α × R) ↦ 
 lemma measurable_hist (n : ℕ) : Measurable (hist n (α := α) (R := R)) := by unfold hist; fun_prop
 
 /-- Filtration of the bandit process. -/
-def ℱ (α : Type*) [MeasurableSpace α] :
+def ℱ (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 

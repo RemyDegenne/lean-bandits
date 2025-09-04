@@ -84,12 +84,36 @@ lemma measurable_rewardByCount (a : α) (m : ℕ) :
       (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
     exact Measurable.comp (by fun_prop) this
 
+lemma condDistrib_rewardByCount_stepsUntil {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
+    (a : α) (m : ℕ) :
+    condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
+        (Bandit.measure alg ν)
+      =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)] Kernel.const _ (ν a) := by
+  sorry
+
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
     (a : α) (m : ℕ) :
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
   map_eq := by
-    sorry
+    have h_condDistrib :
+        condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
+          (Bandit.measure alg ν)
+        =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)]
+          Kernel.const _ (ν a) := condDistrib_rewardByCount_stepsUntil a m
+    calc (Bandit.measure alg ν).map (fun ω ↦ rewardByCount a m ω.1 ω.2)
+    _ = (condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
+          (Bandit.measure alg ν))
+        ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) := by
+      sorry
+    _ = (Kernel.const _ (ν a))
+        ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) := by
+      sorry
+    _ = ν a := by
+      have : IsProbabilityMeasure
+          ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) :=
+        isProbabilityMeasure_map (by fun_prop)
+      simp
 
 lemma identDistrib_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
     (a : α) (n m : ℕ) :

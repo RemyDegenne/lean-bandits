@@ -91,15 +91,11 @@ lemma measurable_rewardByCount (a : α) (m : ℕ) :
     exact Measurable.comp (by fun_prop) this
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
-lemma hasLaw_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
+lemma hasLaw_rewardByCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
     (a : α) (m : ℕ) :
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     sorry
-
-lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
-    iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
-  sorry
 
 lemma identDistrib_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
     (a : α) (n m : ℕ) :
@@ -107,7 +103,10 @@ lemma identDistrib_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [
       (Bandit.measure alg ν) (Bandit.measure alg ν) where
   aemeasurable_fst := by fun_prop
   aemeasurable_snd := by fun_prop
-  map_eq := by
-    sorry
+  map_eq := by rw [(hasLaw_rewardByCount a n).map_eq, (hasLaw_rewardByCount a m).map_eq]
+
+lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
+  sorry
 
 end Bandits

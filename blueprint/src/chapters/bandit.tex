@@ -38,19 +38,21 @@ We now want to define a probability space on which we can study the sequences of
   \uses{def:algorithm, def:bandit}
   \leanok
   \lean{Bandits.Bandit.measure}
-By an application of the Ionescu-Tulcea theorem, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution on the space $\Omega := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
-We denote that distribution by $\mathbb{P}$.
-TODO: explain how the probability distribution is constructed.
+By an application of the Ionescu-Tulcea theorem, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution $\mathbb{P}_B$ on the space $\Omega_B := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
+We augment that probability space with a stream of rewards from each arm, independent of the bandit interaction, to get the probability space $(\Omega, \mathbb{P})$, where $\Omega = \Omega_B \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$ and $\mathbb{P} = \mathbb{P}_B \otimes (\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a))$.
+
+TODO: explain how the probability distribution $\mathbb{P}_B$ is constructed.
 \end{definition}
 
+The reason for adding the extra stream of rewards is explained in Section~\ref{sec:alt_model}.
 
 \begin{definition}[Arms, rewards and history]\label{def:armAndReward}
   \leanok
   \lean{Bandits.arm, Bandits.reward, Bandits.hist}
 For $t \in \mathbb{N}$, we denote by $A_t$ the arm pulled at time $t$ and by $X_t$ the reward received at time $t$.
-Formally, these are measurable functions on $\Omega = (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, defined by $A_t(\omega) = \omega_{t,1}$ and $X_t(\omega) = \omega_{t,2}$.
+Formally, these are measurable functions on $\Omega = (\mathcal{A} \times \mathbb{R})^{\mathbb{N}} \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$, defined by $A_t(\omega) = \omega_{1,t,1}$ and $X_t(\omega) = \omega_{1,t,2}$.
 We denote by $H_t \in (\mathcal{A} \times \mathbb{R})^{t+1}$ the history of pulls and rewards up to and including time $t$, that is $H_t = ((A_0, X_0), \ldots, (A_t, X_t))$.
-Formally, $H_t(\omega) = (\omega_0, \ldots, \omega_t)$.
+Formally, $H_t(\omega) = (\omega_{1,0}, \ldots, \omega_{1,t})$.
 \end{definition}
 
 
@@ -101,7 +103,7 @@ The conditional distribution of the arm $A_{t+1}$ given the history $H_t$ in the
 
 
 
-\section{Alternative model}
+\section{Alternative model}\label{sec:alt_model}
 
 The description of the bandit model above considers that at time $t$, a reward $X_t$ is generated, depending on the arm $A_t$ pulled at that time.
 An alternative way to talk about that process is to imagine that there is a stream of rewards from each arm, and that the algorithm sees the first, then second, etc. reward from the arms at it pulls them.
@@ -120,11 +122,11 @@ Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
   \uses{def:stepsUntil}
   \leanok
   \lean{Bandits.rewardByCount}
-For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of everything else.
+For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of the bandit interaction and other $Z_{m,b}$.
+In our probability space $\Omega$, we can take for $Z_{n,a}$ the function $\omega \mapsto \omega_{2,n,a}$.
 We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when pulling arm $a$ for the $n$-th time if that time is finite, and equal to $Z_{n,a}$ otherwise.
 \end{definition}
 
-TODO: that definition requires changing the probability space to $\Omega \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$.
 
 \begin{lemma}\label{lem:iid_rewardByCount}
   \uses{def:rewardByCount}
@@ -154,7 +156,7 @@ $T_{N_{t+1, a}, a} \le t < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathca
 \end{lemma}
 
 \begin{proof}\leanok
-By definition, $T_{N_{t,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t,a}\} \le t - 1 < \infty$.
+By definition, $T_{N_{t+1,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t+1,a}\} \le t < \infty$.
 \end{proof}
 
 

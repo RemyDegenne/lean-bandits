@@ -6,7 +6,7 @@ Authors: Rémy Degenne
 import LeanBandits.Bandit
 import LeanBandits.Regret
 
-/-! # Reward by count measure
+/-! # Laws of `stepsUntil` and `rewardByCount`
 -/
 
 open MeasureTheory ProbabilityTheory Finset

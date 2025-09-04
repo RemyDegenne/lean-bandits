@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import LeanBandits.AlgorithmBuilding
 import LeanBandits.Regret
 
 /-!
@@ -17,6 +18,36 @@ open scoped ENNReal NNReal
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {k : ℕ → α} {t : ℕ} {a : α}
+
+section Algorithm
+
+variable [Nonempty α] [DecidableEq α] [Finite α] [Encodable α] [MeasurableSingletonClass α]
+
+/-- The exploration bonus of the UCB algorithm, which corresponds to the width of
+a confidence interval. -/
+noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → α × ℝ) (a : α) : ℝ :=
+  √(c * log (n + 1) / (pullCount' n h a))
+
+open Classical in
+/-- Arm pulled by the UCB algorithm at time `n + 1`. -/
+noncomputable
+def ucbNextArm (c : ℝ) (n : ℕ) (h : Iic n → α × ℝ) : α :=
+  measurableArgmax (fun h a ↦ empMean' n h a + ucbWidth' c n h a) h
+
+@[fun_prop]
+lemma measurable_ucbNextArm (c : ℝ) (n : ℕ) : Measurable (ucbNextArm c n (α := α)) := by
+  classical
+  refine measurable_measurableArgmax fun a ↦ ?_
+  unfold ucbWidth'
+  fun_prop
+
+/-- The UCB algorithm. -/
+noncomputable
+def ucbAlgorithm (c : ℝ) : Algorithm α ℝ where
+  policy n := Kernel.deterministic (ucbNextArm c n) (by fun_prop)
+  p0 := Measure.dirac (Classical.arbitrary α)
+
+end Algorithm
 
 variable [Fintype α] [Nonempty α] {c : ℝ} {μ : α → ℝ} {N : α → ℕ} {a : α}
 

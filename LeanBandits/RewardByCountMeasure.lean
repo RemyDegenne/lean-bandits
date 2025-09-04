@@ -12,6 +12,25 @@ import LeanBandits.Regret
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
 
+namespace ProbabilityTheory
+
+variable {α β Ω F : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω]
+  [Nonempty Ω] [NormedAddCommGroup F] {mα : MeasurableSpace α} {μ : Measure α} [IsFiniteMeasure μ]
+  {X : α → β} {Y : α → Ω}
+  {mβ : MeasurableSpace β} {s : Set Ω} {t : Set β} {f : β × Ω → F}
+
+lemma condDistrib_comp_map (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    condDistrib Y X μ ∘ₘ (μ.map X) = μ.map Y := by
+  rw [← Measure.snd_compProd, compProd_map_condDistrib hY]
+  rw [Measure.snd_map_prodMk₀ hX]
+
+omit [IsFiniteMeasure μ] in
+lemma Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
+    κ ∘ₘ μ = η ∘ₘ μ :=
+  Measure.bind_congr_right h
+
+end ProbabilityTheory
+
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
@@ -105,10 +124,10 @@ lemma hasLaw_rewardByCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMark
     _ = (condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
           (Bandit.measure alg ν))
         ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) := by
-      sorry
+      rw [condDistrib_comp_map (by fun_prop) (by fun_prop)]
     _ = (Kernel.const _ (ν a))
-        ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) := by
-      sorry
+        ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) :=
+      Measure.comp_congr h_condDistrib
     _ = ν a := by
       have : IsProbabilityMeasure
           ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)) :=

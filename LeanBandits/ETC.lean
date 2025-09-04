@@ -17,9 +17,6 @@ namespace Bandits
 
 variable {K : ℕ}
 
--- TODO: when defining the kernel of an algorithm, we use `Iic n → α × ℝ` as the history type.
--- But for all the defs in the regret file, we use `ℕ → α × ℝ` as the history type.
-
 /-- Arm pulled by the ETC algorithm at time `n + 1`. -/
 noncomputable
 def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
@@ -45,26 +42,20 @@ def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ where
   policy n := Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
   p0 := Measure.dirac ⟨0, hK⟩
 
-/-- A bandit interaction between the ETC algorithm and an environment. -/
-noncomputable
-def etcBandit (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    Bandit (Fin K) ℝ where
-  ν := ν
-  toAlgorithm := etcAlgorithm hK m
-
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    arm 0 =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ ⟨0, hK⟩ := by
-  suffices h : (etcBandit hK m ν).trajMeasure.map (arm 0) = (etcAlgorithm hK m).p0 by
-    have h_eq : ∀ᵐ x ∂((etcBandit hK m ν).trajMeasure.map (arm 0)), x = ⟨0, hK⟩ := by
-      simp [etcAlgorithm, h]
-    refine ae_of_ae_map ?_ h_eq
-    fun_prop
+    arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun h ↦ ⟨0, hK⟩ := by
+  suffices h : (Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0) = (etcAlgorithm hK m).p0 by
+    have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0)), x = ⟨0, hK⟩ := by
+      rw [h]
+      simp [etcAlgorithm]
+    exact ae_of_ae_map (by fun_prop) h_eq
   -- extract lemma
   sorry
 
 lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     (n : ℕ) :
-    arm (n + 1) =ᵐ[(etcBandit hK m ν).trajMeasure] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+    arm (n + 1) =ᵐ[(Bandit.trajMeasure (etcAlgorithm hK m) ν)]
+      fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
   sorry
 
 end Bandits

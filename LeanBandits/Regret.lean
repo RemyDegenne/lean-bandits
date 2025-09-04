@@ -40,6 +40,9 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
 noncomputable def pullCount [DecidableEq α] (k : ℕ → α) (a : α) (t : ℕ) : ℕ :=
   #(filter (fun s ↦ k s = a) (range t))
 
+@[simp]
+lemma pullCount_zero (k : ℕ → α) (a : α) : pullCount k a 0 = 0 := by simp [pullCount]
+
 open Classical in
 lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
   fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
@@ -48,7 +51,7 @@ lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
     pullCount k (k t) (t + 1) = pullCount k (k t) t + 1 := by
   simp [pullCount, range_succ, filter_insert]
 
-lemma pullCount_eq_pullCount (k : ℕ → α) (a : α) (t : ℕ) (h : k t ≠ a) :
+lemma pullCount_eq_pullCount {k : ℕ → α} {a : α} {t : ℕ} (h : k t ≠ a) :
     pullCount k a (t + 1) = pullCount k a t := by
   simp [pullCount, range_succ, filter_insert, h]
 
@@ -87,6 +90,27 @@ lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
     simpa [stepsUntil, pullCount_eq_pullCount_add_one]
   exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
 
+lemma arm_stepsUntil (a : α) (m : ℕ) (h : ℕ → α × ℝ) (hm : m ≠ 0)
+    (h_exists : ∃ s, pullCount (arm · h) a (s + 1) = m) :
+    arm (stepsUntil (arm · h) a m).toNat h = a := by
+  classical
+  simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, ENat.toNat_coe]
+  have h_spec := Nat.find_spec h_exists
+  have h_spec' n := Nat.find_min h_exists (m := n)
+  by_cases h_zero : Nat.find h_exists = 0
+  · simp only [h_zero, zero_add, not_lt_zero', IsEmpty.forall_iff, implies_true] at *
+    by_contra h_ne
+    rw [← zero_add 1, pullCount_eq_pullCount h_ne] at h_spec
+    simp only [pullCount_zero] at h_spec
+    exact hm h_spec.symm
+  have h_pos : 0 < Nat.find h_exists := Nat.pos_of_ne_zero h_zero
+  by_contra h_ne
+  refine h_spec' (Nat.find h_exists - 1) ?_ ?_
+  · simp [h_pos]
+  rw [Nat.sub_add_cancel (by omega)]
+  rwa [← pullCount_eq_pullCount]
+  exact h_ne
+
 /-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable
 def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
@@ -115,7 +139,7 @@ lemma sum_rewardByCount_eq_sum_reward
   · rw [← hta] at ht ⊢
     rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
     rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
-  · rwa [pullCount_eq_pullCount _ _ _ hta, sum_range_succ, if_neg hta, add_zero]
+  · rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
 
 lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ) :
     ∑ a, pullCount k a t * f a = ∑ s ∈ range t, f (k s) := by

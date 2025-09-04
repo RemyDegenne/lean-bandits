@@ -17,8 +17,8 @@ open scoped ENNReal NNReal
 
 namespace Bandits
 
-variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {k : ℕ → α} {t : ℕ} {a : α}
-  [DecidableEq α]
+variable {α : Type*} [DecidableEq α] {mα : MeasurableSpace α} {ν : Kernel α ℝ}
+  {k : ℕ → α} {m n t : ℕ} {a : α} {h : ℕ → α × ℝ}
 
 /-! ### Definitions of regret, gaps, pull counts -/
 
@@ -51,8 +51,7 @@ lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
     pullCount k (k t) (t + 1) = pullCount k (k t) t + 1 := by
   simp [pullCount, range_succ, filter_insert]
 
-lemma pullCount_eq_pullCount {k : ℕ → α} {a : α} {t : ℕ} (h : k t ≠ a) :
-    pullCount k a (t + 1) = pullCount k a t := by
+lemma pullCount_eq_pullCount (h : k t ≠ a) :  pullCount k a (t + 1) = pullCount k a t := by
   simp [pullCount, range_succ, filter_insert, h]
 
 lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
@@ -61,6 +60,25 @@ lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
 def stepsUntil (k : ℕ → α) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount k a (s + 1) = m})
+
+lemma stepsUntil_zero_of_ne (hka : k 0 ≠ a) : stepsUntil k a 0 = 0 := by
+  unfold stepsUntil
+  simp_rw [← bot_eq_zero, sInf_eq_bot, bot_eq_zero]
+  intro n hn
+  refine ⟨0, ?_, hn⟩
+  simp only [Set.mem_image, Set.mem_setOf_eq, Nat.cast_eq_zero, exists_eq_right, zero_add]
+  rw [← zero_add 1, pullCount_eq_pullCount hka]
+  simp
+
+lemma stepsUntil_zero_of_eq (hka : k 0 = a) : stepsUntil k a 0 = ⊤ := by
+  simp only [stepsUntil, sInf_eq_top, Set.mem_image, Set.mem_setOf_eq, forall_exists_index, and_imp,
+    forall_apply_eq_imp_iff₂, ENat.coe_ne_top, imp_false]
+  suffices 0 < pullCount k a 1 by
+    intro n hn
+    refine lt_irrefl 0 ?_
+    exact this.trans_le (le_trans (monotone_pullCount _ _ (by omega)) hn.le)
+  rw [← hka, ← zero_add 1, pullCount_eq_pullCount_add_one]
+  simp
 
 lemma stepsUntil_eq_dite (k : ℕ → α) (a : α) (m : ℕ) [Decidable (∃ s, pullCount k a (s + 1) = m)] :
     stepsUntil k a m =
@@ -90,8 +108,7 @@ lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
     simpa [stepsUntil, pullCount_eq_pullCount_add_one]
   exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
 
-lemma arm_stepsUntil (a : α) (m : ℕ) (h : ℕ → α × ℝ) (hm : m ≠ 0)
-    (h_exists : ∃ s, pullCount (arm · h) a (s + 1) = m) :
+lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount (arm · h) a (s + 1) = m) :
     arm (stepsUntil (arm · h) a m).toNat h = a := by
   classical
   simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, ENat.toNat_coe]

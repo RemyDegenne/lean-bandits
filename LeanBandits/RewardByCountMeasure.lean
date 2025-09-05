@@ -135,7 +135,7 @@ lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace α] [Nonempty α]
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount [StandardBorelSpace α] [Nonempty α]
-    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0):
+    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0) :
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     have h_condDistrib :

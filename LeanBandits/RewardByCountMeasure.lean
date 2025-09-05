@@ -14,8 +14,8 @@ open scoped ENNReal NNReal
 
 section Aux
 
-variable {α β Ω Ω' : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
-  {mα : MeasurableSpace α} {μ : Measure α} {mβ : MeasurableSpace β}
+variable {α β γ Ω Ω' : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
+  {mα : MeasurableSpace α} {μ : Measure α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
   [MeasurableSpace Ω'] [StandardBorelSpace Ω'] [Nonempty Ω']
   {X : α → β} {Y : α → Ω} {Z : α → Ω'}
 
@@ -23,15 +23,16 @@ lemma MeasureTheory.Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂�
     κ ∘ₘ μ = η ∘ₘ μ :=
   Measure.bind_congr_right h
 
+lemma MeasureTheory.Measure.copy_comp_map (hX : AEMeasurable X μ) :
+    Kernel.copy β ∘ₘ (μ.map X) = μ.map (fun a ↦ (X a, X a)) := by
+  rw [Kernel.copy, deterministic_comp_eq_map, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  congr
+
 lemma MeasureTheory.Measure.compProd_deterministic [SFinite μ] (hX : Measurable X) :
     μ ⊗ₘ (Kernel.deterministic X hX) = μ.map (fun a ↦ (a, X a)) := by
-  rw [Measure.compProd_eq_comp_prod]
-  calc (Kernel.id ×ₖ Kernel.deterministic X hX) ∘ₘ μ
-  _ = (Kernel.deterministic (fun ω ↦ (ω, X ω)) (by fun_prop)) ∘ₘ μ := by
-    rw [Kernel.id, Kernel.deterministic_prod_deterministic]
-    simp
-  _ = μ.map (fun ω ↦ (ω, X ω)) := by
-    rw [Measure.deterministic_comp_eq_map]
+  rw [Measure.compProd_eq_comp_prod, Kernel.id, Kernel.deterministic_prod_deterministic,
+    Measure.deterministic_comp_eq_map]
+  rfl
 
 lemma ProbabilityTheory.condDistrib_comp_map [IsFiniteMeasure μ]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
@@ -52,14 +53,6 @@ lemma ProbabilityTheory.condDistrib_const [IsFiniteMeasure μ]
   conv_lhs => rw [this]
   filter_upwards [condDistrib_comp hX (by fun_prop : Measurable (fun _ ↦ c))] with b hb
   rw [hb]
-
-lemma ProbabilityTheory.condDistrib_compProd_condDistrib [IsFiniteMeasure μ]
-    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hZ : AEMeasurable Z μ) :
-    (condDistrib Y X μ) ⊗ₖ condDistrib Z (fun a ↦ (X a, Y a)) μ
-      =ᵐ[μ.map X] condDistrib (fun a ↦ (Y a, Z a)) X μ := by
-  rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop)]
-  rw [Measure.compProd_eq_comp_prod]
-  sorry
 
 end Aux
 

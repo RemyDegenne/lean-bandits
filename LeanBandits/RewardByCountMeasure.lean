@@ -54,21 +54,19 @@ lemma ProbabilityTheory.condDistrib_const [IsFiniteMeasure μ]
   filter_upwards [condDistrib_comp hX (by fun_prop : Measurable (fun _ ↦ c))] with b hb
   rw [hb]
 
+@[fun_prop]
+lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
+    Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
+
+@[fun_prop]
+lemma Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun a ↦ (f a).toNat) :=
+  Measurable.comp (by fun_prop) hf
+
 end Aux
 
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
-
-omit [DecidableEq α] [MeasurableSingletonClass α] in
-@[fun_prop]
-lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
-    Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
-
-omit [DecidableEq α] [MeasurableSingletonClass α] in
-@[fun_prop]
-lemma _root_.Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun a ↦ (f a).toNat) :=
-  Measurable.comp (by fun_prop) hf
 
 @[fun_prop]
 lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun k ↦ pullCount k a t) := by

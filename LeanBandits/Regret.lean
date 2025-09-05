@@ -61,6 +61,9 @@ lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
 noncomputable
 def stepsUntil (k : ℕ → α) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount k a (s + 1) = m})
 
+lemma stepsUntil_eq_top_iff : stepsUntil k a m = ⊤ ↔ ∀ s, pullCount k a (s + 1) ≠ m := by
+  simp [stepsUntil, sInf_eq_top]
+
 lemma stepsUntil_zero_of_ne (hka : k 0 ≠ a) : stepsUntil k a 0 = 0 := by
   unfold stepsUntil
   simp_rw [← bot_eq_zero, sInf_eq_bot, bot_eq_zero]
@@ -71,8 +74,7 @@ lemma stepsUntil_zero_of_ne (hka : k 0 ≠ a) : stepsUntil k a 0 = 0 := by
   simp
 
 lemma stepsUntil_zero_of_eq (hka : k 0 = a) : stepsUntil k a 0 = ⊤ := by
-  simp only [stepsUntil, sInf_eq_top, Set.mem_image, Set.mem_setOf_eq, forall_exists_index, and_imp,
-    forall_apply_eq_imp_iff₂, ENat.coe_ne_top, imp_false]
+  rw [stepsUntil_eq_top_iff]
   suffices 0 < pullCount k a 1 by
     intro n hn
     refine lt_irrefl 0 ?_

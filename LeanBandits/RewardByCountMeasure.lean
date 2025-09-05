@@ -14,18 +14,52 @@ open scoped ENNReal NNReal
 
 section Aux
 
-variable {α β Ω : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
+variable {α β Ω Ω' : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
   {mα : MeasurableSpace α} {μ : Measure α} {mβ : MeasurableSpace β}
-  {X : α → β} {Y : α → Ω}
+  [MeasurableSpace Ω'] [StandardBorelSpace Ω'] [Nonempty Ω']
+  {X : α → β} {Y : α → Ω} {Z : α → Ω'}
+
+lemma MeasureTheory.Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
+    κ ∘ₘ μ = η ∘ₘ μ :=
+  Measure.bind_congr_right h
+
+lemma MeasureTheory.Measure.compProd_deterministic [SFinite μ] (hX : Measurable X) :
+    μ ⊗ₘ (Kernel.deterministic X hX) = μ.map (fun a ↦ (a, X a)) := by
+  rw [Measure.compProd_eq_comp_prod]
+  calc (Kernel.id ×ₖ Kernel.deterministic X hX) ∘ₘ μ
+  _ = (Kernel.deterministic (fun ω ↦ (ω, X ω)) (by fun_prop)) ∘ₘ μ := by
+    rw [Kernel.id, Kernel.deterministic_prod_deterministic]
+    simp
+  _ = μ.map (fun ω ↦ (ω, X ω)) := by
+    rw [Measure.deterministic_comp_eq_map]
 
 lemma ProbabilityTheory.condDistrib_comp_map [IsFiniteMeasure μ]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
     condDistrib Y X μ ∘ₘ (μ.map X) = μ.map Y := by
   rw [← Measure.snd_compProd, compProd_map_condDistrib hY, Measure.snd_map_prodMk₀ hX]
 
-lemma MeasureTheory.Measure.comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
-    κ ∘ₘ μ = η ∘ₘ μ :=
-  Measure.bind_congr_right h
+lemma ProbabilityTheory.condDistrib_comp [IsFiniteMeasure μ]
+    (hX : AEMeasurable X μ) {f : β → Ω} (hf : Measurable f) :
+    condDistrib (f ∘ X) X μ =ᵐ[μ.map X] Kernel.deterministic f hf := by
+  rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop),
+    Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  congr
+
+lemma ProbabilityTheory.condDistrib_const [IsFiniteMeasure μ]
+    (hX : AEMeasurable X μ) (c : Ω) :
+    condDistrib (fun _ ↦ c) X μ =ᵐ[μ.map X] Kernel.deterministic (fun _ ↦ c) (by fun_prop) := by
+  have : (fun _ : α ↦ c) = (fun _ : β ↦ c) ∘ X := rfl
+  conv_lhs => rw [this]
+  filter_upwards [condDistrib_comp hX (by fun_prop : Measurable (fun _ ↦ c))] with b hb
+  rw [hb]
+
+lemma ProbabilityTheory.condDistrib_compProd_condDistrib [IsFiniteMeasure μ]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hZ : AEMeasurable Z μ) :
+    (condDistrib Y X μ) ⊗ₖ condDistrib Z (fun a ↦ (X a, Y a)) μ
+      =ᵐ[μ.map X] condDistrib (fun a ↦ (Y a, Z a)) X μ := by
+  rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop)]
+  rw [Measure.compProd_eq_comp_prod]
+  sorry
 
 end Aux
 
@@ -101,23 +135,23 @@ lemma measurable_rewardByCount (a : α) (m : ℕ) :
       (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
     exact Measurable.comp (by fun_prop) this
 
-lemma condDistrib_rewardByCount_stepsUntil {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
+lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace α] [Nonempty α]
+    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
         (Bandit.measure alg ν)
       =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)] Kernel.const _ (ν a) := by
   sorry
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
-lemma hasLaw_rewardByCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
-    (a : α) (m : ℕ) :
+lemma hasLaw_rewardByCount [StandardBorelSpace α] [Nonempty α]
+    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0):
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     have h_condDistrib :
         condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
           (Bandit.measure alg ν)
         =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)]
-          Kernel.const _ (ν a) := condDistrib_rewardByCount_stepsUntil a m
+          Kernel.const _ (ν a) := condDistrib_rewardByCount_stepsUntil a m hm
     calc (Bandit.measure alg ν).map (fun ω ↦ rewardByCount a m ω.1 ω.2)
     _ = (condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
           (Bandit.measure alg ν))
@@ -132,13 +166,14 @@ lemma hasLaw_rewardByCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMark
         isProbabilityMeasure_map (by fun_prop)
       simp
 
-lemma identDistrib_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (a : α) (n m : ℕ) :
+lemma identDistrib_rewardByCount [StandardBorelSpace α] [Nonempty α]
+    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (n m : ℕ)
+    (hn : n ≠ 0) (hm : m ≠ 0) :
     IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ rewardByCount a m ω.1 ω.2)
       (Bandit.measure alg ν) (Bandit.measure alg ν) where
   aemeasurable_fst := by fun_prop
   aemeasurable_snd := by fun_prop
-  map_eq := by rw [(hasLaw_rewardByCount a n).map_eq, (hasLaw_rewardByCount a m).map_eq]
+  map_eq := by rw [(hasLaw_rewardByCount a n hn).map_eq, (hasLaw_rewardByCount a m hm).map_eq]
 
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
     iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by

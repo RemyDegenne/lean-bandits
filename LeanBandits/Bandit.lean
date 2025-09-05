@@ -111,6 +111,12 @@ def hist (n : ℕ) (h : ℕ → α × R) : Iic n → α × R := fun i ↦ h i
 lemma measurable_arm (n : ℕ) : Measurable (arm n (α := α) (R := R)) := by unfold arm; fun_prop
 
 @[fun_prop]
+lemma measurable_arm_prod : Measurable (fun p : ℕ × (ℕ → α × R) ↦ arm p.1 p.2) := by
+  refine measurable_from_prod_countable_right fun n ↦ ?_
+  simp only
+  fun_prop
+
+@[fun_prop]
 lemma measurable_reward (n : ℕ) : Measurable (reward n (α := α) (R := R)) := by
   unfold reward; fun_prop
 

@@ -38,48 +38,24 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
 
 /-- Number of times arm `a` was pulled up to time `t` (excluding `t`). -/
 noncomputable def pullCount [DecidableEq α] (k : ℕ → α) (a : α) (t : ℕ) : ℕ :=
-  if t = 0 then 0 else #(filter (fun s ↦ k s = a) (range t))
+  #(filter (fun s ↦ k s = a) (range t))
 
 @[simp]
 lemma pullCount_zero (k : ℕ → α) (a : α) : pullCount k a 0 = 0 := by simp [pullCount]
 
-@[simp]
-lemma pullCount_one (k : ℕ → α) (a : α) : pullCount k a 1 = if k 0 = a then 1 else 0 := by
-  simp only [pullCount, one_ne_zero, ↓reduceIte, range_one]
-  split_ifs with h
-  · suffices ({0} : Finset ℕ).filter (fun s ↦ k s = a) = {0} by simp [this]
-    ext x
-    simp only [mem_filter, mem_singleton, and_iff_left_iff_imp]
-    rintro rfl
-    exact h
-  · simp [h]
-
 open Classical in
-lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) := by
-  intro m n hmn
-  by_cases hm : m = 0
-  · simp [hm]
-  have hn : n ≠ 0 := by grind
-  simp only [pullCount, hm, ↓reduceIte, hn, ge_iff_le]
-  exact card_le_card (filter_subset_filter _ (by simpa))
+lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
+  fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
 
 lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
     pullCount k (k t) (t + 1) = pullCount k (k t) t + 1 := by
-  cases t with
-  | zero => simp
-  | succ n =>
-    rw [pullCount, range_succ, filter_insert]
-    simp [pullCount]
+  simp [pullCount, range_succ, filter_insert]
 
-lemma pullCount_eq_pullCount (h : k t ≠ a) : pullCount k a (t + 1) = pullCount k a t := by
-  simp only [pullCount, Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceIte, range_succ,
-    filter_insert, h, right_eq_ite_iff, card_eq_zero, filter_eq_empty_iff, mem_range]
-  rintro rfl
-  simp
+lemma pullCount_eq_pullCount (h : k t ≠ a) :  pullCount k a (t + 1) = pullCount k a t := by
+  simp [pullCount, range_succ, filter_insert, h]
 
 lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
-    pullCount k a t = if t = 0 then 0 else ∑ s ∈ range t, if k s = a then 1 else 0 := by
-  simp [pullCount]
+    pullCount k a t = ∑ s ∈ range t, if k s = a then 1 else 0 := by simp [pullCount]
 
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
@@ -188,10 +164,8 @@ lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ)
   classical
   simp_rw [card_eq_sum_ones]
   push_cast
-  by_cases ht : t = 0
-  · simp [ht]
-  · simp only [ht, ↓reduceIte, sum_mul, one_mul]
-    exact sum_fiberwise' (range t) k f
+  simp_rw [sum_mul, one_mul]
+  exact sum_fiberwise' (range t) k f
 
 lemma sum_pullCount [Fintype α] : ∑ a, pullCount k a t = t := by
   suffices ∑ a, pullCount k a t * (1 : ℝ) = t by norm_cast at this; simpa

@@ -144,6 +144,14 @@ lemma rewardByCount_eq_ite (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ �
   unfold rewardByCount
   cases stepsUntil (arm · h) a m <;> simp
 
+lemma rewardByCount_of_stepsUntil_eq_top {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
+    (h : stepsUntil (arm · ω.1) a m = ⊤) :
+    rewardByCount a m ω.1 ω.2 = ω.2 m a := by simp [rewardByCount_eq_ite, h]
+
+lemma rewardByCount_of_stepsUntil_eq_coe {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
+    (h : stepsUntil (arm · ω.1) a m = n) :
+    rewardByCount a m ω.1 ω.2 = reward n ω.1 := by simp [rewardByCount_eq_ite, h]
+
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     rewardByCount (arm t h) (pullCount (arm · h) (arm t h) t + 1) h z = reward t h := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]

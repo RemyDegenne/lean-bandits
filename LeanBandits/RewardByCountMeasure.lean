@@ -212,9 +212,11 @@ lemma hasLaw_Z (a : α) (m : ℕ) :
     _ = ν a := by simp_rw [(measurePreserving_eval_infinitePi _ _).map_eq]
 
 -- Notation for the law of a random variable conditioned on an event
-notation "𝓛[" Y " | " s ";" μ "]" => Measure.map Y (μ[|s])
-notation "𝓛[" Y " | " X " in " s ";" μ "]" => Measure.map Y (μ[|X ⁻¹' s])
-notation "𝓛[" Y " | " X " ← " x ";" μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
+notation "𝓛[" Y " | " s "; " μ "]" => Measure.map Y (μ[|s])
+notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s])
+notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
+notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
+notation "𝓛[" Y "; " μ "]" => Measure.map Y μ
 
 lemma reward_cond_arm [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (n : ℕ)
     (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :

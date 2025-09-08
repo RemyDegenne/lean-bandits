@@ -185,6 +185,7 @@ For $n > 0$ and $a \in \mathcal{A}$, the law of $Y_{n,a}$ is $\nu(a)$.
 \end{lemma}
 
 \begin{proof}
+  \uses{lem:condDistrib_reward}
 It suffices to show that for all $t \in \mathbb{N} \cup \{\infty\}$, the law of $Y_{n,a}$ conditioned on $T_{n,a} = t$ is $\nu(a)$.
 If $t = \infty$, then
 \begin{align*}
@@ -296,7 +297,7 @@ We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mat
 
 
 \begin{definition}[Regret]\label{def:regret}
-  \uses{def:armMean}
+  \uses{def:armMean, def:armAndReward}
   \leanok
   \lean{Bandits.regret}
 The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:

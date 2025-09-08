@@ -211,11 +211,15 @@ lemma hasLaw_Z (a : α) (m : ℕ) :
       rfl
     _ = ν a := by simp_rw [(measurePreserving_eval_infinitePi _ _).map_eq]
 
--- Notation for the law of a random variable conditioned on an event
+/-- Law of `Y` conditioned on the event `s`.-/
 notation "𝓛[" Y " | " s "; " μ "]" => Measure.map Y (μ[|s])
+/-- Law of `Y` conditioned on the event that `X` is in `s`. -/
 notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s])
+/-- Law of `Y` conditioned on the event that `X` equals `x`. -/
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
+/-- Law of `Y` conditioned on `X`. -/
 notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
+/-- Law of `Y`. -/
 notation "𝓛[" Y "; " μ "]" => Measure.map Y μ
 
 lemma reward_cond_arm [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (n : ℕ)

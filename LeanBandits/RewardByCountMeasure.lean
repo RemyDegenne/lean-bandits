@@ -72,6 +72,11 @@ lemma ProbabilityTheory.ae_cond_of_forall_mem {μ : Measure α} {s : Set α}
     (hs : MeasurableSet s) {p : α → Prop} (h : ∀ x ∈ s, p x) :
     ∀ᵐ x ∂μ[|s], p x := Measure.ae_smul_measure (ae_restrict_of_forall_mem hs h) _
 
+lemma ProbabilityTheory.condDistrib_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X Y μ)
+    (hX : Measurable X) (hY : Measurable Y) :
+    condDistrib Y X μ =ᵐ[μ.map X] fun _ ↦ μ.map Y := by
+  sorry
+
 omit [StandardBorelSpace Ω] [Nonempty Ω] in
 lemma ProbabilityTheory.cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X Y μ)
     (hX : Measurable X) (hY : Measurable Y) {s : Set β} (hs : MeasurableSet s)
@@ -84,6 +89,37 @@ lemma ProbabilityTheory.cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : In
   · simp
   · rw [indepFun_iff_indepSet_preimage hX hY] at h
     exact h s t hs ht
+
+lemma condIndep_iff_condExpKernel_eq {α : Type*} {F G H mα : MeasurableSpace α}
+    [StandardBorelSpace α] {μ : Measure α} [IsFiniteMeasure μ]
+    (hG : G ≤ mα) :
+    CondIndep G F H hG μ
+      ↔ condExpKernel μ (F ⊔ G) =ᵐ[@Measure.map  _ _ mα H id μ] condExpKernel μ G := by
+  sorry
+
+lemma ProbabilityTheory.condDistrib_of_condIndepFun
+    [StandardBorelSpace α] [IsZeroOrProbabilityMeasure μ]
+    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
+    (h : CondIndepFun (MeasurableSpace.comap Z inferInstance) hZ.comap_le Y X μ) :
+    condDistrib Y (fun ω ↦ (X ω, Z ω)) μ
+      =ᵐ[μ.map (fun ω ↦ (X ω, Z ω))] fun p ↦ condDistrib Y Z μ p.2 := by
+  sorry
+
+lemma ProbabilityTheory.cond_of_condIndepFun [StandardBorelSpace α] [IsZeroOrProbabilityMeasure μ]
+    (hZ : Measurable Z)
+    (h : CondIndepFun (MeasurableSpace.comap Z inferInstance) hZ.comap_le Y X μ)
+    (hX : Measurable X) (hY : Measurable Y) {s : Set β} (hs : MeasurableSet s) {t : Set Ω'}
+    (ht : MeasurableSet t) (hμs : μ (Z ⁻¹' t) ≠ 0) :
+    (μ[|X ⁻¹' s ∩ Z ⁻¹' t]).map Y = (μ[|Z ⁻¹' t]).map Y := by
+  ext u hu
+  rw [Measure.map_apply (by fun_prop) hu, Measure.map_apply (by fun_prop) hu, cond_apply,
+    cond_apply]
+  rotate_left
+  · exact hZ ht
+  · exact (hX hs).inter (hZ ht)
+  rw [condIndepFun_iff_condExp_inter_preimage_eq_mul hY hX] at h
+  specialize h u s hu hs
+  sorry
 
 @[fun_prop]
 lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
@@ -157,8 +193,10 @@ lemma measurable_rewardByCount (a : α) (m : ℕ) :
       (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
     exact Measurable.comp (by fun_prop) this
 
+variable {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
+
 omit [DecidableEq α] [MeasurableSingletonClass α] in
-lemma hasLaw_Z {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) :
+lemma hasLaw_Z (a : α) (m : ℕ) :
   HasLaw (fun ω ↦ ω.2 m a) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     calc ((Bandit.trajMeasure alg ν).prod (Bandit.streamMeasure ν)).map (fun ω ↦ ω.2 m a)
@@ -173,8 +211,55 @@ lemma hasLaw_Z {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
       rfl
     _ = ν a := by simp_rw [(measurePreserving_eval_infinitePi _ _).map_eq]
 
-lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace α] [Nonempty α]
-    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0) :
+-- Notation for the law of a random variable conditioned on an event
+notation "𝓛[" Y " | " s ";" μ "]" => Measure.map Y (μ[|s])
+notation "𝓛[" Y " | " X " in " s ";" μ "]" => Measure.map Y (μ[|X ⁻¹' s])
+notation "𝓛[" Y " | " X " ← " x ";" μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
+
+lemma reward_cond_arm [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (n : ℕ)
+    (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
+    𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
+  let μ := Bandit.measure alg ν
+  have h_ra : (condDistrib (fun ω ↦ reward n ω.1) (fun ω ↦ arm n ω.1) μ)
+      =ᵐ[μ.map (fun ω ↦ arm n ω.1)] ν := by
+    have h_ra' := condDistrib_reward alg ν n
+    sorry
+  have h_eq := condDistrib_ae_eq_cond (μ := μ)
+    (X := fun ω ↦ arm n ω.1) (Y := fun ω ↦ reward n ω.1) (by fun_prop) (by fun_prop)
+  rw [Filter.EventuallyEq, ae_iff_of_countable] at h_ra h_eq
+  specialize h_ra a hμa
+  specialize h_eq a hμa
+  rw [h_ra] at h_eq
+  exact h_eq.symm
+
+lemma reward_condIndepFun_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
+    (a : α) (m n : ℕ) :
+    CondIndepFun (MeasurableSpace.comap (fun ω ↦ arm n ω.1) inferInstance)
+      (Measurable.comap_le <| by fun_prop) (fun ω ↦ reward n ω.1)
+      (fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m) (Bandit.measure alg ν) := by
+  let μ := Bandit.measure alg ν
+  sorry
+
+lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
+    (hm : m ≠ 0) (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
+    𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m ← (n : ℕ∞);
+      Bandit.measure alg ν] = ν a := by
+  let μ := Bandit.measure alg ν
+  calc 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m ← (n : ℕ∞); μ]
+  _ = (μ[|(fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m) ⁻¹' {↑n} ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}]).map
+      (fun ω ↦ reward n ω.1) := by
+    congr with ω
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
+    exact arm_eq_of_stepsUntil_eq_coe hm
+  _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
+    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop)
+      (measurableSet_singleton _) (measurableSet_singleton _)]
+    · rwa [Measure.map_apply (by fun_prop) (measurableSet_singleton _)] at hμa
+    · exact reward_condIndepFun_stepsUntil_arm a m n
+  _ = ν a := reward_cond_arm a n hμa
+
+lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil (arm · ω.1) a m)
         (Bandit.measure alg ν)
       =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil (arm · ω.1) a m)] Kernel.const _ (ν a) := by
@@ -202,11 +287,15 @@ lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace α] [Nonempty α]
     · refine ae_cond_of_forall_mem ((measurableSet_singleton _).preimage (by fun_prop)) ?_
       simp only [Set.mem_preimage, Set.mem_singleton_iff]
       exact fun ω ↦ rewardByCount_of_stepsUntil_eq_coe
-    sorry
+    refine reward_cond_stepsUntil a m n hm ?_
+    rw [Measure.map_apply (by fun_prop) (measurableSet_singleton _)] at hn ⊢
+    refine fun h_zero ↦ hn (measure_mono_null (fun ω ↦ ?_) h_zero)
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    exact arm_eq_of_stepsUntil_eq_coe hm
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
-lemma hasLaw_rewardByCount [StandardBorelSpace α] [Nonempty α]
-    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (m : ℕ) (hm : m ≠ 0) :
+lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) (m : ℕ) (hm : m ≠ 0) :
     HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     have h_condDistrib :
@@ -228,8 +317,7 @@ lemma hasLaw_rewardByCount [StandardBorelSpace α] [Nonempty α]
         isProbabilityMeasure_map (by fun_prop)
       simp
 
-lemma identDistrib_rewardByCount [StandardBorelSpace α] [Nonempty α]
-    {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν] (a : α) (n m : ℕ)
+lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α] (a : α) (n m : ℕ)
     (hn : n ≠ 0) (hm : m ≠ 0) :
     IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ rewardByCount a m ω.1 ω.2)
       (Bandit.measure alg ν) (Bandit.measure alg ν) where

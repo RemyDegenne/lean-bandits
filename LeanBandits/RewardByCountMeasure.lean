@@ -105,7 +105,7 @@ notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 notation "𝓛[" Y "; " μ "]" => Measure.map Y μ
 
 omit [DecidableEq α] in
-lemma reward_cond_arm [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (n : ℕ)
+lemma reward_cond_arm [Countable α] (a : α) (n : ℕ)
     (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν

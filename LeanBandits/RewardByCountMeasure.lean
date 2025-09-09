@@ -129,10 +129,24 @@ lemma reward_condIndepFun_stepsUntil_arm [StandardBorelSpace α] [Countable α] 
   sorry
 
 lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
-    (hm : m ≠ 0) (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
+    (hm : m ≠ 0)
+    (hμn : (Bandit.measure alg ν) ((fun ω ↦ stepsUntil (arm · ω.1) a m) ⁻¹' {↑n}) ≠ 0) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m ← (n : ℕ∞);
       Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν
+  have hμna :
+      μ ((fun ω ↦ stepsUntil (arm · ω.1) a m) ⁻¹' {↑n} ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}) ≠ 0 := by
+    suffices ((fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦
+          stepsUntil (arm · ω.1) a m) ⁻¹' {↑n} ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a})
+        = (fun ω ↦ stepsUntil (arm · ω.1) a m) ⁻¹' {↑n} by simpa [this] using hμn
+    ext ω
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, and_iff_left_iff_imp]
+    exact arm_eq_of_stepsUntil_eq_coe hm
+  have hμa : μ.map (fun ω ↦ arm n ω.1) {a} ≠ 0 := by
+    rw [Measure.map_apply (by fun_prop) (measurableSet_singleton _)]
+    refine fun h_zero ↦ hμn (measure_mono_null (fun ω ↦ ?_) h_zero)
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    exact arm_eq_of_stepsUntil_eq_coe hm
   calc 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m ← (n : ℕ∞); μ]
   _ = (μ[|(fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m) ⁻¹' {↑n} ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}]).map
       (fun ω ↦ reward n ω.1) := by
@@ -140,9 +154,8 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact arm_eq_of_stepsUntil_eq_coe hm
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
-    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop)
-      (measurableSet_singleton _) (measurableSet_singleton _)]
-    · rwa [Measure.map_apply (by fun_prop) (measurableSet_singleton _)] at hμa
+    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop)]
+    · exact hμna
     · exact reward_condIndepFun_stepsUntil_arm a m n
   _ = ν a := reward_cond_arm a n hμa
 
@@ -176,10 +189,7 @@ lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α
       simp only [Set.mem_preimage, Set.mem_singleton_iff]
       exact fun ω ↦ rewardByCount_of_stepsUntil_eq_coe
     refine reward_cond_stepsUntil a m n hm ?_
-    rw [Measure.map_apply (by fun_prop) (measurableSet_singleton _)] at hn ⊢
-    refine fun h_zero ↦ hn (measure_mono_null (fun ω ↦ ?_) h_zero)
-    simp only [Set.mem_preimage, Set.mem_singleton_iff]
-    exact arm_eq_of_stepsUntil_eq_coe hm
+    rwa [Measure.map_apply (by fun_prop) (measurableSet_singleton _)] at hn
 
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]

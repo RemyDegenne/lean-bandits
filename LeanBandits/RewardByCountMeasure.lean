@@ -135,14 +135,6 @@ lemma reward_cond_arm [Countable α] (a : α) (n : ℕ)
   rw [h_ra] at h_eq
   exact h_eq.symm
 
-lemma reward_condIndepFun_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
-    (a : α) (m n : ℕ) :
-    CondIndepFun (MeasurableSpace.comap (fun ω ↦ arm n ω.1) inferInstance)
-      (Measurable.comap_le <| by fun_prop) (fun ω ↦ reward n ω.1)
-      (fun ω ↦ stepsUntil (fun x ↦ arm x ω.1) a m) (Bandit.measure alg ν) := by
-  let μ := Bandit.measure alg ν
-  sorry
-
 lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
     (hm : m ≠ 0)
     (hμn : (Bandit.measure alg ν) ((fun ω ↦ stepsUntil (arm · ω.1) a m) ⁻¹' {↑n}) ≠ 0) :
@@ -169,8 +161,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact arm_eq_of_stepsUntil_eq_coe hm
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
-    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop) hμna]
-    exact reward_condIndepFun_stepsUntil_arm a m n
+    sorry
   _ = ν a := reward_cond_arm a n hμa
 
 lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]

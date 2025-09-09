@@ -5,7 +5,6 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
-import Mathlib.Probability.Kernel.CompProdEqIff
 import Mathlib.Probability.Kernel.Condexp
 
 
@@ -37,7 +36,7 @@ lemma copy_comp_map (hX : AEMeasurable X μ) :
   congr
 
 lemma compProd_deterministic [SFinite μ] (hX : Measurable X) :
-    μ ⊗ₘ (Kernel.deterministic X hX) = μ.map (fun a ↦ (a, X a)) := by
+    μ ⊗ₘ Kernel.deterministic X hX = μ.map (fun a ↦ (a, X a)) := by
   rw [compProd_eq_comp_prod, Kernel.id, Kernel.deterministic_prod_deterministic,
     deterministic_comp_eq_map]
   rfl
@@ -51,12 +50,43 @@ lemma condDistrib_comp_map [IsFiniteMeasure μ]
     condDistrib Y X μ ∘ₘ (μ.map X) = μ.map Y := by
   rw [← Measure.snd_compProd, compProd_map_condDistrib hY, Measure.snd_map_prodMk₀ hX]
 
+lemma condDistrib_congr [IsFiniteMeasure μ] {X' : α → β} {Y' : α → Ω}
+    (hY : Y =ᵐ[μ] Y') (hX : X =ᵐ[μ] X') :
+    condDistrib Y X μ = condDistrib Y' X' μ := by
+  rw [condDistrib, condDistrib]
+  congr 1
+  rw [Measure.map_congr]
+  filter_upwards [hX, hY] with a ha hb using by rw [ha, hb]
+
+lemma condDistrib_congr_right [IsFiniteMeasure μ] {X' : α → β} (hX : X =ᵐ[μ] X') :
+    condDistrib Y X μ = condDistrib Y X' μ :=
+  condDistrib_congr (by rfl) hX
+
+lemma condDistrib_congr_left [IsFiniteMeasure μ] {Y' : α → Ω} (hY : Y =ᵐ[μ] Y') :
+    condDistrib Y X μ = condDistrib Y' X μ :=
+  condDistrib_congr hY (by rfl)
+
+lemma condDistrib_ae_eq_of_measure_eq_compProd₀ [IsFiniteMeasure μ]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (κ : Kernel β Ω) [IsFiniteKernel κ]
+    (hκ : μ.map (fun x => (X x, Y x)) = μ.map X ⊗ₘ κ) :
+    ∀ᵐ x ∂μ.map X, κ x = condDistrib Y X μ x := by
+  suffices ∀ᵐ x ∂μ.map (hX.mk X), κ x = condDistrib (hY.mk Y) (hX.mk X) μ x by
+    rw [Measure.map_congr hX.ae_eq_mk]
+    convert this using 3 with b
+    rw [condDistrib_congr hY.ae_eq_mk hX.ae_eq_mk]
+  refine condDistrib_ae_eq_of_measure_eq_compProd (μ := μ) hX.measurable_mk hY.measurable_mk κ
+    ((Eq.trans ?_ hκ).trans ?_)
+  · refine Measure.map_congr ?_
+    filter_upwards [hX.ae_eq_mk, hY.ae_eq_mk] with a haX haY using by rw [haX, haY]
+  · rw [Measure.map_congr hX.ae_eq_mk]
+
 lemma condDistrib_comp [IsFiniteMeasure μ]
     (hX : AEMeasurable X μ) {f : β → Ω} (hf : Measurable f) :
     condDistrib (f ∘ X) X μ =ᵐ[μ.map X] Kernel.deterministic f hf := by
-  rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop),
-    Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
-  congr
+  symm
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ hX (by fun_prop) _ ?_
+  rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  rfl
 
 lemma condDistrib_const [IsFiniteMeasure μ]
     (hX : AEMeasurable X μ) (c : Ω) :
@@ -85,9 +115,20 @@ lemma ae_cond_of_forall_mem {μ : Measure α} {s : Set α}
     ∀ᵐ x ∂μ[|s], p x := Measure.ae_smul_measure (ae_restrict_of_forall_mem hs h) _
 
 lemma condDistrib_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X Y μ)
-    (hX : Measurable X) (hY : Measurable Y) :
-    condDistrib Y X μ =ᵐ[μ.map X] fun _ ↦ μ.map Y := by
-  sorry
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    condDistrib Y X μ =ᵐ[μ.map X] Kernel.const β (μ.map Y) := by
+  symm
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hX hY _ ?_
+  simp only [Measure.compProd_const]
+  exact (indepFun_iff_map_prod_eq_prod_map_map hX hY).mp h
+
+lemma indepFun_iff_condDistrib_eq_const [IsZeroOrProbabilityMeasure μ]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    IndepFun X Y μ ↔ condDistrib Y X μ =ᵐ[μ.map X] Kernel.const β (μ.map Y) := by
+  refine ⟨fun h ↦ condDistrib_of_indepFun h hX hY, fun h ↦ ?_⟩
+  rw [indepFun_iff_map_prod_eq_prod_map_map hX hY, ← compProd_map_condDistrib hY,
+    Measure.compProd_congr h]
+  simp
 
 lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)
     (hX : Measurable X) (hT : Measurable T) {s : Set β} (hs : MeasurableSet s)

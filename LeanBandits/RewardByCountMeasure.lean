@@ -104,14 +104,29 @@ notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 /-- Law of `Y`. -/
 notation "𝓛[" Y "; " μ "]" => Measure.map Y μ
 
+omit [DecidableEq α] in
 lemma reward_cond_arm [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (n : ℕ)
     (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν
-  have h_ra : (condDistrib (fun ω ↦ reward n ω.1) (fun ω ↦ arm n ω.1) μ)
-      =ᵐ[μ.map (fun ω ↦ arm n ω.1)] ν := by
-    have h_ra' := condDistrib_reward alg ν n
-    sorry
+  have h_ra : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ] =ᵐ[𝓛[fun ω ↦ arm n ω.1; μ]] ν := by
+    have h_ra' : 𝓛[reward n | arm n; Bandit.trajMeasure alg ν]
+        =ᵐ[𝓛[arm n; Bandit.trajMeasure alg ν]] ν :=
+      condDistrib_reward alg ν n
+    have h_law : 𝓛[fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ arm n ω.1; μ]
+        = 𝓛[arm n; Bandit.trajMeasure alg ν] := by
+      calc μ.map (fun ω ↦ arm n ω.1)
+      _ = (((Bandit.trajMeasure alg ν).prod (Bandit.streamMeasure ν)).map (fun ω ↦ ω.1)).map
+          (fun ω ↦ arm n ω) := by
+        rw [Measure.map_map (by fun_prop) (by fun_prop)]
+        rfl
+      _ = _ := by simp [Measure.map_fst_prod]
+    rw [h_law]
+    have h_prod : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ]
+        =ᵐ[𝓛[arm n; Bandit.trajMeasure alg ν]] 𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
+      condDistrib_fst_prod (by fun_prop) (by fun_prop) _
+    filter_upwards [h_ra', h_prod] with ω h_eq h_prod
+    rw [h_prod, h_eq]
   have h_eq := condDistrib_ae_eq_cond (μ := μ)
     (X := fun ω ↦ arm n ω.1) (Y := fun ω ↦ reward n ω.1) (by fun_prop) (by fun_prop)
   rw [Filter.EventuallyEq, ae_iff_of_countable] at h_ra h_eq
@@ -154,9 +169,8 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact arm_eq_of_stepsUntil_eq_coe hm
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
-    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop)]
-    · exact hμna
-    · exact reward_condIndepFun_stepsUntil_arm a m n
+    rw [cond_of_condIndepFun (by fun_prop) ?_ (by fun_prop) (by fun_prop) hμna]
+    exact reward_condIndepFun_stepsUntil_arm a m n
   _ = ν a := reward_cond_arm a n hμa
 
 lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]

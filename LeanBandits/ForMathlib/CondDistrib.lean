@@ -324,6 +324,7 @@ theorem condIndepFun_comap_iff_map_prod_eq_prod_condDistrib_prod_condDistrib
     · exact (h_left hs ht hu).symm
     · exact (h_right hs ht hu).symm
 
+-- todo: should be an iff
 lemma condDistrib_prod_of_condIndepFun [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
     (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
     (h : CondIndepFun (MeasurableSpace.comap Z inferInstance) hZ.comap_le Y X μ) :
@@ -364,6 +365,28 @@ lemma condDistrib_prod_of_condIndepFun [StandardBorelSpace α] [StandardBorelSpa
     rw [compProd_map_condDistrib hX.aemeasurable, Measure.swap_comp,
       Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
+
+lemma condDistrib_fst_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
+    (ν : Measure γ) [IsProbabilityMeasure ν] :
+    condDistrib (fun ω ↦ Y ω.1) (fun ω ↦ X ω.1) (μ.prod ν) =ᵐ[μ.map X] condDistrib Y X μ := by
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hX hY _ ?_
+  have hX_map : (μ.prod ν).map (fun ω ↦ X ω.1) = μ.map X := by
+    calc (μ.prod ν).map (fun ω ↦ X ω.1)
+    _ = ((μ.prod ν).map Prod.fst).map X := by
+      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
+      · rfl
+      · rw [Measure.map_fst_prod]
+        exact hX.smul_measure _
+    _ = μ.map X := by simp [Measure.map_fst_prod]
+  rw [← hX_map, compProd_map_condDistrib]
+  · calc μ.map (fun x ↦ (X x, Y x))
+    _ = ((μ.prod ν).map Prod.fst).map (fun a ↦ (X a, Y a)) := by simp [Measure.map_fst_prod]
+    _ = (μ.prod ν).map (fun a ↦ (X a.1, Y a.1)) := by
+      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
+      · rfl
+      · simp only [Measure.map_fst_prod, measure_univ, one_smul]
+        fun_prop
+  · fun_prop
 
 end CondDistrib
 

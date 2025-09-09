@@ -161,8 +161,7 @@ lemma hasLaw_arm_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace 
 lemma condIndepFun_reward_arm_hist [StandardBorelSpace α] [StandardBorelSpace R]
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
     CondIndepFun (MeasurableSpace.comap (hist n) inferInstance)
-      (Measurable.comap_le (by fun_prop))
-      (reward n) (arm n) (Bandit.trajMeasure alg ν) := by
+      (measurable_hist n).comap_le (reward n) (arm n) (Bandit.trajMeasure alg ν) := by
   sorry
 
 end MeasureSpace

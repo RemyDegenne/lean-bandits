@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib
+import LeanBandits.ForMathlib.CondDistrib
 
 /-!
 # Bandit
@@ -159,10 +160,12 @@ lemma hasLaw_arm_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace 
     sorry
 
 /-- The reward at time `n+1` is independent of the history up to time `n` given the arm at `n+1`. -/
-lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [StandardBorelSpace R]
+lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R]
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
     CondIndepFun (MeasurableSpace.comap (arm (n + 1)) inferInstance)
       (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) := by
+  rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft (by fun_prop) (by fun_prop) (by fun_prop)]
   sorry
 
 end MeasureSpace

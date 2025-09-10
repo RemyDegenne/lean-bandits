@@ -144,6 +144,11 @@ lemma measurable_reward_prod : Measurable (fun p : ℕ × (ℕ → α × R) ↦ 
 @[fun_prop]
 lemma measurable_hist (n : ℕ) : Measurable (hist n (α := α) (R := R)) := by unfold hist; fun_prop
 
+lemma hist_eq_frestrictLe :
+    hist = Preorder.frestrictLe («π» := fun _ ↦ α × R) := by
+  ext n h i : 3
+  simp [hist, Preorder.frestrictLe]
+
 /-- Filtration of the bandit process. -/
 protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
@@ -191,16 +196,16 @@ lemma partialTraj_compProd_eq_traj_map_frestrictLe (a : ℕ) (x₀ : (i : Iic 0)
 lemma traj_cond_lemma1 {a : ℕ} (μ₀ : Measure ((i : Iic 0) → X i)) [IsFiniteMeasure μ₀] :
     (traj κ 0 ∘ₘ μ₀).map (fun x ↦ (frestrictLe a x, x (a + 1)))
       = (traj κ 0 ∘ₘ μ₀).map (frestrictLe a) ⊗ₘ κ a := by
-  rw [MeasureTheory.Measure.compProd_eq_comp_prod, Measure.map_comp _ _ (by fun_prop),
-    Measure.map_comp _ _ (by fun_prop), MeasureTheory.Measure.comp_assoc, traj_map_frestrictLe]
+  rw [Measure.compProd_eq_comp_prod, Measure.map_comp _ _ (by fun_prop),
+    Measure.map_comp _ _ (by fun_prop), Measure.comp_assoc, traj_map_frestrictLe]
   congr
   ext x₀ : 1
-  rw [ProbabilityTheory.Kernel.comp_apply, ← MeasureTheory.Measure.compProd_eq_comp_prod]
+  rw [ProbabilityTheory.Kernel.comp_apply, ← Measure.compProd_eq_comp_prod]
   symm
   rw [Kernel.map_apply _ (by fun_prop)]
   exact partialTraj_compProd_eq_traj_map_frestrictLe a x₀
 
-lemma condDistrib_lemma {a : ℕ} (μ₀ : Measure ((i : Iic 0) → X i)) [IsFiniteMeasure μ₀]
+lemma condDistrib_lemma (μ₀ : Measure ((i : Iic 0) → X i)) [IsFiniteMeasure μ₀] (a : ℕ)
     [Nonempty (X (a + 1))] [StandardBorelSpace (X (a + 1))] :
     condDistrib (fun x ↦ x (a + 1)) (frestrictLe a) (traj κ 0 ∘ₘ μ₀)
       =ᵐ[(traj κ 0 ∘ₘ μ₀).map (frestrictLe a)] κ a := by
@@ -224,8 +229,10 @@ end Traj
 lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (fun h ↦ (arm (n + 1) h, reward (n + 1) h)) (hist n) (Bandit.trajMeasure alg ν)
-      =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] Bandit.stepKernel alg ν n := by
-  sorry
+      =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] Bandit.stepKernel alg ν n :=
+  condDistrib_lemma (X := fun _ ↦ α × R)
+    ((alg.p0 ⊗ₘ ν).map (MeasurableEquiv.piIicZero (fun _ ↦ α × R)).symm)
+    (κ := Bandit.stepKernel alg ν) n
 
 lemma condDistrib_reward [StandardBorelSpace R] [Nonempty R] (alg : Algorithm α R) (ν : Kernel α R)
     [IsMarkovKernel ν] (n : ℕ) :

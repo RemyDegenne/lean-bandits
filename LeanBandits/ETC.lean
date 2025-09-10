@@ -38,22 +38,19 @@ lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK
 
 /-- The Explore-Then-Commit algorithm. -/
 noncomputable
-def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ where
-  policy n := Kernel.deterministic (etcNextArm hK m n) (by fun_prop)
-  p0 := Measure.dirac ⟨0, hK⟩
+def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
+  detAlgorithm (etcNextArm hK m) (by fun_prop) ⟨0, hK⟩
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
     arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun _ ↦ ⟨0, hK⟩ := by
-  have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0)), x = ⟨0, hK⟩ := by
-    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-    rw [(hasLaw_arm_zero _ _).map_eq]
-    simp [etcAlgorithm]
-  exact ae_of_ae_map (by fun_prop) h_eq
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  exact arm_zero_detAlgorithm
 
 lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     (n : ℕ) :
     arm (n + 1) =ᵐ[(Bandit.trajMeasure (etcAlgorithm hK m) ν)]
       fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
-  sorry
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  exact arm_detAlgorithm_ae_eq n
 
 end Bandits

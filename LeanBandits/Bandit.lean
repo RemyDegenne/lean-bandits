@@ -246,7 +246,7 @@ lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace 
       =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] alg.policy n := by
   sorry
 
-lemma hasLaw_step_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+lemma hasLaw_step_zero
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) where
   aemeasurable := Measurable.aemeasurable (by fun_prop)

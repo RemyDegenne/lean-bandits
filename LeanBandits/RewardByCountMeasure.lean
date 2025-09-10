@@ -109,8 +109,7 @@ lemma condDistrib_reward' (n : ℕ) :
   let μ := Bandit.measure alg ν
   have h_ra' : 𝓛[reward n | arm n; Bandit.trajMeasure alg ν]
       =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := condDistrib_reward alg ν n
-  have h_law : μ.map (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ arm n ω.1)
-      = (Bandit.trajMeasure alg ν).map (arm n) := by
+  have h_law : μ.map (fun ω ↦ arm n ω.1) = (Bandit.trajMeasure alg ν).map (arm n) := by
     calc μ.map (fun ω ↦ arm n ω.1)
     _ = (μ.map (fun ω ↦ ω.1)).map (fun ω ↦ arm n ω) := by
       rw [Measure.map_map (by fun_prop) (by fun_prop)]

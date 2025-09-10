@@ -158,10 +158,11 @@ lemma hasLaw_arm_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace 
   map_eq := by
     sorry
 
-lemma condIndepFun_reward_arm_hist [StandardBorelSpace α] [StandardBorelSpace R]
+/-- The reward at time `n+1` is independent of the history up to time `n` given the arm at `n+1`. -/
+lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [StandardBorelSpace R]
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
-    CondIndepFun (MeasurableSpace.comap (hist n) inferInstance)
-      (measurable_hist n).comap_le (reward n) (arm n) (Bandit.trajMeasure alg ν) := by
+    CondIndepFun (MeasurableSpace.comap (arm (n + 1)) inferInstance)
+      (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) := by
   sorry
 
 end MeasureSpace

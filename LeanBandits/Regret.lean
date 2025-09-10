@@ -130,14 +130,26 @@ lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount (arm · h) a (s
   rwa [← pullCount_eq_pullCount]
   exact h_ne
 
-lemma arm_eq_of_stepsUntil_eq_coe {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)} (hm : m ≠ 0)
-    (h : stepsUntil (arm · ω.1) a m = n) :
-    arm n ω.1 = a := by
-  have : n = (stepsUntil (fun x ↦ arm x ω.1) a m).toNat := by simp [h]
+lemma arm_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ} (hm : m ≠ 0)
+    (h : stepsUntil (arm · ω) a m = n) :
+    arm n ω = a := by
+  have : n = (stepsUntil (fun x ↦ arm x ω) a m).toNat := by simp [h]
   rw [this, arm_stepsUntil hm]
   by_contra! h_contra
   rw [← stepsUntil_eq_top_iff] at h_contra
   simp [h_contra] at h
+
+lemma stepsUntil_eq_congr {k' : ℕ → α} (h : ∀ i ≤ n, k i = k' i) :
+    stepsUntil k a m = n ↔ stepsUntil k' a m = n := by
+  sorry
+
+lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount k a (s + 1) = m) :
+    pullCount k a (stepsUntil k a m + 1).toNat = m := by
+  sorry
+
+lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount k a (s + 1) = m) :
+    pullCount k a (stepsUntil k a m).toNat = m - 1 := by
+  sorry
 
 /-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable

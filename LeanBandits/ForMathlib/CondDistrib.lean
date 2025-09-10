@@ -71,6 +71,15 @@ lemma Kernel.prod_apply_prod {κ : Kernel α β} {η : Kernel α γ}
     (κ ×ₖ η) a (s ×ˢ t) = (κ a s) * (η a t) := by
   rw [Kernel.prod_apply, Measure.prod_prod]
 
+lemma CondIndepFun.prod_right
+    {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+    {mδ : MeasurableSpace δ} [StandardBorelSpace α]
+    {μ : Measure α} [IsFiniteMeasure μ] {X : α → β} {Y : α → γ} {Z : α → δ}
+    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
+    (h : CondIndepFun (mδ.comap Z) hZ.comap_le X Y μ) :
+    CondIndepFun (mδ.comap Z) hZ.comap_le X (fun ω ↦ (Y ω, Z ω)) μ := by
+  sorry
+
 section CondDistrib
 
 variable [IsFiniteMeasure μ]

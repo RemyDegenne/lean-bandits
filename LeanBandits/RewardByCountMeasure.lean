@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit
-import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.Regret
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
@@ -152,8 +151,20 @@ lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] 
   -- `hist (n-1)` and `arm n`.
   -- It thus suffices to prove the independence of `reward n` and `hist (n-1)` conditionally
   -- on `arm n`.
-  have hn : n ≠ 0 := by
-    sorry -- assume it?
+  by_cases hn : n = 0
+  · simp only [hn, CharP.cast_eq_zero]
+    simp only [stepsUntil_eq_zero_iff, hm, ne_eq, false_and, false_or]
+    by_cases hm1 : m = 1
+    · simp only [hm1, true_and]
+      have h_indep := condIndepFun_self_right (X := reward 0) (Z := arm 0)
+        (mβ := inferInstance) (mδ := inferInstance) (μ := Bandit.trajMeasure alg ν)
+        (by fun_prop) (by fun_prop)
+      have : {ω : ℕ → α × ℝ | arm 0 ω = a}.indicator (fun x ↦ 1)
+          = {b | b = a}.indicator (fun _ ↦ 1) ∘ arm 0 := by ext; simp [Set.indicator]
+      rw [this]
+      exact h_indep.comp measurable_id (by fun_prop)
+    · simp only [hm1, false_and, Set.setOf_false, Set.indicator_empty]
+      exact condIndepFun_const_right (reward 0) 0
   have h_indep : CondIndepFun (mα.comap (arm n)) (measurable_arm n).comap_le (reward n)
       (hist (n - 1)) (Bandit.trajMeasure alg ν) := by
     convert condIndepFun_reward_hist_arm (alg := alg) (ν := ν) (n - 1)

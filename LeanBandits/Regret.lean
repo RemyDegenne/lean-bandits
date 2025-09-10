@@ -43,6 +43,13 @@ noncomputable def pullCount [DecidableEq α] (k : ℕ → α) (a : α) (t : ℕ)
 @[simp]
 lemma pullCount_zero (k : ℕ → α) (a : α) : pullCount k a 0 = 0 := by simp [pullCount]
 
+lemma pullCount_one : pullCount k a 1 = if k 0 = a then 1 else 0 := by
+  simp only [pullCount, range_one]
+  split_ifs with h
+  · rw [card_eq_one]
+    refine ⟨0, by simp [h]⟩
+  · simp [h]
+
 open Classical in
 lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
   fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
@@ -109,6 +116,36 @@ lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
   suffices ∀ t', pullCount k (k t) (t' + 1) = pullCount k (k t) t + 1 → t ≤ t' by
     simpa [stepsUntil, pullCount_eq_pullCount_add_one]
   exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
+
+/-- If we pull arm `a` at time 0, the first time at which it is pulled once is 0. -/
+lemma stepsUntil_one_of_eq (hka : k 0 = a) : stepsUntil k a 1 = 0 := by
+  classical
+  have h_pull : pullCount k a 1 = 1 := by simp [pullCount_one, hka]
+  have h_le := stepsUntil_pullCount_le k a 0
+  simpa [h_pull] using h_le
+
+lemma stepsUntil_eq_zero_iff :
+    stepsUntil k a m = 0 ↔ (m = 0 ∧ k 0 ≠ a) ∨ (m = 1 ∧ k 0 = a) := by
+  classical
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · have h_exists : ∃ s, pullCount k a (s + 1) = m := by
+      by_contra! h_contra
+      rw [← stepsUntil_eq_top_iff] at h_contra
+      simp [h_contra] at h
+    simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, Nat.cast_eq_zero, Nat.find_eq_zero,
+      zero_add] at h
+    rw [pullCount_one] at h
+    by_cases hka : k 0 = a
+    · simp only [hka, ↓reduceIte] at h
+      simp [h.symm, hka]
+    · simp only [hka, ↓reduceIte] at h
+      simp [h.symm, hka]
+  · cases h with
+  | inl h =>
+    rw [h.1, stepsUntil_zero_of_ne h.2]
+  | inr h =>
+    rw [h.1]
+    exact stepsUntil_one_of_eq h.2
 
 lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount (arm · h) a (s + 1) = m) :
     arm (stepsUntil (arm · h) a m).toNat h = a := by

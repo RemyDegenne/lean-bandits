@@ -43,14 +43,12 @@ def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ where
   p0 := Measure.dirac ⟨0, hK⟩
 
 lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun h ↦ ⟨0, hK⟩ := by
-  suffices h : (Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0) = (etcAlgorithm hK m).p0 by
-    have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0)), x = ⟨0, hK⟩ := by
-      rw [h]
-      simp [etcAlgorithm]
-    exact ae_of_ae_map (by fun_prop) h_eq
-  -- extract lemma
-  sorry
+    arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun _ ↦ ⟨0, hK⟩ := by
+  have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (etcAlgorithm hK m) ν).map (arm 0)), x = ⟨0, hK⟩ := by
+    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+    rw [(hasLaw_arm_zero _ _).map_eq]
+    simp [etcAlgorithm]
+  exact ae_of_ae_map (by fun_prop) h_eq
 
 lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     (n : ℕ) :

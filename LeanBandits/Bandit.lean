@@ -130,7 +130,7 @@ lemma measurable_reward_prod : Measurable (fun p : ℕ × (ℕ → α × R) ↦ 
 lemma measurable_hist (n : ℕ) : Measurable (hist n (α := α) (R := R)) := by unfold hist; fun_prop
 
 /-- Filtration of the bandit process. -/
-def ℱ (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
+protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
@@ -150,6 +150,19 @@ lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace 
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (arm (n + 1)) (hist n) (Bandit.trajMeasure alg ν)
       =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] alg.policy n := by
+  sorry
+
+lemma hasLaw_arm_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasLaw (arm 0) alg.p0 (Bandit.trajMeasure alg ν) where
+  map_eq := by
+    sorry
+
+/-- The reward at time `n+1` is independent of the history up to time `n` given the arm at `n+1`. -/
+lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [StandardBorelSpace R]
+    {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
+    CondIndepFun (MeasurableSpace.comap (arm (n + 1)) inferInstance)
+      (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) := by
   sorry
 
 end MeasureSpace

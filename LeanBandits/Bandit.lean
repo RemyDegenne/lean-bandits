@@ -234,11 +234,17 @@ lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α] [StandardBore
     ((alg.p0 ⊗ₘ ν).map (MeasurableEquiv.piIicZero (fun _ ↦ α × R)).symm)
     (κ := Bandit.stepKernel alg ν) n
 
-lemma condDistrib_reward [StandardBorelSpace R] [Nonempty R] (alg : Algorithm α R) (ν : Kernel α R)
-    [IsMarkovKernel ν] (n : ℕ) :
+lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν)
       =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := by
-  sorry
+  cases n with
+  | zero => sorry
+  | succ n =>
+    have h_ar := condDistrib_arm_reward alg ν n
+    have h_prod := condDistrib_prod_left (X := arm (n + 1)) (Y := reward (n + 1))
+      (T := hist n) (μ := Bandit.trajMeasure alg ν) (by fun_prop) (by fun_prop) (by fun_prop)
+    sorry
 
 lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :

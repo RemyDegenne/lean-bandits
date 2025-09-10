@@ -102,7 +102,7 @@ notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' 
 notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
-lemma condDistrib_reward' (n : ℕ) :
+lemma condDistrib_reward' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; Bandit.measure alg ν]
       =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ arm n ω.1)] ν := by
   let μ := Bandit.measure alg ν
@@ -122,7 +122,7 @@ lemma condDistrib_reward' (n : ℕ) :
   rw [h_prod, h_eq]
 
 omit [DecidableEq α] in
-lemma reward_cond_arm [Countable α] (a : α) (n : ℕ)
+lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : α) (n : ℕ)
     (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν

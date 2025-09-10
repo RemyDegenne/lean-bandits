@@ -101,18 +101,16 @@ notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
 /-- Law of `Y` conditioned on `X`. -/
 notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
-/-- Law of `Y`. -/
-notation "𝓛[" Y "; " μ "]" => Measure.map Y μ
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 lemma condDistrib_reward' (n : ℕ) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; Bandit.measure alg ν]
-      =ᵐ[𝓛[fun ω ↦ arm n ω.1; Bandit.measure alg ν]] ν := by
+      =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ arm n ω.1)] ν := by
   let μ := Bandit.measure alg ν
   have h_ra' : 𝓛[reward n | arm n; Bandit.trajMeasure alg ν]
-      =ᵐ[𝓛[arm n; Bandit.trajMeasure alg ν]] ν := condDistrib_reward alg ν n
-  have h_law : 𝓛[fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ arm n ω.1; μ]
-      = 𝓛[arm n; Bandit.trajMeasure alg ν] := by
+      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := condDistrib_reward alg ν n
+  have h_law : μ.map (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ arm n ω.1)
+      = (Bandit.trajMeasure alg ν).map (arm n) := by
     calc μ.map (fun ω ↦ arm n ω.1)
     _ = (μ.map (fun ω ↦ ω.1)).map (fun ω ↦ arm n ω) := by
       rw [Measure.map_map (by fun_prop) (by fun_prop)]
@@ -120,7 +118,7 @@ lemma condDistrib_reward' (n : ℕ) :
     _ = _ := by unfold μ Bandit.measure; simp [Measure.map_fst_prod]
   rw [h_law]
   have h_prod : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ]
-      =ᵐ[𝓛[arm n; Bandit.trajMeasure alg ν]] 𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
+      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] 𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
     condDistrib_fst_prod (by fun_prop) (by fun_prop) _
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
   rw [h_prod, h_eq]
@@ -130,7 +128,7 @@ lemma reward_cond_arm [Countable α] (a : α) (n : ℕ)
     (hμa : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1) {a} ≠ 0) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν
-  have h_ra : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ] =ᵐ[𝓛[fun ω ↦ arm n ω.1; μ]] ν :=
+  have h_ra : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ] =ᵐ[μ.map (fun ω ↦ arm n ω.1)] ν :=
     condDistrib_reward' n
   have h_eq := condDistrib_ae_eq_cond (μ := μ)
     (X := fun ω ↦ arm n ω.1) (Y := fun ω ↦ reward n ω.1) (by fun_prop) (by fun_prop)

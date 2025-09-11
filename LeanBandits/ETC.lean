@@ -93,10 +93,11 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
     sorry
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, ω.2 s (bestArm ν) ≤ ∑ s ∈ Icc 1 m, ω.2 s a} := by
     sorry
-  _ = (𝔓).real {ω | gap ν a
+  _ = (𝔓).real {ω | m * gap ν a
       ≤ ∑ s ∈ Icc 1 m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
+    congr with ω
     sorry
-  _ = (𝔓).real {ω | gap ν a
+  _ = (𝔓).real {ω | m * gap ν a
       ≤ ∑ s ∈ range m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
     sorry
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by

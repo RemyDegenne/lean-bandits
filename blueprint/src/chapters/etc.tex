@@ -20,6 +20,8 @@ The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is def
 
 \begin{lemma}\label{lem:pullCount_etcAlgorithm}
   \uses{def:etcAlgorithm, def:pullCount}
+  \leanok
+  \lean{Bandits.ETC.pullCount_of_ge}
 For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ and any time $t \ge Km$, we have
 \begin{align*}
   N_{t,a}
@@ -35,6 +37,8 @@ For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]
 
 \begin{lemma}\label{lem:prob_etc_error_le_exp}
   \uses{def:etcAlgorithm}
+  \leanok
+  \lean{Bandits.ETC.prob_arm_mul_eq_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
 Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ with $\Delta_a > 0$, we have $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$.
 \end{lemma}
@@ -68,6 +72,8 @@ This concludes the proof.
 
 \begin{theorem}\label{thm:regret_etc_le}
   \uses{def:etcAlgorithm, def:regret}
+  \leanok
+  \lean{Bandits.ETC.regret_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
 Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regret after $T$ pulls with $T \ge Km$ is bounded by
 \begin{align*}

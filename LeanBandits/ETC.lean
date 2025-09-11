@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmBuilding
+import LeanBandits.Regret
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -41,16 +42,70 @@ noncomputable
 def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (etcNextArm hK m) (by fun_prop) ⟨0, hK⟩
 
-lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun _ ↦ ⟨0, hK⟩ := by
+namespace ETC
+
+variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
+
+local notation "𝔓b" => Bandit.trajMeasure (etcAlgorithm hK m) ν
+local notation "𝔓" => Bandit.measure (etcAlgorithm hK m) ν
+
+lemma arm_zero : arm 0 =ᵐ[𝔓b] fun _ ↦ ⟨0, hK⟩ := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_zero_detAlgorithm
 
-lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
-    (n : ℕ) :
-    arm (n + 1) =ᵐ[(Bandit.trajMeasure (etcAlgorithm hK m) ν)]
-      fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+lemma arm_ae_eq_etcNextArm (n : ℕ) :
+    arm (n + 1) =ᵐ[𝔓b] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_detAlgorithm_ae_eq n
+
+lemma pullCount_mul (a : Fin K) :
+    (fun ω ↦ pullCount (arm · ω) a (K * m)) =ᵐ[𝔓b] fun _ ↦ m := by
+  sorry
+
+lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    (fun ω ↦ pullCount (arm · ω) a n)
+      =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
+  sorry
+
+lemma prob_arm_mul_eq_le (a : Fin K) :
+    (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+  sorry
+
+lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    𝔓b[fun ω ↦ (pullCount (arm · ω) a n : ℝ)]
+      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+  have : (fun ω ↦ (pullCount (arm · ω) a n : ℝ))
+      =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
+    filter_upwards [pullCount_of_ge a hn] with ω h
+    simp only [h, Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
+      Nat.cast_ite, CharP.cast_eq_zero, add_right_inj]
+    norm_cast
+  rw [integral_congr_ae this, integral_add (integrable_const _), integral_const_mul]
+  swap; · sorry
+  simp only [integral_const, measureReal_univ_eq_one, smul_eq_mul, one_mul, neg_mul,
+    add_le_add_iff_left, ge_iff_le]
+  gcongr
+  · norm_cast
+    simp
+  rw [integral_indicator_const, smul_eq_mul, mul_one]
+  · rw [← neg_mul]
+    exact prob_arm_mul_eq_le a
+  · exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma regret_le (n : ℕ) (hn : K * m ≤ n) : -- todo: remove hn
+    𝔓b[fun ω ↦ regret ν (arm · ω) n]
+      ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
+  simp_rw [regret_eq_sum_pullCount_mul_gap]
+  rw [integral_finset_sum]
+  swap
+  · refine fun i _ ↦ Integrable.mul_const ?_ _
+    sorry
+  gcongr with a
+  rw [mul_comm (gap _ _), integral_mul_const]
+  gcongr
+  · exact gap_nonneg
+  · exact expectation_pullCount_le a hn
+
+end ETC
 
 end Bandits

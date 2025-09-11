@@ -91,17 +91,31 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
     sorry
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, ω.2 s (bestArm ν) ≤ ∑ s ∈ Icc 1 m, ω.2 s a} := by
-    sorry
-  _ = (𝔓).real {ω | m * gap ν a
-      ≤ ∑ s ∈ Icc 1 m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
-    congr with ω
+  _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     sorry
   _ = (𝔓).real {ω | m * gap ν a
       ≤ ∑ s ∈ range m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
-    sorry
+    congr with ω
+    simp only [gap_eq_bestArm_sub, id_eq, sum_sub_distrib, sum_const, card_range, nsmul_eq_mul]
+    ring_nf
+    simp
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
-    sorry
+    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
+      ?_ ?_ ?_).trans_eq ?_
+    · suffices iIndepFun (fun s ω ↦ ω s a - (ν a)[id] - (ω s (bestArm ν) - (ν (bestArm ν))[id]))
+          (Bandit.streamMeasure ν) by
+        sorry
+      sorry
+    · intro i him
+      sorry
+    · have : 0 ≤ gap ν a := gap_nonneg
+      positivity
+    · congr 1
+      field_simp
+      simp_rw [mul_assoc]
+      simp only [NNReal.coe_ofNat, neg_inj, mul_eq_mul_left_iff, ne_eq, OfNat.ofNat_ne_zero,
+        not_false_eq_true, pow_eq_zero_iff, Nat.cast_eq_zero]
+      norm_num
 
 lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     𝔓b[fun ω ↦ (pullCount (arm · ω) a n : ℝ)]
@@ -128,7 +142,7 @@ lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     exact prob_arm_mul_eq_le a
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma regret_le (n : ℕ) (hn : K * m ≤ n) : -- todo: remove hn
+lemma regret_le (n : ℕ) (hn : K * m ≤ n) :
     𝔓b[fun ω ↦ regret ν (arm · ω) n]
       ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]

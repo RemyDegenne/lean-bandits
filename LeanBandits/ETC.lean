@@ -70,8 +70,16 @@ lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
 lemma prob_arm_mul_eq_le (a : Fin K) :
     (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  -- extend the probability space to include the stream of independent rewards
   suffices (𝔓).real {ω | arm (K * m) ω.1 = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
-    sorry
+    suffices (𝔓b).real {ω | arm (K * m) ω = a} = (𝔓).real {ω | arm (K * m) ω.1 = a} by
+      rwa [this]
+    calc (𝔓b).real {ω | arm (K * m) ω = a}
+    _ = ((𝔓).fst).real {ω | arm (K * m) ω = a} := by simp
+    _ = (𝔓).real {ω | arm (K * m) ω.1 = a} := by
+      rw [Measure.fst, map_measureReal_apply (by fun_prop)]
+      · rfl
+      · exact (measurableSet_singleton _).preimage (by fun_prop)
   calc (𝔓).real {ω | arm (K * m) ω.1 = a}
   _ ≤ (𝔓).real {ω | ∑ s ∈ range (K * m), (if (arm s ω.1) = bestArm ν then (reward s ω.1) else 0)
       ≤ ∑ s ∈ range (K * m), if (arm s ω.1) = a then (reward s ω.1) else 0} := by

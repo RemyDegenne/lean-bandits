@@ -43,9 +43,8 @@ lemma measurable_ucbNextArm (c : ℝ) (n : ℕ) : Measurable (ucbNextArm c n (α
 
 /-- The UCB algorithm. -/
 noncomputable
-def ucbAlgorithm (c : ℝ) : Algorithm α ℝ where
-  policy n := Kernel.deterministic (ucbNextArm c n) (by fun_prop)
-  p0 := Measure.dirac (Classical.arbitrary α)
+def ucbAlgorithm (c : ℝ) : Algorithm α ℝ :=
+  detAlgorithm (ucbNextArm c) (by fun_prop) (Classical.arbitrary α)
 
 end Algorithm
 

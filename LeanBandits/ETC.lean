@@ -20,7 +20,7 @@ variable {K : ℕ}
 
 /-- Arm pulled by the ETC algorithm at time `n + 1`. -/
 noncomputable
-def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
+def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m - 1 then
     ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
@@ -29,9 +29,9 @@ def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
     else (h ⟨n - 1, by simp⟩).1
 
 @[fun_prop]
-lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK m n) := by
+lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  unfold etcNextArm
+  unfold nextArm
   simp only [dite_eq_ite]
   refine Measurable.ite (by simp) (by fun_prop) ?_
   refine Measurable.ite (by simp) ?_ (by fun_prop)
@@ -40,7 +40,7 @@ lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK
 /-- The Explore-Then-Commit algorithm. -/
 noncomputable
 def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (etcNextArm hK m) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
 
 namespace ETC
 
@@ -54,7 +54,7 @@ lemma arm_zero : arm 0 =ᵐ[𝔓b] fun _ ↦ ⟨0, hK⟩ := by
   exact arm_zero_detAlgorithm
 
 lemma arm_ae_eq_etcNextArm (n : ℕ) :
-    arm (n + 1) =ᵐ[𝔓b] fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+    arm (n + 1) =ᵐ[𝔓b] fun h ↦ nextArm hK m n (fun i ↦ h i) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_detAlgorithm_ae_eq n
 
@@ -69,7 +69,30 @@ lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
 
 lemma prob_arm_mul_eq_le (a : Fin K) :
     (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
-  sorry
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  suffices (𝔓).real {ω | arm (K * m) ω.1 = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
+    sorry
+  calc (𝔓).real {ω | arm (K * m) ω.1 = a}
+  _ ≤ (𝔓).real {ω | ∑ s ∈ range (K * m), (if (arm s ω.1) = bestArm ν then (reward s ω.1) else 0)
+      ≤ ∑ s ∈ range (K * m), if (arm s ω.1) = a then (reward s ω.1) else 0} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (arm · ω.1) (bestArm ν) (K * m)),
+        rewardByCount (bestArm ν) s ω.1 ω.2
+      ≤ ∑ s ∈ Icc 1 (pullCount (arm · ω.1) a (K * m)), rewardByCount a s ω.1 ω.2} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
+      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, ω.2 s (bestArm ν) ≤ ∑ s ∈ Icc 1 m, ω.2 s a} := by
+    sorry
+  _ = (𝔓).real {ω | gap ν a
+      ≤ ∑ s ∈ Icc 1 m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
+    sorry
+  _ = (𝔓).real {ω | gap ν a
+      ≤ ∑ s ∈ range m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
+    sorry
+  _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+    sorry
 
 lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     𝔓b[fun ω ↦ (pullCount (arm · ω) a n : ℝ)]
@@ -81,7 +104,11 @@ lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
       Nat.cast_ite, CharP.cast_eq_zero, add_right_inj]
     norm_cast
   rw [integral_congr_ae this, integral_add (integrable_const _), integral_const_mul]
-  swap; · sorry
+  swap
+  · refine Integrable.const_mul ?_ _
+    rw [integrable_indicator_iff]
+    · exact integrableOn_const
+    · exact (measurableSet_singleton _).preimage (by fun_prop)
   simp only [integral_const, measureReal_univ_eq_one, smul_eq_mul, one_mul, neg_mul,
     add_le_add_iff_left, ge_iff_le]
   gcongr

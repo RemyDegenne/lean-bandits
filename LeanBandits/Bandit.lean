@@ -108,6 +108,16 @@ def measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
   (trajMeasure alg ν).prod (streamMeasure ν)
 deriving IsProbabilityMeasure
 
+@[simp]
+lemma fst_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    (measure alg ν).fst = trajMeasure alg ν := by
+  rw [measure, Measure.fst_prod]
+
+@[simp]
+lemma snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    (measure alg ν).snd = streamMeasure ν := by
+  rw [measure, Measure.snd_prod]
+
 end Bandit
 
 /-- `arm n` is the arm pulled at time `n`. This is a random variable on the measurable space

@@ -521,6 +521,13 @@ lemma condDistrib_fst_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
         fun_prop
   · fun_prop
 
+lemma Kernel.compProd_assoc {κ : Kernel α β} {η : Kernel (α × β) γ} {ξ : Kernel (α × β × γ) δ}
+    [IsSFiniteKernel κ] [IsSFiniteKernel η] [IsSFiniteKernel ξ] :
+    (κ ⊗ₖ η) ⊗ₖ ξ
+      = (κ ⊗ₖ (η ⊗ₖ (ξ.comap MeasurableEquiv.prodAssoc (MeasurableEquiv.measurable _)))).map
+        MeasurableEquiv.prodAssoc.symm := by
+  sorry
+
 lemma Measure.compProd_assoc {μ : Measure α} {κ : Kernel α β} {η : Kernel (α × β) γ}
     [SFinite μ] [IsSFiniteKernel κ] [IsSFiniteKernel η] :
     (μ ⊗ₘ κ) ⊗ₘ η = (μ ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by

@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmBuilding
+import LeanBandits.Regret
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -19,7 +20,7 @@ variable {K : ℕ}
 
 /-- Arm pulled by the ETC algorithm at time `n + 1`. -/
 noncomputable
-def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
+def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m - 1 then
     ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
@@ -28,9 +29,9 @@ def etcNextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
     else (h ⟨n - 1, by simp⟩).1
 
 @[fun_prop]
-lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK m n) := by
+lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  unfold etcNextArm
+  unfold nextArm
   simp only [dite_eq_ite]
   refine Measurable.ite (by simp) (by fun_prop) ?_
   refine Measurable.ite (by simp) ?_ (by fun_prop)
@@ -39,18 +40,122 @@ lemma measurable_etcNextArm (hK : 0 < K) (m n : ℕ) : Measurable (etcNextArm hK
 /-- The Explore-Then-Commit algorithm. -/
 noncomputable
 def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (etcNextArm hK m) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
 
-lemma ETC.arm_zero (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] :
-    arm 0 =ᵐ[Bandit.trajMeasure (etcAlgorithm hK m) ν] fun _ ↦ ⟨0, hK⟩ := by
+namespace ETC
+
+variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
+
+local notation "𝔓b" => Bandit.trajMeasure (etcAlgorithm hK m) ν
+local notation "𝔓" => Bandit.measure (etcAlgorithm hK m) ν
+
+lemma arm_zero : arm 0 =ᵐ[𝔓b] fun _ ↦ ⟨0, hK⟩ := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_zero_detAlgorithm
 
-lemma ETC.arm_ae_eq_etcNextArm (hK : 0 < K) (m : ℕ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
-    (n : ℕ) :
-    arm (n + 1) =ᵐ[(Bandit.trajMeasure (etcAlgorithm hK m) ν)]
-      fun h ↦ etcNextArm hK m n (fun i ↦ h i) := by
+lemma arm_ae_eq_etcNextArm (n : ℕ) :
+    arm (n + 1) =ᵐ[𝔓b] fun h ↦ nextArm hK m n (fun i ↦ h i) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_detAlgorithm_ae_eq n
+
+lemma pullCount_mul (a : Fin K) :
+    (fun ω ↦ pullCount (arm · ω) a (K * m)) =ᵐ[𝔓b] fun _ ↦ m := by
+  sorry
+
+lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    (fun ω ↦ pullCount (arm · ω) a n)
+      =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
+  sorry
+
+lemma prob_arm_mul_eq_le (a : Fin K) :
+    (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  -- extend the probability space to include the stream of independent rewards
+  suffices (𝔓).real {ω | arm (K * m) ω.1 = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
+    suffices (𝔓b).real {ω | arm (K * m) ω = a} = (𝔓).real {ω | arm (K * m) ω.1 = a} by
+      rwa [this]
+    calc (𝔓b).real {ω | arm (K * m) ω = a}
+    _ = ((𝔓).fst).real {ω | arm (K * m) ω = a} := by simp
+    _ = (𝔓).real {ω | arm (K * m) ω.1 = a} := by
+      rw [Measure.fst, map_measureReal_apply (by fun_prop)]
+      · rfl
+      · exact (measurableSet_singleton _).preimage (by fun_prop)
+  calc (𝔓).real {ω | arm (K * m) ω.1 = a}
+  _ ≤ (𝔓).real {ω | ∑ s ∈ range (K * m), (if (arm s ω.1) = bestArm ν then (reward s ω.1) else 0)
+      ≤ ∑ s ∈ range (K * m), if (arm s ω.1) = a then (reward s ω.1) else 0} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (arm · ω.1) (bestArm ν) (K * m)),
+        rewardByCount (bestArm ν) s ω.1 ω.2
+      ≤ ∑ s ∈ Icc 1 (pullCount (arm · ω.1) a (K * m)), rewardByCount a s ω.1 ω.2} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
+      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
+    sorry
+  _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
+    sorry
+  _ = (𝔓).real {ω | m * gap ν a
+      ≤ ∑ s ∈ range m, ((ω.2 s a - (ν a)[id]) - (ω.2 s (bestArm ν) - (ν (bestArm ν))[id]))} := by
+    congr with ω
+    simp only [gap_eq_bestArm_sub, id_eq, sum_sub_distrib, sum_const, card_range, nsmul_eq_mul]
+    ring_nf
+    simp
+  _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
+      ?_ ?_ ?_).trans_eq ?_
+    · suffices iIndepFun (fun s ω ↦ ω s a - (ν a)[id] - (ω s (bestArm ν) - (ν (bestArm ν))[id]))
+          (Bandit.streamMeasure ν) by
+        sorry
+      sorry
+    · intro i him
+      sorry
+    · have : 0 ≤ gap ν a := gap_nonneg
+      positivity
+    · congr 1
+      field_simp
+      simp_rw [mul_assoc]
+      simp only [NNReal.coe_ofNat, neg_inj, mul_eq_mul_left_iff, ne_eq, OfNat.ofNat_ne_zero,
+        not_false_eq_true, pow_eq_zero_iff, Nat.cast_eq_zero]
+      norm_num
+
+lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    𝔓b[fun ω ↦ (pullCount (arm · ω) a n : ℝ)]
+      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+  have : (fun ω ↦ (pullCount (arm · ω) a n : ℝ))
+      =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
+    filter_upwards [pullCount_of_ge a hn] with ω h
+    simp only [h, Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
+      Nat.cast_ite, CharP.cast_eq_zero, add_right_inj]
+    norm_cast
+  rw [integral_congr_ae this, integral_add (integrable_const _), integral_const_mul]
+  swap
+  · refine Integrable.const_mul ?_ _
+    rw [integrable_indicator_iff]
+    · exact integrableOn_const
+    · exact (measurableSet_singleton _).preimage (by fun_prop)
+  simp only [integral_const, measureReal_univ_eq_one, smul_eq_mul, one_mul, neg_mul,
+    add_le_add_iff_left, ge_iff_le]
+  gcongr
+  · norm_cast
+    simp
+  rw [integral_indicator_const, smul_eq_mul, mul_one]
+  · rw [← neg_mul]
+    exact prob_arm_mul_eq_le a
+  · exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma regret_le (n : ℕ) (hn : K * m ≤ n) :
+    𝔓b[fun ω ↦ regret ν (arm · ω) n]
+      ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
+  simp_rw [regret_eq_sum_pullCount_mul_gap]
+  rw [integral_finset_sum]
+  swap
+  · refine fun i _ ↦ Integrable.mul_const ?_ _
+    sorry
+  gcongr with a
+  rw [mul_comm (gap _ _), integral_mul_const]
+  gcongr
+  · exact gap_nonneg
+  · exact expectation_pullCount_le a hn
+
+end ETC
 
 end Bandits

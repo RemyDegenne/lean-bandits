@@ -1,0 +1,33 @@
+\chapter{Iterative stochastic algorithms}
+
+
+\begin{definition}[Algorithm]\label{def:algorithm'}
+  \leanok
+  \lean{Bandits.Algorithm}
+A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
+\begin{itemize}
+  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the action of the algorithm at time $t+1$ given the history of previous pulls and observations,
+  \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first action.
+\end{itemize}
+\end{definition}
+
+After the algorithm takes an action, the environment generates an observation according to a Markov kernel $\nu_t : (\mathcal{A} \times \mathcal{R})^{t+1} \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
+
+Let's detail four examples of interactions between an algorithm and an environment.
+\begin{enumerate}
+  \item \textbf{First order optimization}. The objective of the algorithm is to find the minimum of a function $f : \mathbb{R}^d \to \mathbb{R}$.
+  The action space is $\mathcal{A} = \mathbb{R}^d$ (a point on which the function will be queried) and the observation space is $\mathcal{R} = \mathbb{R} \times \mathbb{R}^d$.
+  The environment is described by a function $g : \mathbb{R}^d \to \mathbb{R} \times \mathbb{R}^d$ such that for all $x \in \mathbb{R}^d$, $g(x) = (f(x), \nabla f(x))$. That is, the kernel $\nu_t$ is deterministic and depends only on the action: it is given by $\nu_t(h_t, x) = \delta_{g(x)}$ (the Dirac measure at $g(x)$).
+  An example of algorithm is gradient descent with fixed step size $\eta > 0$: this is a deterministic algorithm defined by $P_0 = \delta_{x_0}$ for some initial point $x_0 \in \mathbb{R}^d$ and for all $t \in \mathbb{N}$, $\pi_t(h_t) = \delta_{x_{t+1}}$ where $x_{t+1} = x_t - \eta \nabla g_2(x_t)$.
+  \item \textbf{Stochastic bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
+  TODO etc
+  \item \textbf{Adversarial bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
+  TODO etc
+  \item \textbf{Reinforcement learnings in Markov decision processes}.
+\end{enumerate}
+
+
+\section{Ionescu-Tulcea theorem}
+
+
+\section{Independence and Markov property}

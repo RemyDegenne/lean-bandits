@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib
 import LeanBandits.ForMathlib.CondDistrib
+import LeanBandits.ForMathlib.KernelCompositionLemmas
 
 /-!
 # Bandit
@@ -170,19 +171,6 @@ open Kernel Preorder
 
 variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
     {κ : (n : ℕ) → Kernel ((i : { x // x ∈ Iic n }) → X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
-
-lemma Measure.compProd_map {X Y Z : Type*} {mX : MeasurableSpace X} {mY : MeasurableSpace Y}
-    {mZ : MeasurableSpace Z} {μ : Measure X} {κ : Kernel X Y} [SFinite μ] [IsSFiniteKernel κ]
-    {f : Y → Z} (hf : Measurable f) :
-    μ ⊗ₘ (κ.map f) = (μ ⊗ₘ κ).map (Prod.map id f) := by
-  calc μ ⊗ₘ (κ.map f)
-  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ (Kernel.id ×ₖ κ) ∘ₘ μ := by
-    rw [Measure.comp_assoc, Kernel.parallelComp_comp_prod, Measure.compProd_eq_comp_prod,
-      Kernel.id_comp, Kernel.deterministic_comp_eq_map]
-  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ (μ ⊗ₘ κ) := by rw [Measure.compProd_eq_comp_prod]
-  _ = (μ ⊗ₘ κ).map (Prod.map id f) := by
-    rw [Kernel.id, Kernel.deterministic_parallelComp_deterministic,
-      Measure.deterministic_comp_eq_map]
 
 lemma partialTraj_compProd_eq_traj_map_frestrictLe (a : ℕ) (x₀ : (i : Iic 0) → X i) :
     (partialTraj κ 0 a x₀) ⊗ₘ (κ a) =

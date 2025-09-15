@@ -10,7 +10,7 @@ variable {κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))} [∀ n, IsM
 variable {μ₀ : Measure (X 0)} [IsProbabilityMeasure μ₀]
 
 -- (Generalize for Embedding.lean?) Probability/Kernel/IonescuTulcea/Traj.lean
-def MeasurableEquiv.piIicZero : X 0 ≃ᵐ (Π n : Iic 0, X n) :=
+def MeasurableEquiv.piIicZero' : X 0 ≃ᵐ (Π n : Iic 0, X n) :=
   have : Unique (Iic 0) := by simp_rw [mem_Iic, nonpos_iff_eq_zero]; exact Unique.subtypeEq 0
   have e (n : Iic 0) : X n ≃ᵐ X 0 :=
     (congrArg (X · ≃ᵐ X 0) (nonpos_iff_eq_zero.1 (mem_Iic.1 n.2))).mpr (refl (X 0))
@@ -23,12 +23,12 @@ noncomputable
 def trajMeasure (μ₀ : Measure (X 0)) [IsProbabilityMeasure μ₀]
     (κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))) [∀ n, IsMarkovKernel (κ n)] :
     Measure (Π n, X n) :=
-  (traj κ 0) ∘ₘ (μ₀.map MeasurableEquiv.piIicZero)
+  (traj κ 0) ∘ₘ (μ₀.map MeasurableEquiv.piIicZero')
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
 instance : IsProbabilityMeasure (trajMeasure μ₀ κ) := by
   rw [trajMeasure]
-  have : IsProbabilityMeasure (μ₀.map (MeasurableEquiv.piIicZero)) :=
+  have : IsProbabilityMeasure (μ₀.map (MeasurableEquiv.piIicZero')) :=
     isProbabilityMeasure_map <| by fun_prop
   infer_instance
 

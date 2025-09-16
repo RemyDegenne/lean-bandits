@@ -154,44 +154,6 @@ open Kernel Preorder
 variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
     {κ : (n : ℕ) → Kernel ((i : { x // x ∈ Iic n }) → X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
 
-lemma partialTraj_compProd_eq_traj_map_frestrictLe (a : ℕ) (x₀ : (i : Iic 0) → X i) :
-    (partialTraj κ 0 a x₀) ⊗ₘ (κ a) =
-      (traj κ 0 x₀).map (fun x ↦ (frestrictLe a x, x (a + 1))) := by
-  have h1 := partialTraj_compProd_traj (κ := κ) (zero_le a) x₀
-  have h2 : (fun x : Π n, X n ↦ (frestrictLe a x, x (a + 1))) =
-      (Prod.map id (fun x ↦ x (a + 1))) ∘ (fun x ↦ (frestrictLe a x, x)) := by ext <;> simp
-  rw [h2, ← Measure.map_map (by fun_prop) (by fun_prop), ← h1, ← Measure.compProd_map (by fun_prop)]
-  congr
-  have : (fun x : Π n, X n ↦ x (a + 1)) =
-      (fun x : Π i : Iic (a + 1), X i ↦ x ⟨a+1, by simp⟩) ∘ (frestrictLe (a + 1)) := by ext; simp
-  rw [this, map_comp_right _ (by fun_prop) (by fun_prop), traj_map_frestrictLe,
-    partialTraj_succ_self, ← map_comp_right _ (by fun_prop) (by fun_prop)]
-  have : (fun x : Π i : Iic (a + 1), X i ↦ x ⟨a+1, by simp⟩) ∘ IicProdIoc a (a + 1)
-      = (MeasurableEquiv.piSingleton a).symm ∘ Prod.snd := by
-    ext; simp [_root_.IicProdIoc, MeasurableEquiv.piSingleton]
-  rw [this, map_comp_right _ (by fun_prop) (by fun_prop), ← snd_eq, snd_prod,
-    ← map_comp_right _ (by fun_prop) (by fun_prop)]
-  simp
-
-lemma traj_cond_lemma1 {a : ℕ} (μ₀ : Measure ((i : Iic 0) → X i)) [IsFiniteMeasure μ₀] :
-    (traj κ 0 ∘ₘ μ₀).map (fun x ↦ (frestrictLe a x, x (a + 1)))
-      = (traj κ 0 ∘ₘ μ₀).map (frestrictLe a) ⊗ₘ κ a := by
-  rw [Measure.compProd_eq_comp_prod, Measure.map_comp _ _ (by fun_prop),
-    Measure.map_comp _ _ (by fun_prop), Measure.comp_assoc, traj_map_frestrictLe]
-  congr
-  ext x₀ : 1
-  rw [ProbabilityTheory.Kernel.comp_apply, ← Measure.compProd_eq_comp_prod]
-  symm
-  rw [Kernel.map_apply _ (by fun_prop)]
-  exact partialTraj_compProd_eq_traj_map_frestrictLe a x₀
-
-lemma condDistrib_lemma (μ₀ : Measure ((i : Iic 0) → X i)) [IsFiniteMeasure μ₀] (a : ℕ)
-    [Nonempty (X (a + 1))] [StandardBorelSpace (X (a + 1))] :
-    condDistrib (fun x ↦ x (a + 1)) (frestrictLe a) (traj κ 0 ∘ₘ μ₀)
-      =ᵐ[(traj κ 0 ∘ₘ μ₀).map (frestrictLe a)] κ a := by
-  symm
-  exact condDistrib_ae_eq_of_measure_eq_compProd (by fun_prop) (by fun_prop) _ (traj_cond_lemma1 μ₀)
-
 lemma traj_zero_map_eval_zero :
     (Kernel.traj κ 0).map (fun h ↦ h 0)
       = Kernel.deterministic (MeasurableEquiv.piIicZero X)

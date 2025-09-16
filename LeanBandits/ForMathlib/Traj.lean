@@ -9,12 +9,20 @@ variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
 variable {κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
 variable {μ₀ : Measure (X 0)} [IsProbabilityMeasure μ₀]
 
--- (Generalize for Embedding.lean?) Probability/Kernel/IonescuTulcea/Traj.lean
-def MeasurableEquiv.piIicZero' : X 0 ≃ᵐ (Π n : Iic 0, X n) :=
-  have : Unique (Iic 0) := by simp_rw [mem_Iic, nonpos_iff_eq_zero]; exact Unique.subtypeEq 0
-  have e (n : Iic 0) : X n ≃ᵐ X 0 :=
-    (congrArg (X · ≃ᵐ X 0) (nonpos_iff_eq_zero.1 (mem_Iic.1 n.2))).mpr (refl (X 0))
-  ((piCongrRight e).trans (piUnique _)).symm
+section MeasurableEquiv
+
+instance : Unique (Iic 0) := by simp only [mem_Iic, nonpos_iff_eq_zero]; exact Unique.subtypeEq 0
+
+lemma coe_default_Iic_zero : ((default : Iic 0) : ℕ) = 0 := by
+  calc _ = ((⟨0, by simp⟩ : Iic 0) : ℕ) := by congr; exact (Unique.eq_default _).symm
+    _ = _ := by simp
+
+/-- Measurable equivalence between `Iic 0 → X i` and `X 0`. -/
+def MeasurableEquiv.piIicZero (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] :
+    ((i : Iic 0) → X i) ≃ᵐ X 0 :=
+  (MeasurableEquiv.piUnique _).trans (coe_default_Iic_zero.symm ▸ MeasurableEquiv.refl _)
+
+end MeasurableEquiv
 
 namespace ProbabilityTheory.Kernel
 
@@ -23,12 +31,12 @@ noncomputable
 def trajMeasure (μ₀ : Measure (X 0)) [IsProbabilityMeasure μ₀]
     (κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))) [∀ n, IsMarkovKernel (κ n)] :
     Measure (Π n, X n) :=
-  (traj κ 0) ∘ₘ (μ₀.map MeasurableEquiv.piIicZero')
+  (traj κ 0) ∘ₘ (μ₀.map (MeasurableEquiv.piIicZero _).symm)
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
 instance : IsProbabilityMeasure (trajMeasure μ₀ κ) := by
   rw [trajMeasure]
-  have : IsProbabilityMeasure (μ₀.map (MeasurableEquiv.piIicZero')) :=
+  have : IsProbabilityMeasure (μ₀.map (MeasurableEquiv.piIicZero _).symm) :=
     isProbabilityMeasure_map <| by fun_prop
   infer_instance
 

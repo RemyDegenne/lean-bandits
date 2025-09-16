@@ -27,7 +27,7 @@ end MeasurableEquiv
 namespace ProbabilityTheory.Kernel
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
-/- Distribution of the infinite trajectory given the distribution of `X 0`.  -/
+/-- Distribution of the infinite trajectory given the distribution of `X 0`. -/
 noncomputable
 def trajMeasure (μ₀ : Measure (X 0)) (κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1)))
     [∀ n, IsMarkovKernel (κ n)] :

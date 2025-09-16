@@ -8,7 +8,7 @@ import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.Kernel.Composition.Lemmas
 import Mathlib.Probability.Kernel.CompProdEqIff
 import Mathlib.Probability.Kernel.Condexp
-
+import LeanBandits.ForMathlib.KernelCompositionParallelComp
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
@@ -67,14 +67,6 @@ lemma ext_prod₃_iff {α β γ : Type*} {mα : MeasurableSpace α} {mβ : Measu
 end MeasureTheory.Measure
 
 namespace ProbabilityTheory
-
-lemma Kernel.deterministic_parallelComp_deterministic
-    {f : α → γ} {g : β → δ} (hf : Measurable f) (hg : Measurable g) :
-    (deterministic f hf) ∥ₖ (deterministic g hg)
-      = deterministic (Prod.map f g) (hf.prodMap hg) := by
-  ext x : 1
-  rw [parallelComp_apply, deterministic_apply, deterministic_apply, deterministic_apply, Prod.map,
-    Measure.dirac_prod_dirac]
 
 lemma Kernel.prod_apply_prod {κ : Kernel α β} {η : Kernel α γ}
     [IsSFiniteKernel κ] [IsSFiniteKernel η] {s : Set β} {t : Set γ} {a : α} :

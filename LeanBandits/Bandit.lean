@@ -197,7 +197,7 @@ lemma hasLaw_step_zero
     HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) where
   aemeasurable := Measurable.aemeasurable (by fun_prop)
   map_eq := by
-    simp only [Bandit.trajMeasure, ProbabilityTheory.Kernel.trajMeasure]
+    simp only [Bandit.trajMeasure, Kernel.trajMeasure]
     rw [← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
       Kernel.deterministic_comp_eq_map, traj_zero_map_eval_zero,
       Measure.deterministic_comp_eq_map, Measure.map_map (by fun_prop) (by fun_prop)]

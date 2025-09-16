@@ -77,7 +77,7 @@ lemma trajMeasure_map_frestrictLe_compProd_kernel_eq_trajMeasure_map {a : ℕ} :
   fun_prop
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
-lemma trajMeasure_condDistrib_ae_eq_kernel {a : ℕ}
+lemma condDistrib_trajMeasure_ae_eq_kernel {a : ℕ}
     [StandardBorelSpace (X (a + 1))] [Nonempty (X (a + 1))] :
     condDistrib (fun x ↦ x (a + 1)) (frestrictLe a) (trajMeasure μ₀ κ)
       =ᵐ[(trajMeasure μ₀ κ).map (frestrictLe a)] κ a := by

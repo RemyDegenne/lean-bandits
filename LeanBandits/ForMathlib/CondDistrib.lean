@@ -664,6 +664,7 @@ lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)
   · rw [indepFun_iff_indepSet_preimage hX hT] at h
     exact h s t hs ht
 
+omit [Nonempty Ω'] in
 lemma cond_of_condIndepFun [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β] [Countable β]
     [Countable Ω']
     [IsZeroOrProbabilityMeasure μ]

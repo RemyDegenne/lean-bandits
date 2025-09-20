@@ -50,12 +50,63 @@ lemma trim_comap_apply (hX : Measurable X) {s : Set β} (hs : MeasurableSet s) :
   rw [trim_measurableSet_eq, Measure.map_apply (by fun_prop) hs]
   exact ⟨s, hs, rfl⟩
 
+lemma ext_prod {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {μ ν : Measure (α × β)} [IsFiniteMeasure μ] [IsFiniteMeasure ν]
+    (h : ∀ {s : Set α} {t : Set β} (_ : MeasurableSet s) (_ : MeasurableSet t),
+      μ (s ×ˢ t) = ν (s ×ˢ t)) :
+    μ = ν := by
+  ext s hs
+  have h_univ : μ .univ = ν .univ := by
+    rw [← Set.univ_prod_univ]
+    exact h .univ .univ
+  refine MeasurableSpace.induction_on_inter generateFrom_prod.symm isPiSystem_prod (by simp)
+    ?_ ?_ ?_ s hs
+  · intro t ht
+    simp only [Set.mem_image2, Set.mem_setOf_eq] at ht
+    obtain ⟨s, hs, t, ht, rfl⟩ := ht
+    exact h hs ht
+  · intro t ht
+    simp_rw [measure_compl ht (measure_ne_top _ _)]
+    intro h
+    rw [h, h_univ]
+  · intro f h_disj hf h_eq
+    simp_rw [measure_iUnion h_disj hf, h_eq]
+
+lemma ext_prod_iff {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {μ ν : Measure (α × β)} [IsFiniteMeasure μ] [IsFiniteMeasure ν] :
+    μ = ν ↔ ∀ {s : Set α} {t : Set β} (_ : MeasurableSet s) (_ : MeasurableSet t),
+      μ (s ×ˢ t) = ν (s ×ˢ t) :=
+  ⟨fun h s t hs ht ↦ by rw [h], Measure.ext_prod⟩
+
 lemma ext_prod₃ {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
     {mγ : MeasurableSpace γ} {μ ν : Measure (α × β × γ)} [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    (h : ∀ {s : Set α} {t : Set β} {u : Set γ} (hs : MeasurableSet s) (ht : MeasurableSet t)
-      (hu : MeasurableSet u), μ (s ×ˢ t ×ˢ u) = ν (s ×ˢ t ×ˢ u)) :
+    (h : ∀ {s : Set α} {t : Set β} {u : Set γ} (_ : MeasurableSet s) (_ : MeasurableSet t)
+      (_ : MeasurableSet u), μ (s ×ˢ t ×ˢ u) = ν (s ×ˢ t ×ˢ u)) :
     μ = ν := by
-  sorry
+  ext s hs
+  have h_univ : μ .univ = ν .univ := by
+    simp_rw [← Set.univ_prod_univ]
+    exact h .univ .univ .univ
+  let C₂ := Set.image2 (· ×ˢ ·) { t : Set β | MeasurableSet t } { u : Set γ | MeasurableSet u }
+  let C := Set.image2 (· ×ˢ ·) { s : Set α | MeasurableSet s } C₂
+  refine MeasurableSpace.induction_on_inter (s := C) ?_ ?_ (by simp)
+    ?_ ?_ ?_ s hs
+  · refine (generateFrom_eq_prod (C := { s : Set α | MeasurableSet s }) (D := C₂) ?_ ?_ ?_ ?_).symm
+    · simp
+    · exact generateFrom_prod
+    · exact isCountablySpanning_measurableSet
+    · exact isCountablySpanning_measurableSet.prod isCountablySpanning_measurableSet
+  · exact MeasurableSpace.isPiSystem_measurableSet.prod isPiSystem_prod
+  · intro t ht
+    simp only [Set.mem_image2, Set.mem_setOf_eq, exists_exists_and_exists_and_eq_and, C, C₂] at ht
+    obtain ⟨s, hs, t, ht, u, hu, rfl⟩ := ht
+    exact h hs ht hu
+  · intro t ht
+    simp_rw [measure_compl ht (measure_ne_top _ _)]
+    intro h
+    rw [h, h_univ]
+  · intro f h_disj hf h_eq
+    simp_rw [measure_iUnion h_disj hf, h_eq]
 
 lemma ext_prod₃_iff {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
     {mγ : MeasurableSpace γ} {μ ν : Measure (α × β × γ)} [IsFiniteMeasure μ] [IsFiniteMeasure ν] :
@@ -63,6 +114,30 @@ lemma ext_prod₃_iff {α β γ : Type*} {mα : MeasurableSpace α} {mβ : Measu
       MeasurableSet s → MeasurableSet t → MeasurableSet u →
       μ (s ×ˢ t ×ˢ u) = ν (s ×ˢ t ×ˢ u)) :=
   ⟨fun h s t u hs ht hu ↦ by rw [h], Measure.ext_prod₃⟩
+
+lemma ext_prod₃_iff' {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {mγ : MeasurableSpace γ} {μ ν : Measure ((α × β) × γ)} [IsFiniteMeasure μ] [IsFiniteMeasure ν] :
+    μ = ν ↔ (∀ {s : Set α} {t : Set β} {u : Set γ},
+      MeasurableSet s → MeasurableSet t → MeasurableSet u →
+      μ ((s ×ˢ t) ×ˢ u) = ν ((s ×ˢ t) ×ˢ u)) := by
+  have : μ = ν ↔ μ.map MeasurableEquiv.prodAssoc = ν.map MeasurableEquiv.prodAssoc := by
+    refine ⟨fun h ↦ by rw [h], fun h ↦ ?_⟩
+    have h_map_map (μ : Measure ((α × β) × γ)) :
+        μ = (μ.map MeasurableEquiv.prodAssoc).map MeasurableEquiv.prodAssoc.symm := by
+      simp
+    rw [h_map_map μ, h_map_map ν, h]
+  rw [this, ext_prod₃_iff]
+  have h_eq (ν : Measure ((α × β) × γ)) {s : Set α} {t : Set β} {u : Set γ}
+      (hs : MeasurableSet s) (ht : MeasurableSet t) (hu : MeasurableSet u) :
+      ν.map MeasurableEquiv.prodAssoc (s ×ˢ (t ×ˢ u)) = ν ((s ×ˢ t) ×ˢ u) := by
+    rw [map_apply (by fun_prop) (hs.prod (ht.prod hu))]
+    congr 1
+    ext x
+    simp [MeasurableEquiv.prodAssoc]
+  refine ⟨fun h s t u hs ht hu ↦ ?_, fun h s t u hs ht hu ↦ ?_⟩
+    <;> specialize h hs ht hu
+  · rwa [h_eq μ hs ht hu, h_eq ν hs ht hu] at h
+  · rwa [h_eq μ hs ht hu, h_eq ν hs ht hu]
 
 end MeasureTheory.Measure
 
@@ -426,6 +501,7 @@ theorem condIndepFun_comap_iff_map_prod_eq_prod_condDistrib_prod_condDistrib
     · exact (h_left hs ht hu).symm
     · exact (h_right hs ht hu).symm
 
+omit [Nonempty Ω'] in
 lemma condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft
     [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
     (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z) :
@@ -482,7 +558,21 @@ lemma condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft
   have h2 : (condDistrib X Z μ ×ₖ Kernel.id ×ₖ condDistrib Y Z μ) ∘ₘ μ.map Z
       = ((Kernel.id ×ₖ (condDistrib Y Z μ ×ₖ condDistrib X Z μ)) ∘ₘ μ.map Z).map e := by
     rw [← Measure.deterministic_comp_eq_map e.measurable, Measure.comp_assoc]
-    sorry
+    congr
+    ext ω : 1
+    rw [Kernel.prod_apply, Kernel.prod_apply, Kernel.id_apply, Kernel.comp_apply,
+      Kernel.prod_apply, Kernel.prod_apply, Kernel.id_apply, Measure.deterministic_comp_eq_map]
+    rw [Measure.ext_prod₃_iff']
+    intro s t u hs ht hu
+    rw [Measure.prod_prod, Measure.prod_prod,
+      Measure.map_apply (by fun_prop) ((hs.prod ht).prod hu)]
+    have : e ⁻¹' ((s ×ˢ t) ×ˢ u) = t ×ˢ u ×ˢ s := by
+      ext x
+      simp only [MeasurableEquiv.coe_mk, Equiv.coe_fn_mk, Set.mem_preimage, Set.mem_prod, e]
+      tauto
+    rw [this]
+    simp_rw [Measure.prod_prod]
+    ring
   have h2_symm : (Kernel.id ×ₖ (condDistrib Y Z μ ×ₖ condDistrib X Z μ)) ∘ₘ μ.map Z
       = ((condDistrib X Z μ ×ₖ Kernel.id ×ₖ condDistrib Y Z μ) ∘ₘ μ.map Z).map e.symm := by
     rw [h2, Measure.map_map (by fun_prop) (by fun_prop), MeasurableEquiv.symm_comp_self,
@@ -574,6 +664,7 @@ lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)
   · rw [indepFun_iff_indepSet_preimage hX hT] at h
     exact h s t hs ht
 
+omit [Nonempty Ω'] in
 lemma cond_of_condIndepFun [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β] [Countable β]
     [Countable Ω']
     [IsZeroOrProbabilityMeasure μ]

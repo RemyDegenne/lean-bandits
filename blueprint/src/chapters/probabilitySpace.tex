@@ -19,15 +19,65 @@ Let's detail four examples of interactions between an algorithm and an environme
   The action space is $\mathcal{A} = \mathbb{R}^d$ (a point on which the function will be queried) and the observation space is $\mathcal{R} = \mathbb{R} \times \mathbb{R}^d$.
   The environment is described by a function $g : \mathbb{R}^d \to \mathbb{R} \times \mathbb{R}^d$ such that for all $x \in \mathbb{R}^d$, $g(x) = (f(x), \nabla f(x))$. That is, the kernel $\nu_t$ is deterministic and depends only on the action: it is given by $\nu_t(h_t, x) = \delta_{g(x)}$ (the Dirac measure at $g(x)$).
   An example of algorithm is gradient descent with fixed step size $\eta > 0$: this is a deterministic algorithm defined by $P_0 = \delta_{x_0}$ for some initial point $x_0 \in \mathbb{R}^d$ and for all $t \in \mathbb{N}$, $\pi_t(h_t) = \delta_{x_{t+1}}$ where $x_{t+1} = x_t - \eta \nabla g_2(x_t)$.
+
   \item \textbf{Stochastic bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
-  TODO etc
+  The kernel $\nu_t$ is stationary and depends only on the action: there are probability distributions $(P_a)_{a \in [K]}$ such that for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = P_a$.
+
   \item \textbf{Adversarial bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
-  TODO etc
+  The reward kernels are usually taken to be deterministic and in an \emph{oblivious} adversarial bandit they depend only on the time step: there is a sequence of vectors $(r_t)_{t \in \mathbb{N}}$ in $[0,1]^K$ such that for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = \delta_{r_{t,a}}$ (the Dirac measure at $r_{t,a}$).
+
   \item \textbf{Reinforcement learnings in Markov decision processes}.
+  TODO: main feature is that $\mathcal{R} = \mathcal{S} \times \mathbb{R}$ where $\mathcal{S}$ is the state space, and the kernel $\nu_t$ depends on the last state only.
 \end{enumerate}
 
 
 \section{Ionescu-Tulcea theorem}
 
+If we group together the policy of the algorithm and the kernel of the environment at each time step, we get a sequence of Markov kernels $(\kappa_t)_{t \in \mathbb{N}}$, with $\kappa_t : (\mathcal{A} \times \mathcal{R})^{t+1}  \rightsquigarrow (\mathcal{A} \times \mathcal{R})$.
+We will want to make global probabilistic statements about the whole sequence of actions and observations.
+For example, we may want to prove that an optimization algorithm converges to the minimum of a function almost surely.
+For such a statement to make sense, we need a probability space on which the whole sequence of actions and observations is defined as a random variable.
+
+We now abstract that situation and consider a sequence of measurable spaces $(\Omega_t)_{t \in \mathbb{N}}$, a probability measure $\mu$ on $\Omega_0$ and a sequence of Markov kernels $\kappa_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \Omega_{t+1}$.
+The Ionescu-Tulcea theorem builds a probability space from the sequence of kernels and the initial measure.
+
+\begin{theorem}[Ionescu-Tulcea]\label{thm:ionescu-tulcea}
+  \mathlibok
+  \lean{ProbabilityTheory.Kernel.traj}
+Let $(\Omega_t)_{t \in \mathbb{N}}$ be a family of measurable spaces. Let $(\kappa_t)_{t \in \mathbb{N}}$ be a family of Markov kernels such that for any $t$, $\kappa_t$ is a kernel from $\prod_{i=0}^t \Omega_{i}$ to $\Omega_{t+1}$.
+Then there exists a unique Markov kernel $\xi : \Omega_0 \rightsquigarrow \prod_{i = 1}^{\infty} \Omega_{i}$ such that for any $n \ge 1$,
+$\pi_{[1,n]*} \xi = \kappa_0 \otimes \ldots \otimes \kappa_{n-1}$.
+Here $\pi_{[1,n]} : \prod_{i=1}^{\infty} \Omega_i \to \prod_{i=1}^n \Omega_i$ is the projection on the first $n$ coordinates.
+\end{theorem}
+
+We can then combine the kernel $\xi$ with the initial measure $\mu$ to get a probability measure $\mu \otimes \xi$ on $\prod_{i=0}^{\infty} \Omega_i$.
+
+TODO: the IT theorem in Mathlib generates kernels $\xi_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \prod_{s=0}^{\infty} \Omega_s$ for any $t$, with the property that the kernels are the identity on the first $t+1$ coordinates.
+Also, our actual definition of the trajectory measure is $\xi_0 \circ \mu$ due to that implementation detail.
+
+We denote by $\Omega_{\mathcal{T}}$ the space $\prod_{t=0}^\infty \Omega_t$ endowed with the product $\sigma$-algebra and by $\mathbb{P}_{\mathcal{T}}$ the probability measure $\mu \otimes \xi$ on that space.
+The $\mathcal{T}$ subscript stands for ``trajectory''.
+
+
+\begin{definition}\label{def:history}
+For $t \in \mathbb{N}$, we denote by $X_t \in \Omega_t$ the random variable describing the time step $t$, and by $H_t \in \prod_{s=0}^t \Omega_s$ the history up to time $t$.
+Formally, these are measurable functions on $\Omega_{\mathcal{T}}$, defined by $X_t(\omega) = \omega_t$ and $H_t(\omega) = (\omega_1, \ldots, \omega_t)$.
+\end{definition}
+
+Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T}}$.
+
+We now list properties of those random variables that follow from the construction of the trajectory measure.
+
+\begin{lemma}\label{lem:condDistrib_X_add_one}
+  \uses{def:history}
+For any $t \in \mathbb{N}$, the conditional distribution of $X_{t+1}$ given the history $H_t$ is $P_{\mathcal{T}}$-almost surely equal to $\kappa_t$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
 
 \section{Independence and Markov property}
+
+The structure of the sequence of kernels $(\kappa_t)_{t \in \mathbb{N}}$ is reflected in independence properties of the sequence of random variables $(X_t)_{t \in \mathbb{N}}$.

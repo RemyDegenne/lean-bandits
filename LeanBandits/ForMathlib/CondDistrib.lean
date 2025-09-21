@@ -5,11 +5,8 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
-import Mathlib.Probability.Kernel.Composition.Lemmas
 import Mathlib.Probability.Kernel.CompProdEqIff
-import Mathlib.Probability.Kernel.Condexp
-import LeanBandits.ForMathlib.KernelCompositionLemmas
-import LeanBandits.ForMathlib.KernelCompositionParallelComp
+import Mathlib.Probability.Kernel.Composition.Lemmas
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal

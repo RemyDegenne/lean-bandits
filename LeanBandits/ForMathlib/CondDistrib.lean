@@ -8,6 +8,7 @@ import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.Kernel.Composition.Lemmas
 import Mathlib.Probability.Kernel.CompProdEqIff
 import Mathlib.Probability.Kernel.Condexp
+import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.KernelCompositionParallelComp
 
 open MeasureTheory ProbabilityTheory Finset
@@ -20,6 +21,43 @@ variable {α β γ δ Ω Ω' : Type*}
   [MeasurableSpace Ω'] [StandardBorelSpace Ω'] [Nonempty Ω']
   {X : α → β} {Y : α → Ω} {Z : α → Ω'} {T : α → γ}
 
+lemma MeasurableSpace.comap_prodMk (X : α → β) (Y : α → γ) :
+    MeasurableSpace.comap (fun ω ↦ (X ω, Y ω)) inferInstance = mβ.comap X ⊔ mγ.comap Y := by
+  rw [← generateFrom_prod, MeasurableSpace.comap_generateFrom,
+    MeasurableSpace.comap_eq_generateFrom, MeasurableSpace.comap_eq_generateFrom,
+    MeasurableSpace.generateFrom_sup_generateFrom]
+  have : (Set.preimage fun ω ↦ (X ω, Y ω)) ''
+        Set.image2 (fun x1 x2 ↦ x1 ×ˢ x2) {s | MeasurableSet s} {t | MeasurableSet t}
+      = {x | ∃ a, MeasurableSet a ∧ ∃ b, MeasurableSet b ∧ X ⁻¹' a ∩ Y ⁻¹' b = x} := by
+    ext
+    simp [Set.mk_preimage_prod]
+  rw [this]
+  refine le_antisymm (MeasurableSpace.generateFrom_le ?_) (MeasurableSpace.generateFrom_le ?_)
+  · rintro _ ⟨a, ha, b, hb, rfl⟩
+    refine MeasurableSet.inter ?_ ?_
+    · exact MeasurableSpace.measurableSet_generateFrom <| .inl ⟨a, ha, rfl⟩
+    · exact MeasurableSpace.measurableSet_generateFrom <| .inr ⟨b, hb, rfl⟩
+  · refine fun t ht ↦ MeasurableSpace.measurableSet_generateFrom ?_
+    cases ht with
+    | inl h =>
+      obtain ⟨s, hs, rfl⟩ := h
+      exact ⟨s, hs, .univ, .univ, by simp⟩
+    | inr h =>
+      obtain ⟨t, ht, rfl⟩ := h
+      exact ⟨.univ, .univ, t, ht, by simp⟩
+
+lemma map_trim_comap {f : α → β} (hf : Measurable f) :
+    @Measure.map _ _ (mβ.comap f) _ f (μ.trim hf.comap_le) = μ.map f := by
+  ext s hs
+  rw [Measure.map_apply hf hs, Measure.map_apply _ hs, trim_measurableSet_eq]
+  · exact ⟨s, hs, rfl⟩
+  · exact Measurable.of_comap_le le_rfl
+
+lemma ae_map_iff_ae_trim {f : α → β} (hf : Measurable f) {p : β → Prop}
+    (hp : MeasurableSet { x | p x }) :
+    (∀ᵐ y ∂μ.map f, p y) ↔ ∀ᵐ x ∂(μ.trim hf.comap_le), p (f x) := by
+  rw [← map_trim_comap hf, ae_map_iff (Measurable.of_comap_le le_rfl).aemeasurable hp]
+
 @[fun_prop]
 lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
     Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
@@ -29,6 +67,14 @@ lemma Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun
   Measurable.comp (by fun_prop) hf
 
 namespace MeasureTheory.Measure
+
+lemma trim_eq_map {hm : m ≤ mα} : μ.trim hm = @Measure.map _ _ mα m id μ := by
+  refine @Measure.ext _ m _ _ fun s hs ↦ ?_
+  rw [trim_measurableSet_eq _ hs, Measure.map_apply _ hs]
+  · simp
+  · intro t ht
+    simp only [Set.preimage_id_eq, id_eq]
+    exact hm _ ht
 
 lemma comp_congr {κ η : Kernel α β} (h : ∀ᵐ a ∂μ, κ a = η a) :
     κ ∘ₘ μ = η ∘ₘ μ :=
@@ -89,13 +135,10 @@ lemma ext_prod₃ {α β γ : Type*} {mα : MeasurableSpace α} {mβ : Measurabl
     exact h .univ .univ .univ
   let C₂ := Set.image2 (· ×ˢ ·) { t : Set β | MeasurableSet t } { u : Set γ | MeasurableSet u }
   let C := Set.image2 (· ×ˢ ·) { s : Set α | MeasurableSet s } C₂
-  refine MeasurableSpace.induction_on_inter (s := C) ?_ ?_ (by simp)
-    ?_ ?_ ?_ s hs
-  · refine (generateFrom_eq_prod (C := { s : Set α | MeasurableSet s }) (D := C₂) ?_ ?_ ?_ ?_).symm
-    · simp
-    · exact generateFrom_prod
-    · exact isCountablySpanning_measurableSet
-    · exact isCountablySpanning_measurableSet.prod isCountablySpanning_measurableSet
+  refine MeasurableSpace.induction_on_inter (s := C) ?_ ?_ (by simp) ?_ ?_ ?_ s hs
+  · refine (generateFrom_eq_prod (C := { s : Set α | MeasurableSet s }) (D := C₂) (by simp)
+      generateFrom_prod isCountablySpanning_measurableSet ?_).symm
+    exact isCountablySpanning_measurableSet.prod isCountablySpanning_measurableSet
   · exact MeasurableSpace.isPiSystem_measurableSet.prod isPiSystem_prod
   · intro t ht
     simp only [Set.mem_image2, Set.mem_setOf_eq, exists_exists_and_exists_and_eq_and, C, C₂] at ht
@@ -139,6 +182,8 @@ lemma ext_prod₃_iff' {α β γ : Type*} {mα : MeasurableSpace α} {mβ : Meas
   · rwa [h_eq μ hs ht hu, h_eq ν hs ht hu] at h
   · rwa [h_eq μ hs ht hu, h_eq ν hs ht hu]
 
+alias ⟨_, ext_prod₃'⟩ := ext_prod₃_iff'
+
 end MeasureTheory.Measure
 
 namespace ProbabilityTheory
@@ -147,6 +192,41 @@ lemma Kernel.prod_apply_prod {κ : Kernel α β} {η : Kernel α γ}
     [IsSFiniteKernel κ] [IsSFiniteKernel η] {s : Set β} {t : Set γ} {a : α} :
     (κ ×ₖ η) a (s ×ˢ t) = (κ a s) * (η a t) := by
   rw [Kernel.prod_apply, Measure.prod_prod]
+
+lemma Kernel.compProd_assoc {κ : Kernel α β} {η : Kernel (α × β) γ} {ξ : Kernel (α × β × γ) δ}
+    [IsSFiniteKernel κ] [IsSFiniteKernel η] [IsSFiniteKernel ξ] :
+    (κ ⊗ₖ η) ⊗ₖ ξ
+      = (κ ⊗ₖ (η ⊗ₖ (ξ.comap MeasurableEquiv.prodAssoc (MeasurableEquiv.measurable _)))).map
+        MeasurableEquiv.prodAssoc.symm := by
+  ext a s hs
+  rw [compProd_apply hs, map_apply' _ (by fun_prop) _ hs,
+    compProd_apply (hs.preimage (by fun_prop)), lintegral_compProd]
+  swap; · exact measurable_kernel_prodMk_left' hs a
+  congr with b
+  rw [compProd_apply]
+  swap; · exact hs.preimage (by fun_prop)
+  congr
+
+lemma _root_.MeasureTheory.Measure.compProd_assoc
+    {μ : Measure α} {κ : Kernel α β} {η : Kernel (α × β) γ}
+    [SFinite μ] [IsSFiniteKernel κ] [IsSFiniteKernel η] :
+    (μ ⊗ₘ κ) ⊗ₘ η = (μ ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by
+  ext s hs
+  rw [Measure.compProd_apply hs, Measure.map_apply (by fun_prop) hs,
+    Measure.compProd_apply (hs.preimage (by fun_prop)), Measure.lintegral_compProd]
+  swap; · exact Kernel.measurable_kernel_prodMk_left hs
+  congr with a
+  rw [Kernel.compProd_apply]
+  swap; · exact hs.preimage (by fun_prop)
+  congr
+
+lemma _root_.MeasureTheory.Measure.compProd_assoc'
+    {μ : Measure α} {κ : Kernel α β} {η : Kernel (α × β) γ}
+    [SFinite μ] [IsSFiniteKernel κ] [IsSFiniteKernel η] :
+    μ ⊗ₘ (κ ⊗ₖ η) = ((μ ⊗ₘ κ) ⊗ₘ η).map MeasurableEquiv.prodAssoc := by
+  simp [Measure.compProd_assoc]
+
+section IndepFun
 
 -- fix the lemma in mathlib to allow different types for the functions
 theorem CondIndepFun.symm'
@@ -276,6 +356,8 @@ lemma CondIndepFun.prod_right [StandardBorelSpace α] [IsFiniteMeasure μ]
     -- CondIndepFun (mδ.comap Z) hZ.comap_le X (fun ω ↦ (Y ω, Z ω)) μ := by
   sorry
 
+end IndepFun
+
 section CondDistrib
 
 variable [IsFiniteMeasure μ]
@@ -332,6 +414,45 @@ lemma condDistrib_const (hX : AEMeasurable X μ) (c : Ω) :
   conv_lhs => rw [this]
   filter_upwards [condDistrib_comp hX (by fun_prop : Measurable (fun _ ↦ c))] with b hb
   rw [hb]
+
+lemma condDistrib_fst_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
+    (ν : Measure γ) [IsProbabilityMeasure ν] :
+    condDistrib (fun ω ↦ Y ω.1) (fun ω ↦ X ω.1) (μ.prod ν) =ᵐ[μ.map X] condDistrib Y X μ := by
+  symm
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hX hY _ ?_
+  have hX_map : (μ.prod ν).map (fun ω ↦ X ω.1) = μ.map X := by
+    calc (μ.prod ν).map (fun ω ↦ X ω.1)
+    _ = ((μ.prod ν).map Prod.fst).map X := by
+      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
+      · rfl
+      · rw [Measure.map_fst_prod]
+        exact hX.smul_measure _
+    _ = μ.map X := by simp [Measure.map_fst_prod]
+  rw [← hX_map, compProd_map_condDistrib]
+  · calc μ.map (fun x ↦ (X x, Y x))
+    _ = ((μ.prod ν).map Prod.fst).map (fun a ↦ (X a, Y a)) := by simp [Measure.map_fst_prod]
+    _ = (μ.prod ν).map (fun a ↦ (X a.1, Y a.1)) := by
+      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
+      · rfl
+      · simp only [Measure.map_fst_prod, measure_univ, one_smul]
+        fun_prop
+  · fun_prop
+
+lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :
+    condDistrib (fun ω ↦ (X ω, Y ω)) T μ
+      =ᵐ[μ.map T] condDistrib X T μ ⊗ₖ condDistrib Y (fun ω ↦ (T ω, X ω)) μ := by
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hT (by fun_prop)
+    (condDistrib X T μ ⊗ₖ condDistrib Y (fun ω ↦ (T ω, X ω)) μ) ?_
+  rw [Measure.compProd_assoc', compProd_map_condDistrib hX, compProd_map_condDistrib hY,
+    AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+  rfl
+
+lemma fst_condDistrib_prod [StandardBorelSpace β] [Nonempty β]
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :
+    (condDistrib (fun ω ↦ (X ω, Y ω)) T μ).fst =ᵐ[μ.map T] condDistrib X T μ := by
+  filter_upwards [condDistrib_prod_left hX hY hT] with c hc
+  rw [Kernel.fst_apply, hc, ← Kernel.fst_apply, Kernel.fst_compProd]
 
 lemma condDistrib_of_indepFun (h : IndepFun X Y μ) (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
     condDistrib Y X μ =ᵐ[μ.map X] Kernel.const β (μ.map Y) := by
@@ -612,70 +733,6 @@ lemma condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft
       Measure.map_id]
   rw [h1, h2]
   exact ⟨fun h ↦ by rw [h], fun h ↦ by rw [h1_symm, h1, h2_symm, h2, h]⟩
-
-lemma condDistrib_fst_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
-    (ν : Measure γ) [IsProbabilityMeasure ν] :
-    condDistrib (fun ω ↦ Y ω.1) (fun ω ↦ X ω.1) (μ.prod ν) =ᵐ[μ.map X] condDistrib Y X μ := by
-  symm
-  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hX hY _ ?_
-  have hX_map : (μ.prod ν).map (fun ω ↦ X ω.1) = μ.map X := by
-    calc (μ.prod ν).map (fun ω ↦ X ω.1)
-    _ = ((μ.prod ν).map Prod.fst).map X := by
-      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
-      · rfl
-      · rw [Measure.map_fst_prod]
-        exact hX.smul_measure _
-    _ = μ.map X := by simp [Measure.map_fst_prod]
-  rw [← hX_map, compProd_map_condDistrib]
-  · calc μ.map (fun x ↦ (X x, Y x))
-    _ = ((μ.prod ν).map Prod.fst).map (fun a ↦ (X a, Y a)) := by simp [Measure.map_fst_prod]
-    _ = (μ.prod ν).map (fun a ↦ (X a.1, Y a.1)) := by
-      rw [AEMeasurable.map_map_of_aemeasurable ?_ (by fun_prop)]
-      · rfl
-      · simp only [Measure.map_fst_prod, measure_univ, one_smul]
-        fun_prop
-  · fun_prop
-
-lemma Kernel.compProd_assoc {κ : Kernel α β} {η : Kernel (α × β) γ} {ξ : Kernel (α × β × γ) δ}
-    [IsSFiniteKernel κ] [IsSFiniteKernel η] [IsSFiniteKernel ξ] :
-    (κ ⊗ₖ η) ⊗ₖ ξ
-      = (κ ⊗ₖ (η ⊗ₖ (ξ.comap MeasurableEquiv.prodAssoc (MeasurableEquiv.measurable _)))).map
-        MeasurableEquiv.prodAssoc.symm := by
-  ext a s hs
-  rw [compProd_apply hs, map_apply' _ (by fun_prop) _ hs,
-    compProd_apply (hs.preimage (by fun_prop)), lintegral_compProd]
-  swap; · exact measurable_kernel_prodMk_left' hs a
-  congr with b
-  rw [compProd_apply]
-  swap; · exact hs.preimage (by fun_prop)
-  congr
-
-lemma Measure.compProd_assoc {μ : Measure α} {κ : Kernel α β} {η : Kernel (α × β) γ}
-    [SFinite μ] [IsSFiniteKernel κ] [IsSFiniteKernel η] :
-    (μ ⊗ₘ κ) ⊗ₘ η = (μ ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by
-  ext s hs
-  rw [Measure.compProd_apply hs, Measure.map_apply (by fun_prop) hs,
-    Measure.compProd_apply (hs.preimage (by fun_prop)), Measure.lintegral_compProd]
-  swap; · exact Kernel.measurable_kernel_prodMk_left hs
-  congr with a
-  rw [Kernel.compProd_apply]
-  swap; · exact hs.preimage (by fun_prop)
-  congr
-
-lemma Measure.compProd_assoc' {μ : Measure α} {κ : Kernel α β} {η : Kernel (α × β) γ}
-    [SFinite μ] [IsSFiniteKernel κ] [IsSFiniteKernel η] :
-    μ ⊗ₘ (κ ⊗ₖ η) = ((μ ⊗ₘ κ) ⊗ₘ η).map MeasurableEquiv.prodAssoc := by
-  simp [Measure.compProd_assoc]
-
-lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
-    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :
-    condDistrib (fun ω ↦ (X ω, Y ω)) T μ
-      =ᵐ[μ.map T] condDistrib X T μ ⊗ₖ condDistrib Y (fun ω ↦ (T ω, X ω)) μ := by
-  refine condDistrib_ae_eq_of_measure_eq_compProd₀ (μ := μ) hT (by fun_prop)
-    (condDistrib X T μ ⊗ₖ condDistrib Y (fun ω ↦ (T ω, X ω)) μ) ?_
-  rw [Measure.compProd_assoc', compProd_map_condDistrib hX, compProd_map_condDistrib hY,
-    AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
-  rfl
 
 end CondDistrib
 

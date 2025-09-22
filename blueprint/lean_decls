@@ -1,5 +1,7 @@
 Bandits.Algorithm
 ProbabilityTheory.Kernel.traj
+ProbabilityTheory.Kernel.trajMeasure
+ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel
 Bandits.Algorithm
 Bandits.Bandit.measure
 Bandits.arm

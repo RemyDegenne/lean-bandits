@@ -50,15 +50,23 @@ $\pi_{[1,n]*} \xi = \kappa_0 \otimes \ldots \otimes \kappa_{n-1}$.
 Here $\pi_{[1,n]} : \prod_{i=1}^{\infty} \Omega_i \to \prod_{i=1}^n \Omega_i$ is the projection on the first $n$ coordinates.
 \end{theorem}
 
-We can then combine the kernel $\xi$ with the initial measure $\mu$ to get a probability measure $\mu \otimes \xi$ on $\prod_{i=0}^{\infty} \Omega_i$.
-We denote by $\Omega_{\mathcal{T}}$ the space $\prod_{t=0}^\infty \Omega_t$ endowed with the product $\sigma$-algebra and by $\mathbb{P}_{\mathcal{T}}$ the probability measure $\mu \otimes \xi$ on that space.
-The $\mathcal{T}$ subscript stands for ``trajectory''.
+\begin{proof}\leanok
+\end{proof}
 
 The Ionescu-Tulcea theorem in Mathlib \cite{marion2025formalization} actually generates kernels $\xi_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \prod_{s=0}^{\infty} \Omega_s$ for any $t$, with the property that the kernels are the identity on the first $t+1$ coordinates.
-Due to that implementation, our actual definition of the trajectory measure is $\xi_0 \circ \mu$.
+
+\begin{definition}\label{def:trajMeasure}
+  \uses{thm:ionescu-tulcea}
+  \leanok
+  \lean{ProbabilityTheory.Kernel.trajMeasure}
+For $\mu \in \mathcal{P}(\Omega_0)$, we call trajectory measure the probability measure $\xi_0 \circ \mu$ on $\Omega_{\mathcal{T}} := \prod_{i=0}^{\infty} \Omega_i$.
+We denote it by $P_{\mathcal{T}}$.
+The $\mathcal{T}$ subscript stands for ``trajectory''.
+\end{definition}
 
 
 \begin{definition}\label{def:history}
+  \leanok % no need for a Lean definition
 For $t \in \mathbb{N}$, we denote by $X_t \in \Omega_t$ the random variable describing the time step $t$, and by $H_t \in \prod_{s=0}^t \Omega_s$ the history up to time $t$.
 Formally, these are measurable functions on $\Omega_{\mathcal{T}}$, defined by $X_t(\omega) = \omega_t$ and $H_t(\omega) = (\omega_1, \ldots, \omega_t)$.
 \end{definition}
@@ -67,12 +75,15 @@ Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T
 
 We now list properties of those random variables that follow from the construction of the trajectory measure.
 
+
 \begin{lemma}\label{lem:condDistrib_X_add_one}
-  \uses{def:history}
-For any $t \in \mathbb{N}$, the conditional distribution of $X_{t+1}$ given the history $H_t$ is $P_{\mathcal{T}}$-almost surely equal to $\kappa_t$.
+  \uses{def:history, def:trajMeasure}
+  \leanok
+  \lean{ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel}
+For any $t \in \mathbb{N}$, the conditional distribution of $X_{t+1}$ given the history $H_t$ as a function $\prod_{s=0}^t \Omega_s \to \Omega_{t+1}$ is $(\pi_{[1,t+1]*} P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
 
 \end{proof}
 

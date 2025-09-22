@@ -71,20 +71,23 @@ For $t \in \mathbb{N}$, we denote by $X_t \in \Omega_t$ the random variable desc
 Formally, these are measurable functions on $\Omega_{\mathcal{T}}$, defined by $X_t(\omega) = \omega_t$ and $H_t(\omega) = (\omega_1, \ldots, \omega_t)$.
 \end{definition}
 
-Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T}}$.
+Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T}}$. $H_t$ is equal to $\pi_{[0,t]}$.
 
 We now list properties of those random variables that follow from the construction of the trajectory measure.
 
+We write $P[X \mid Y]$ for the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
 
 \begin{lemma}\label{lem:condDistrib_X_add_one}
   \uses{def:history, def:trajMeasure}
   \leanok
   \lean{ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel}
-For any $t \in \mathbb{N}$, the conditional distribution of $X_{t+1}$ given the history $H_t$ as a function $\prod_{s=0}^t \Omega_s \to \Omega_{t+1}$ is $(\pi_{[1,t+1]*} P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
+For any $t \in \mathbb{N}$, the conditional distribution of $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
 \end{lemma}
 
 \begin{proof}\leanok
+This is proved through the defining property of the conditional distribution: it is the almost surely unique Markov kernel $\eta$ such that $((H_t)_* P_{\mathcal{T}}) \otimes \eta = (H_t, X_{t+1})_*P_{\mathcal{T}}$.
 
+TODO: complete proof.
 \end{proof}
 
 

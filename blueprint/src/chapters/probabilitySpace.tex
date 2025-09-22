@@ -51,12 +51,11 @@ Here $\pi_{[1,n]} : \prod_{i=1}^{\infty} \Omega_i \to \prod_{i=1}^n \Omega_i$ is
 \end{theorem}
 
 We can then combine the kernel $\xi$ with the initial measure $\mu$ to get a probability measure $\mu \otimes \xi$ on $\prod_{i=0}^{\infty} \Omega_i$.
-
-TODO: the IT theorem in Mathlib generates kernels $\xi_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \prod_{s=0}^{\infty} \Omega_s$ for any $t$, with the property that the kernels are the identity on the first $t+1$ coordinates.
-Also, our actual definition of the trajectory measure is $\xi_0 \circ \mu$ due to that implementation detail.
-
 We denote by $\Omega_{\mathcal{T}}$ the space $\prod_{t=0}^\infty \Omega_t$ endowed with the product $\sigma$-algebra and by $\mathbb{P}_{\mathcal{T}}$ the probability measure $\mu \otimes \xi$ on that space.
 The $\mathcal{T}$ subscript stands for ``trajectory''.
+
+The Ionescu-Tulcea theorem in Mathlib \cite{marion2025formalization} actually generates kernels $\xi_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \prod_{s=0}^{\infty} \Omega_s$ for any $t$, with the property that the kernels are the identity on the first $t+1$ coordinates.
+Due to that implementation, our actual definition of the trajectory measure is $\xi_0 \circ \mu$.
 
 
 \begin{definition}\label{def:history}

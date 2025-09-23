@@ -54,7 +54,10 @@ def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
 
 /-- A stationary environment, in which the distribution of the next reward depends only on the last
 action. -/
-def stationaryEnv (ν : Kernel α R) (n : ℕ) : Kernel ((Iic n → α × R) × α) R := ν.prodMkLeft _
+@[simps]
+def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R where
+  feedback _ := ν.prodMkLeft _
+  ν0 := ν
 
 /-- Kernel describing the distribution of the next action-reward pair given the history
 up to `n`. -/

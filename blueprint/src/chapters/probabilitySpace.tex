@@ -3,7 +3,7 @@
 
 \begin{definition}[Algorithm]\label{def:algorithm'}
   \leanok
-  \lean{Bandits.Algorithm}
+  \lean{Learning.Algorithm}
 A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
 \begin{itemize}
   \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the action of the algorithm at time $t+1$ given the history of previous pulls and observations,

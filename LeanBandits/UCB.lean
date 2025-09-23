@@ -11,7 +11,7 @@ import LeanBandits.Regret
 
 -/
 
-open MeasureTheory ProbabilityTheory Filter Real Finset
+open MeasureTheory ProbabilityTheory Filter Real Finset Learning
 
 open scoped ENNReal NNReal
 

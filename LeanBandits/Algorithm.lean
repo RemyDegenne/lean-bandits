@@ -187,6 +187,14 @@ lemma hasLaw_action_zero (alg : Algorithm α R) (env : Environment α R) :
     rw [← fst_comp_step, ← Measure.map_map (by fun_prop) (by fun_prop),
       (hasLaw_step_zero alg env).map_eq, ← Measure.fst, Measure.fst_compProd]
 
+lemma condDistrib_reward_zero [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (env : Environment α R) :
+    condDistrib (reward 0) (action 0) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (action 0)] env.ν0 := by
+  have h_step := (hasLaw_step_zero alg env).map_eq
+  have h_action := (hasLaw_action_zero alg env).map_eq
+  rwa [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop), h_action]
+
 section DetAlgorithm
 
 variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}

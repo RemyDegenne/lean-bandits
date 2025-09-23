@@ -149,7 +149,7 @@ lemma hasLaw_step_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel
     HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) :=
   Learning.hasLaw_step_zero alg (stationaryEnv ν)
 
-lemma hasLaw_arm_zero [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+lemma hasLaw_arm_zero
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     HasLaw (arm 0) alg.p0 (Bandit.trajMeasure alg ν) :=
   Learning.hasLaw_action_zero alg (stationaryEnv ν)
@@ -165,8 +165,7 @@ lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
 
 section DetAlgorithm
 
-variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-  {nextArm : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextArm n)}
+variable {nextArm : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextArm n)}
   {arm0 : α} {ν : Kernel α R} [IsMarkovKernel ν]
 
 lemma HasLaw_arm_zero_detAlgorithm :
@@ -174,7 +173,7 @@ lemma HasLaw_arm_zero_detAlgorithm :
       (Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν) where
   map_eq := (hasLaw_arm_zero _ _).map_eq
 
-lemma arm_zero_detAlgorithm :
+lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
     arm 0 =ᵐ[Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν] fun _ ↦ arm0 := by
   have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν).map (arm 0)), x
       = arm0 := by
@@ -187,7 +186,8 @@ lemma arm_detAlgorithm_ae_eq (n : ℕ) :
       fun h ↦ nextArm n (fun i ↦ h i) := by
   sorry
 
-example : ∀ᵐ h ∂(Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν),
+example [MeasurableSingletonClass α] :
+    ∀ᵐ h ∂(Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν),
     arm 0 h = arm0 ∧ ∀ n, arm (n + 1) h = nextArm n (fun i ↦ h i) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero_detAlgorithm, arm_detAlgorithm_ae_eq⟩

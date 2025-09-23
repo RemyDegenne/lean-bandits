@@ -147,27 +147,6 @@ protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R]
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
-section Traj
-
-open Kernel Preorder
-
-variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
-    {κ : (n : ℕ) → Kernel ((i : { x // x ∈ Iic n }) → X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
-
-lemma traj_zero_map_eval_zero :
-    (Kernel.traj κ 0).map (fun h ↦ h 0)
-      = Kernel.deterministic (MeasurableEquiv.piIicZero X)
-        (MeasurableEquiv.piIicZero X).measurable := by
-  suffices (Kernel.traj κ 0).map (fun h ↦ h 0) = (Kernel.partialTraj κ 0 0).map
-      (MeasurableEquiv.piIicZero X) by
-    rwa [Kernel.partialTraj_zero,
-      Kernel.deterministic_map _ (MeasurableEquiv.piIicZero X).measurable] at this
-  rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
-  congr with h
-  sorry
-
-end Traj
-
 lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (fun h ↦ (arm (n + 1) h, reward (n + 1) h)) (hist n) (Bandit.trajMeasure alg ν)
@@ -199,7 +178,7 @@ lemma hasLaw_step_zero
   map_eq := by
     simp only [Bandit.trajMeasure, Kernel.trajMeasure]
     rw [← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
-      Kernel.deterministic_comp_eq_map, traj_zero_map_eval_zero,
+      Kernel.deterministic_comp_eq_map, Kernel.traj_zero_map_eval_zero,
       Measure.deterministic_comp_eq_map, Measure.map_map (by fun_prop) (by fun_prop)]
     simp
 

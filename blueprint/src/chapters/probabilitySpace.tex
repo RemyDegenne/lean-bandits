@@ -108,12 +108,15 @@ Likewise, $\mu = \alpha_0 \otimes \nu'_0$ for a probability measure $\alpha_0$ o
 That's the case of an algorithm interacting with an environment as described above.
 We write $A_t$ and $R_t$ for the projections of $X_t$ on $\mathcal{A}_t$ and $\mathcal{R}_t$ respectively.
 
+
 \begin{lemma}\label{lem:condDistrib_A_add_one}
   \uses{def:history, def:trajMeasure}
+  \leanok
+  \lean{Learning.condDistrib_action}
 For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\pi_t$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{lem:condDistrib_X_add_one}
 By Lemma~\ref{lem:condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
 Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}_{t+1}$, which is $\pi_t$.
@@ -122,10 +125,12 @@ Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\math
 
 \begin{lemma}\label{lem:condDistrib_R_add_one}
   \uses{def:history, def:trajMeasure}
+  \leanok
+  \lean{Learning.condDistrib_reward}
 For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right]$ is $((H_t, A_{t+1})_* P_{\mathcal{T}})$-almost surely equal to $\nu_t$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{lem:condDistrib_X_add_one, lem:condDistrib_A_add_one}
 It suffices to show that $((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t = (H_t, A_{t+1}, R_{t+1})_* P_{\mathcal{T}} = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
 By Lemma~\ref{lem:condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
@@ -139,10 +144,12 @@ By Lemma~\ref{lem:condDistrib_A_add_one}, $(H_t, A_{t+1})_* P_{\mathcal{T}} = (H
 
 \begin{lemma}\label{lem:law_A_zero}
   \uses{def:history, def:trajMeasure}
+  \leanok
+  \lean{Learning.hasLaw_action_zero}
 The law of $A_0$ under $P_{\mathcal{T}}$ is $\alpha_0$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{lem:law_X_zero}
 $X_0$ has law $\mu = \alpha_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ on the first space $\mathcal{A}_0$ and $\nu_0'$ is Markov, so $A_0$ has law $\alpha_0$.
 \end{proof}

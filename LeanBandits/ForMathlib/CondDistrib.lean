@@ -399,6 +399,17 @@ lemma condDistrib_ae_eq_iff_measure_eq_compProd₀
   refine ⟨fun h ↦ ?_, condDistrib_ae_eq_of_measure_eq_compProd₀ hX hY κ⟩
   rw [Measure.compProd_congr h.symm, compProd_map_condDistrib hY]
 
+lemma condDistrib_comp' (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
+    {f : Ω → Ω'} (hf : Measurable f) :
+    condDistrib (f ∘ Y) X μ =ᵐ[μ.map X] (condDistrib Y X μ).map f := by
+  refine condDistrib_ae_eq_of_measure_eq_compProd₀ hX (by fun_prop) _ ?_
+  calc μ.map (fun x ↦ (X x, (f ∘ Y) x))
+  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ μ.map (fun x ↦ (X x, Y x)) := by
+    sorry
+  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ (μ.map X ⊗ₘ condDistrib Y X μ) := by
+    rw [compProd_map_condDistrib hY]
+  _ = μ.map X ⊗ₘ (condDistrib Y X μ).map f := sorry
+
 lemma condDistrib_comp (hX : AEMeasurable X μ) {f : β → Ω} (hf : Measurable f) :
     condDistrib (f ∘ X) X μ =ᵐ[μ.map X] Kernel.deterministic f hf := by
   refine condDistrib_ae_eq_of_measure_eq_compProd₀ hX (by fun_prop) _ ?_

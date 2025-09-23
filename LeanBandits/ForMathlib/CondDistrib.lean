@@ -7,6 +7,7 @@ import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.Kernel.CompProdEqIff
 import Mathlib.Probability.Kernel.Composition.Lemmas
+import LeanBandits.ForMathlib.KernelCompositionParallelComp
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
@@ -404,11 +405,19 @@ lemma condDistrib_comp' (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
     condDistrib (f ∘ Y) X μ =ᵐ[μ.map X] (condDistrib Y X μ).map f := by
   refine condDistrib_ae_eq_of_measure_eq_compProd₀ hX (by fun_prop) _ ?_
   calc μ.map (fun x ↦ (X x, (f ∘ Y) x))
-  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ μ.map (fun x ↦ (X x, Y x)) := by
-    sorry
-  _ = (Kernel.id ∥ₖ Kernel.deterministic f hf) ∘ₘ (μ.map X ⊗ₘ condDistrib Y X μ) := by
+  _ = (μ.map (fun x ↦ (X x, Y x))).map (Prod.map id f) := by
+    rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+    rfl
+  _ = (μ.map X ⊗ₘ condDistrib Y X μ).map (Prod.map id f) := by
     rw [compProd_map_condDistrib hY]
-  _ = μ.map X ⊗ₘ (condDistrib Y X μ).map f := sorry
+  _ = μ.map X ⊗ₘ (condDistrib Y X μ).map f := by
+    rw [Measure.compProd_eq_comp_prod, ← Measure.deterministic_comp_eq_map (by fun_prop),
+      Measure.compProd_eq_comp_prod, Measure.comp_assoc]
+    congr
+    rw [← Kernel.deterministic_comp_eq_map hf, ← Kernel.parallelComp_comp_copy,
+      ← Kernel.parallelComp_comp_copy, ← Kernel.parallelComp_id_left_comp_parallelComp,
+      ← Kernel.deterministic_parallelComp_deterministic (by fun_prop), Kernel.comp_assoc,
+      ← Kernel.id]
 
 lemma condDistrib_comp (hX : AEMeasurable X μ) {f : β → Ω} (hf : Measurable f) :
     condDistrib (f ∘ X) X μ =ᵐ[μ.map X] Kernel.deterministic f hf := by

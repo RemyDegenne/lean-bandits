@@ -1,3 +1,4 @@
+import LeanBandits.Algorithm
 import LeanBandits.AlgorithmBuilding
 import LeanBandits.Bandit
 import LeanBandits.ETC

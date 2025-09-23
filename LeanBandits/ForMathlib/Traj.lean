@@ -84,4 +84,16 @@ lemma condDistrib_trajMeasure_ae_eq_kernel {a : ℕ}
   apply condDistrib_ae_eq_of_measure_eq_compProd₀ (by measurability) (by measurability)
   exact trajMeasure_map_frestrictLe_compProd_kernel_eq_trajMeasure_map.symm
 
+lemma traj_zero_map_eval_zero :
+    (Kernel.traj κ 0).map (fun h ↦ h 0)
+      = Kernel.deterministic (MeasurableEquiv.piIicZero X)
+        (MeasurableEquiv.piIicZero X).measurable := by
+  suffices (Kernel.traj κ 0).map (fun h ↦ h 0) = (Kernel.partialTraj κ 0 0).map
+      (MeasurableEquiv.piIicZero X) by
+    rwa [Kernel.partialTraj_zero,
+      Kernel.deterministic_map _ (MeasurableEquiv.piIicZero X).measurable] at this
+  rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
+  congr with h
+  sorry
+
 end ProbabilityTheory.Kernel

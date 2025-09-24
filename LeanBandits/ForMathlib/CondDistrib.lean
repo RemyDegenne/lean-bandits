@@ -816,40 +816,14 @@ instance : OrderedSub (FiniteMeasure α) where
     simp only [FiniteMeasure.le_iff_coe, FiniteMeasure.toMeasure_sub, FiniteMeasure.toMeasure_add]
     exact Measure.sub_le_iff_add
 
-instance : MeasurableSub₂ (FiniteMeasure α) where
-  measurable_sub := by
-    simp only [FiniteMeasure.sub_def]
-    refine Measurable.subtype_mk ?_
-    refine Measure.measurable_of_measurable_coe _ fun s hs ↦ ?_
-    sorry
-
-instance : MeasurableSingletonClass (Measure α) where
-  measurableSet_singleton μ := sorry
-
-instance : MeasurableSingletonClass (FiniteMeasure α) := Subtype.instMeasurableSingletonClass
-
-lemma Kernel.measurableSet_eq (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
-    MeasurableSet {a | κ a = η a} := by
-  let κ' : α → FiniteMeasure β := fun a ↦ ⟨κ a, inferInstance⟩
-  have hκ' : Measurable κ' := Measurable.subtype_mk (by fun_prop)
-  let η' : α → FiniteMeasure β := fun a ↦ ⟨η a, inferInstance⟩
-  have hη' : Measurable η' := Measurable.subtype_mk (by fun_prop)
-  have h2 : {a | κ a = η a}
-      = (fun a ↦ (κ' a, η' a)) ⁻¹'
-        {p : FiniteMeasure β × FiniteMeasure β | p.fst = p.snd} := by
-    ext
-    simp [κ', η', FiniteMeasure.ext_iff_coe]
-    sorry
-  rw [h2]
-  refine MeasurableSet.preimage ?_ (by fun_prop)
-  refine measurableSet_eq_fun' (by fun_prop) (by fun_prop)
-
-lemma Kernel.prodMkLeft_ae_eq_iff {κ η : Kernel α β} [IsFiniteKernel κ] [IsFiniteKernel η]
+lemma Kernel.prodMkLeft_ae_eq_iff [MeasurableSpace.CountableOrCountablyGenerated α β]
+    {κ η : Kernel α β} [IsFiniteKernel κ] [IsFiniteKernel η]
     {μ : Measure (γ × α)} :
     κ.prodMkLeft γ =ᵐ[μ] η.prodMkLeft γ ↔ κ =ᵐ[μ.snd] η := by
   rw [Measure.snd, Filter.EventuallyEq, Filter.EventuallyEq, ae_map_iff (by fun_prop)]
   · simp
-  · exact Kernel.measurableSet_eq κ η
+  · classical
+    exact Kernel.measurableSet_eq κ η
 
 omit [Nonempty Ω'] in
 lemma condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft

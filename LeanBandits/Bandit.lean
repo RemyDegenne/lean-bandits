@@ -115,6 +115,14 @@ protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R]
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
+lemma hasLaw_step_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) :=
+  Learning.hasLaw_step_zero alg (stationaryEnv ν)
+
+lemma hasLaw_arm_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasLaw (arm 0) alg.p0 (Bandit.trajMeasure alg ν) :=
+  Learning.hasLaw_action_zero alg (stationaryEnv ν)
+
 lemma condDistrib_arm_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (fun h ↦ (arm (n + 1) h, reward (n + 1) h)) (hist n) (Bandit.trajMeasure alg ν)
@@ -127,32 +135,54 @@ lemma condDistrib_reward' [StandardBorelSpace α] [Nonempty α] [StandardBorelSp
       =ᵐ[(Bandit.trajMeasure alg ν).map (fun ω ↦ (hist n ω, arm (n + 1) ω))] ν.prodMkLeft _ :=
   Learning.condDistrib_reward alg (stationaryEnv ν) n
 
+lemma Measure.snd_compProd_prodMkLeft {α β γ : Type*}
+    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
+    (μ ⊗ₘ (κ.prodMkLeft α)).snd = κ ∘ₘ μ.snd := by
+  ext s hs
+  rw [Measure.snd_apply hs, Measure.compProd_apply (hs.preimage (by fun_prop)),
+    Measure.bind_apply hs (by fun_prop), Measure.snd,
+    lintegral_map (κ.measurable_coe hs) (by fun_prop)]
+  simp only [Kernel.prodMkLeft_apply]
+  congr
+
+lemma Measure.snd_prodAssoc_compProd_prodMkLeft {α β γ : Type*}
+    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
+    (((μ ⊗ₘ (κ.prodMkLeft α))).map MeasurableEquiv.prodAssoc).snd = μ.snd ⊗ₘ κ := by
+  ext s hs
+  rw [Measure.snd_apply hs, Measure.map_apply (by fun_prop) (hs.preimage (by fun_prop)),
+    Measure.compProd_apply, Measure.compProd_apply hs, Measure.snd, lintegral_map _ (by fun_prop)]
+  · simp only [Kernel.prodMkLeft_apply]
+    congr
+  · exact Kernel.measurable_kernel_prodMk_left hs
+  · exact hs.preimage (by fun_prop)
+
 lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν)
       =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := by
   cases n with
-  | zero => sorry
+  | zero =>
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)]
+    change (Bandit.trajMeasure alg ν).map (fun h ↦ h 0)
+      = (Bandit.trajMeasure alg ν).map (arm 0) ⊗ₘ ν
+    rw [(hasLaw_arm_zero alg ν).map_eq, (hasLaw_step_zero alg ν).map_eq]
   | succ n =>
-    have h_ar := condDistrib_arm_reward alg ν n
-    have h_prod := condDistrib_prod_left (X := arm (n + 1)) (Y := reward (n + 1))
-      (T := hist n) (μ := Bandit.trajMeasure alg ν) (by fun_prop) (by fun_prop) (by fun_prop)
-    sorry
+    have h_eq := condDistrib_reward' alg ν n
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_eq ⊢
+    have : (Bandit.trajMeasure alg ν).map (arm (n + 1))
+        = ((Bandit.trajMeasure alg ν).map (fun x ↦ (hist n x, arm (n + 1) x))).snd := by
+      rw [Measure.snd_map_prodMk (by fun_prop)]
+    rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
+      Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
+    congr
 
 lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (arm (n + 1)) (hist n) (Bandit.trajMeasure alg ν)
       =ᵐ[(Bandit.trajMeasure alg ν).map (hist n)] alg.policy n :=
   Learning.condDistrib_action alg (stationaryEnv ν) n
-
-lemma hasLaw_step_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
-    HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) :=
-  Learning.hasLaw_step_zero alg (stationaryEnv ν)
-
-lemma hasLaw_arm_zero
-    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
-    HasLaw (arm 0) alg.p0 (Bandit.trajMeasure alg ν) :=
-  Learning.hasLaw_action_zero alg (stationaryEnv ν)
 
 /-- The reward at time `n+1` is independent of the history up to time `n` given the arm at `n+1`. -/
 lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
@@ -161,6 +191,11 @@ lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
     CondIndepFun (MeasurableSpace.comap (arm (n + 1)) inferInstance)
       (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) := by
   rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft (by fun_prop) (by fun_prop) (by fun_prop)]
+  have h_reward' := condDistrib_reward' alg ν n
+  have h_reward := condDistrib_reward alg ν (n + 1)
+  -- rw [← Kernel.compProd_eq_iff] at h_reward' h_reward ⊢
+  -- rw [compProd_map_condDistrib (by fun_prop)] at h_reward' ⊢
+  -- rw [h_reward']
   sorry
 
 section DetAlgorithm

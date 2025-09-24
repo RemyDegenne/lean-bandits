@@ -3,11 +3,13 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.Kernel.CompProdEqIff
 import Mathlib.Probability.Kernel.Composition.Lemmas
 import LeanBandits.ForMathlib.KernelCompositionParallelComp
+import LeanBandits.ForMathlib.KernelSub
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
@@ -750,6 +752,123 @@ lemma condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft
       Measure.map_id]
   rw [h1, h2]
   exact ⟨fun h ↦ by rw [h], fun h ↦ by rw [h1_symm, h1, h2_symm, h2, h]⟩
+
+lemma Measure.snd_compProd_prodMkLeft {α β γ : Type*}
+    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
+    (μ ⊗ₘ (κ.prodMkLeft α)).snd = κ ∘ₘ μ.snd := by
+  ext s hs
+  rw [Measure.snd_apply hs, Measure.compProd_apply (hs.preimage (by fun_prop)),
+    Measure.bind_apply hs (by fun_prop), Measure.snd,
+    lintegral_map (κ.measurable_coe hs) (by fun_prop)]
+  simp only [Kernel.prodMkLeft_apply]
+  congr
+
+lemma Measure.snd_prodAssoc_compProd_prodMkLeft {α β γ : Type*}
+    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
+    (((μ ⊗ₘ (κ.prodMkLeft α))).map MeasurableEquiv.prodAssoc).snd = μ.snd ⊗ₘ κ := by
+  ext s hs
+  rw [Measure.snd_apply hs, Measure.map_apply (by fun_prop) (hs.preimage (by fun_prop)),
+    Measure.compProd_apply, Measure.compProd_apply hs, Measure.snd, lintegral_map _ (by fun_prop)]
+  · simp only [Kernel.prodMkLeft_apply]
+    congr
+  · exact Kernel.measurable_kernel_prodMk_left hs
+  · exact hs.preimage (by fun_prop)
+
+lemma ProbabilityMeasure.ext_iff_coe {α : Type*} {mα : MeasurableSpace α}
+    {μ ν : ProbabilityMeasure α} :
+    μ = ν ↔ (μ : Measure α) = ν := Subtype.ext_iff
+
+lemma FiniteMeasure.ext_iff_coe {α : Type*} {mα : MeasurableSpace α} {μ ν : FiniteMeasure α} :
+    μ = ν ↔ (μ : Measure α) = ν := Subtype.ext_iff
+
+instance : PartialOrder (FiniteMeasure α) :=
+  PartialOrder.lift _ FiniteMeasure.toMeasure_injective
+
+lemma FiniteMeasure.le_iff_coe {μ ν : FiniteMeasure α} :
+    μ ≤ ν ↔ (μ : Measure α) ≤ (ν : Measure α) := Iff.rfl
+
+noncomputable
+instance : Sub (FiniteMeasure α) :=
+  ⟨fun μ ν ↦ ⟨μ.toMeasure - ν.toMeasure, inferInstance⟩⟩
+
+lemma FiniteMeasure.sub_def (μ ν : FiniteMeasure α) :
+    μ - ν = ⟨μ.toMeasure - ν.toMeasure, inferInstance⟩ :=
+  rfl
+
+@[simp, norm_cast]
+theorem FiniteMeasure.toMeasure_sub (μ ν : FiniteMeasure α) : ↑(μ - ν) = (↑μ - ↑ν : Measure α) :=
+  rfl
+
+instance : CanonicallyOrderedAdd (FiniteMeasure α) where
+  exists_add_of_le {μ ν} hμν := by
+    refine ⟨ν - μ, ?_⟩
+    rw [FiniteMeasure.ext_iff_coe]
+    simp only [FiniteMeasure.toMeasure_add, FiniteMeasure.toMeasure_sub]
+    rw [add_comm, Measure.sub_add_cancel_of_le hμν]
+  le_self_add μ ν := by
+    simp only [FiniteMeasure.le_iff_coe, FiniteMeasure.toMeasure_add]
+    exact Measure.le_add_right le_rfl
+
+instance : OrderedSub (FiniteMeasure α) where
+  tsub_le_iff_right μ ν ξ := by
+    simp only [FiniteMeasure.le_iff_coe, FiniteMeasure.toMeasure_sub, FiniteMeasure.toMeasure_add]
+    exact Measure.sub_le_iff_add
+
+instance : MeasurableSub₂ (FiniteMeasure α) where
+  measurable_sub := by
+    simp only [FiniteMeasure.sub_def]
+    refine Measurable.subtype_mk ?_
+    refine Measure.measurable_of_measurable_coe _ fun s hs ↦ ?_
+    sorry
+
+instance : MeasurableSingletonClass (Measure α) where
+  measurableSet_singleton μ := sorry
+
+instance : MeasurableSingletonClass (FiniteMeasure α) := Subtype.instMeasurableSingletonClass
+
+lemma Kernel.measurableSet_eq (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
+    MeasurableSet {a | κ a = η a} := by
+  let κ' : α → FiniteMeasure β := fun a ↦ ⟨κ a, inferInstance⟩
+  have hκ' : Measurable κ' := Measurable.subtype_mk (by fun_prop)
+  let η' : α → FiniteMeasure β := fun a ↦ ⟨η a, inferInstance⟩
+  have hη' : Measurable η' := Measurable.subtype_mk (by fun_prop)
+  have h2 : {a | κ a = η a}
+      = (fun a ↦ (κ' a, η' a)) ⁻¹'
+        {p : FiniteMeasure β × FiniteMeasure β | p.fst = p.snd} := by
+    ext
+    simp [κ', η', FiniteMeasure.ext_iff_coe]
+    sorry
+  rw [h2]
+  refine MeasurableSet.preimage ?_ (by fun_prop)
+  refine measurableSet_eq_fun' (by fun_prop) (by fun_prop)
+
+lemma Kernel.prodMkLeft_ae_eq_iff {κ η : Kernel α β} [IsFiniteKernel κ] [IsFiniteKernel η]
+    {μ : Measure (γ × α)} :
+    κ.prodMkLeft γ =ᵐ[μ] η.prodMkLeft γ ↔ κ =ᵐ[μ.snd] η := by
+  rw [Measure.snd, Filter.EventuallyEq, Filter.EventuallyEq, ae_map_iff (by fun_prop)]
+  · simp
+  · exact Kernel.measurableSet_eq κ η
+
+omit [Nonempty Ω'] in
+lemma condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
+    [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
+    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z) {η : Kernel Ω' Ω}
+    [IsMarkovKernel η]
+    (h : condDistrib Y (fun ω ↦ (X ω, Z ω)) μ =ᵐ[μ.map (fun ω ↦ (X ω, Z ω))] η.prodMkLeft _) :
+    Y ⟂ᵢ[Z, hZ; μ] X := by
+  have hη_eq : condDistrib Y Z μ =ᵐ[μ.map Z] η := by
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h ⊢
+    have h_snd : μ.map Z = (μ.map (fun ω ↦ (X ω, Z ω))).snd := by
+      rw [Measure.snd_map_prodMk hX]
+    rw [h_snd, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h,
+      Measure.map_map (by fun_prop) (by fun_prop), Measure.snd_map_prodMk (by fun_prop)]
+    congr
+  rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkLeft hX hY hZ]
+  refine h.trans ?_
+  rw [Kernel.prodMkLeft_ae_eq_iff, Measure.snd_map_prodMk (by fun_prop)]
+  exact hη_eq.symm
 
 end CondDistrib
 

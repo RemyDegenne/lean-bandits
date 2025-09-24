@@ -135,29 +135,6 @@ lemma condDistrib_reward' [StandardBorelSpace α] [Nonempty α] [StandardBorelSp
       =ᵐ[(Bandit.trajMeasure alg ν).map (fun ω ↦ (hist n ω, arm (n + 1) ω))] ν.prodMkLeft _ :=
   Learning.condDistrib_reward alg (stationaryEnv ν) n
 
-lemma Measure.snd_compProd_prodMkLeft {α β γ : Type*}
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
-    (μ ⊗ₘ (κ.prodMkLeft α)).snd = κ ∘ₘ μ.snd := by
-  ext s hs
-  rw [Measure.snd_apply hs, Measure.compProd_apply (hs.preimage (by fun_prop)),
-    Measure.bind_apply hs (by fun_prop), Measure.snd,
-    lintegral_map (κ.measurable_coe hs) (by fun_prop)]
-  simp only [Kernel.prodMkLeft_apply]
-  congr
-
-lemma Measure.snd_prodAssoc_compProd_prodMkLeft {α β γ : Type*}
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    {μ : Measure (α × β)} [SFinite μ] {κ : Kernel β γ} [IsSFiniteKernel κ] :
-    (((μ ⊗ₘ (κ.prodMkLeft α))).map MeasurableEquiv.prodAssoc).snd = μ.snd ⊗ₘ κ := by
-  ext s hs
-  rw [Measure.snd_apply hs, Measure.map_apply (by fun_prop) (hs.preimage (by fun_prop)),
-    Measure.compProd_apply, Measure.compProd_apply hs, Measure.snd, lintegral_map _ (by fun_prop)]
-  · simp only [Kernel.prodMkLeft_apply]
-    congr
-  · exact Kernel.measurable_kernel_prodMk_left hs
-  · exact hs.preimage (by fun_prop)
-
 lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν)

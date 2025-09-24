@@ -9,7 +9,7 @@ import LeanBandits.Regret
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/
 
-open MeasureTheory ProbabilityTheory Finset
+open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
 namespace Bandits
@@ -102,7 +102,7 @@ notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' 
 notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
-lemma condDistrib_reward' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
+lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; Bandit.measure alg ν]
       =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ arm n ω.1)] ν := by
   let μ := Bandit.measure alg ν
@@ -127,7 +127,7 @@ lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : 
     𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν
   have h_ra : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ] =ᵐ[μ.map (fun ω ↦ arm n ω.1)] ν :=
-    condDistrib_reward' n
+    condDistrib_reward'' n
   have h_eq := condDistrib_ae_eq_cond (μ := μ)
     (X := fun ω ↦ arm n ω.1) (Y := fun ω ↦ reward n ω.1) (by fun_prop) (by fun_prop)
   rw [Filter.EventuallyEq, ae_iff_of_countable] at h_ra h_eq

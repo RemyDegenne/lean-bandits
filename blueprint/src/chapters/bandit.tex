@@ -2,27 +2,17 @@
 
 \section{Algorithm, bandit and probability space}
 
-\begin{definition}[Algorithm]\label{def:algorithm}
-  \leanok
-  \lean{Bandits.Algorithm}
-A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
-\begin{itemize}
-  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the arm to pull at time $t+1$ given the history of previous pulls and observations,
-  \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first arm to pull.
-\end{itemize}
-\end{definition}
-
+A bandit algorithm is an algorithm in the sense of Definition~\ref{def:algorithm}.
+We call the actions \emph{arms} and the observations \emph{rewards}.
 
 The first arm pulled by the algorithm is sampled from $P_0$, the arm pulled at time $1$ is sampled from $\pi_0(H_0)$, where $H_0 \in \mathcal{A} \times \mathcal{R}$ is the data of the first arm pulled and the first observation received, and so on.
 
 
 \begin{definition}[Bandit]\label{def:bandit}
-  \mathlibok
+  \uses{def:environment}
+  \leanok
 A stochastic bandit is simply a reward distribution for each arm: a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathbb{R}$, conditional distribution of the rewards given the arm pulled.
 \end{definition}
-
-
-Note: we don't have a Lean definition for a bandit, since it is just a Markov kernel.
 
 An algorithm can interact with a bandit to produce a sequence of arms and rewards: after a time $t$, the history $H_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$ contains the arms pulled and rewards received up to that time,
 \begin{itemize}
@@ -47,6 +37,7 @@ TODO: explain how the probability distribution $\mathbb{P}_B$ is constructed.
 The reason for adding the extra stream of rewards is explained in Section~\ref{sec:alt_model}.
 
 \begin{definition}[Arms, rewards and history]\label{def:armAndReward}
+  \uses{def:history}
   \leanok
   \lean{Bandits.arm, Bandits.reward, Bandits.hist}
 For $t \in \mathbb{N}$, we denote by $A_t$ the arm pulled at time $t$ and by $X_t$ the reward received at time $t$.
@@ -112,7 +103,8 @@ Let $a \in \mathcal{A}$. Seen as a process defined on $\Omega_B$, $(N_{t,a})_{t 
 The conditional distribution of the reward $X_t$ given the arm $A_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\nu(A_t)$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
+  \uses{lem:condDistrib_R_add_one, lem:condDistrib_R_zero}
 
 \end{proof}
 
@@ -124,7 +116,8 @@ The conditional distribution of the reward $X_t$ given the arm $A_t$ in the band
 The law of the arm $A_0$ in the bandit probability space $(\Omega, \mathbb{P})$ is $P_0$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
+  \uses{lem:law_A_zero}
 
 \end{proof}
 
@@ -136,7 +129,8 @@ The law of the arm $A_0$ in the bandit probability space $(\Omega, \mathbb{P})$ 
 The conditional distribution of the arm $A_{t+1}$ given the history $H_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\pi_t(H_t)$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
+  \uses{lem:condDistrib_A_add_one}
 
 \end{proof}
 

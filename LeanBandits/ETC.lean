@@ -11,7 +11,7 @@ import LeanBandits.Regret
 
 -/
 
-open MeasureTheory ProbabilityTheory Finset
+open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
 namespace Bandits

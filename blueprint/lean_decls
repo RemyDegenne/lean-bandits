@@ -1,4 +1,12 @@
-Bandits.Algorithm
+Learning.Algorithm
+Learning.Environment
+ProbabilityTheory.Kernel.traj
+ProbabilityTheory.Kernel.trajMeasure
+ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel
+Learning.condDistrib_action
+Learning.condDistrib_reward
+Learning.hasLaw_action_zero
+Learning.condDistrib_reward_zero
 Bandits.Bandit.measure
 Bandits.arm
 Bandits.reward

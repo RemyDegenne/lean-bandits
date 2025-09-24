@@ -1,0 +1,189 @@
+\chapter{Iterative stochastic algorithms}
+
+
+\begin{definition}[Algorithm]\label{def:algorithm}
+  \leanok
+  \lean{Learning.Algorithm}
+A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
+\begin{itemize}
+  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the action of the algorithm at time $t+1$ given the history of previous pulls and observations,
+  \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first action.
+\end{itemize}
+\end{definition}
+
+After the algorithm takes an action, the environment generates an observation according to a Markov kernel $\nu_t : (\mathcal{A} \times \mathcal{R})^{t+1} \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
+
+\begin{definition}[Environment]\label{def:environment}
+  \leanok
+  \lean{Learning.Environment}
+An environment with which an algorithm interacts is described by the following data:
+\begin{itemize}
+  \item for all $t \in \mathbb{N}$, a feedback $\nu_t : (\mathcal{A} \times \mathcal{R})^{t+1} \times \mathcal{A} \rightsquigarrow \mathcal{R}$, a Markov kernel which gives the distribution of the observation at time $t+1$ given the history of previous pulls and observations, and the action of the algorithm at time $t+1$,
+  \item $\nu'_0 \in \mathcal{A} \rightsquigarrow \mathcal{R}$, a Markov kernel that gives the distribution of the first observation given the first action.
+\end{itemize}
+\end{definition}
+
+Let's detail four examples of interactions between an algorithm and an environment.
+\begin{enumerate}
+  \item \textbf{First order optimization}. The objective of the algorithm is to find the minimum of a function $f : \mathbb{R}^d \to \mathbb{R}$.
+  The action space is $\mathcal{A} = \mathbb{R}^d$ (a point on which the function will be queried) and the observation space is $\mathcal{R} = \mathbb{R} \times \mathbb{R}^d$.
+  The environment is described by a function $g : \mathbb{R}^d \to \mathbb{R} \times \mathbb{R}^d$ such that for all $x \in \mathbb{R}^d$, $g(x) = (f(x), \nabla f(x))$. That is, the kernel $\nu_t$ is deterministic and depends only on the action: it is given by $\nu_t(h_t, x) = \delta_{g(x)}$ (the Dirac measure at $g(x)$).
+  An example of algorithm is gradient descent with fixed step size $\eta > 0$: this is a deterministic algorithm defined by $P_0 = \delta_{x_0}$ for some initial point $x_0 \in \mathbb{R}^d$ and for all $t \in \mathbb{N}$, $\pi_t(h_t) = \delta_{x_{t+1}}$ where $x_{t+1} = x_t - \eta \nabla g_2(x_t)$.
+
+  \item \textbf{Stochastic bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
+  The kernel $\nu_t$ is stationary and depends only on the action: there are probability distributions $(P_a)_{a \in [K]}$ such that for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = P_a$.
+
+  \item \textbf{Adversarial bandits}. The action space is $\mathcal{A} = [K]$ for some $K \in \mathbb{N}$ (the set of arms) and the observation space is $\mathcal{R} = \mathbb{R}$ (the reward obtained after pulling an arm).
+  The reward kernels are usually taken to be deterministic and in an \emph{oblivious} adversarial bandit they depend only on the time step: there is a sequence of vectors $(r_t)_{t \in \mathbb{N}}$ in $[0,1]^K$ such that for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = \delta_{r_{t,a}}$ (the Dirac measure at $r_{t,a}$).
+
+  \item \textbf{Reinforcement learnings in Markov decision processes}.
+  TODO: main feature is that $\mathcal{R} = \mathcal{S} \times \mathbb{R}$ where $\mathcal{S}$ is the state space, and the kernel $\nu_t$ depends on the last state only.
+\end{enumerate}
+
+
+\section{Ionescu-Tulcea theorem}
+
+If we group together the policy of the algorithm and the kernel of the environment at each time step, we get a sequence of Markov kernels $(\kappa_t)_{t \in \mathbb{N}}$, with $\kappa_t : (\mathcal{A} \times \mathcal{R})^{t+1}  \rightsquigarrow (\mathcal{A} \times \mathcal{R})$.
+We will want to make global probabilistic statements about the whole sequence of actions and observations.
+For example, we may want to prove that an optimization algorithm converges to the minimum of a function almost surely.
+For such a statement to make sense, we need a probability space on which the whole sequence of actions and observations is defined as a random variable.
+
+We now abstract that situation and consider a sequence of measurable spaces $(\Omega_t)_{t \in \mathbb{N}}$, a probability measure $\mu$ on $\Omega_0$ and a sequence of Markov kernels $\kappa_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \Omega_{t+1}$.
+The Ionescu-Tulcea theorem builds a probability space from the sequence of kernels and the initial measure.
+
+\begin{theorem}[Ionescu-Tulcea]\label{thm:ionescu-tulcea}
+  \mathlibok
+  \lean{ProbabilityTheory.Kernel.traj}
+Let $(\Omega_t)_{t \in \mathbb{N}}$ be a family of measurable spaces. Let $(\kappa_t)_{t \in \mathbb{N}}$ be a family of Markov kernels such that for any $t$, $\kappa_t$ is a kernel from $\prod_{i=0}^t \Omega_{i}$ to $\Omega_{t+1}$.
+Then there exists a unique Markov kernel $\xi : \Omega_0 \rightsquigarrow \prod_{i = 1}^{\infty} \Omega_{i}$ such that for any $n \ge 1$,
+$\pi_{[1,n]*} \xi = \kappa_0 \otimes \ldots \otimes \kappa_{n-1}$.
+Here $\pi_{[1,n]} : \prod_{i=1}^{\infty} \Omega_i \to \prod_{i=1}^n \Omega_i$ is the projection on the first $n$ coordinates.
+\end{theorem}
+
+\begin{proof}\leanok
+\end{proof}
+
+The Ionescu-Tulcea theorem in Mathlib \cite{marion2025formalization} actually generates kernels $\xi_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \prod_{s=0}^{\infty} \Omega_s$ for any $t$, with the property that the kernels are the identity on the first $t+1$ coordinates.
+
+\begin{definition}\label{def:trajMeasure}
+  \uses{thm:ionescu-tulcea}
+  \leanok
+  \lean{ProbabilityTheory.Kernel.trajMeasure}
+For $\mu \in \mathcal{P}(\Omega_0)$, we call trajectory measure the probability measure $\xi_0 \circ \mu$ on $\Omega_{\mathcal{T}} := \prod_{i=0}^{\infty} \Omega_i$.
+We denote it by $P_{\mathcal{T}}$.
+The $\mathcal{T}$ subscript stands for ``trajectory''.
+\end{definition}
+
+
+\begin{definition}\label{def:history}
+  \mathlibok % no need for a Lean definition
+For $t \in \mathbb{N}$, we denote by $X_t \in \Omega_t$ the random variable describing the time step $t$, and by $H_t \in \prod_{s=0}^t \Omega_s$ the history up to time $t$.
+Formally, these are measurable functions on $\Omega_{\mathcal{T}}$, defined by $X_t(\omega) = \omega_t$ and $H_t(\omega) = (\omega_1, \ldots, \omega_t)$.
+\end{definition}
+
+Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T}}$. $H_t$ is equal to $\pi_{[0,t]}$.
+
+We now list properties of those random variables that follow from the construction of the trajectory measure.
+
+We write $P[X \mid Y]$ for the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
+
+\begin{lemma}\label{lem:condDistrib_X_add_one}
+  \uses{def:history, def:trajMeasure}
+  \leanok
+  \lean{ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel}
+For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
+\end{lemma}
+
+\begin{proof}\leanok
+This is proved through the defining property of the conditional distribution: it is the almost surely unique Markov kernel $\eta$ such that $((H_t)_* P_{\mathcal{T}}) \otimes \eta = (H_t, X_{t+1})_*P_{\mathcal{T}}$.
+
+TODO: complete proof.
+\end{proof}
+
+
+\begin{lemma}\label{lem:law_X_zero}
+  \uses{def:history, def:trajMeasure}
+The law of $X_0$ under $P_{\mathcal{T}}$ is $\mu$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+
+\paragraph{Case of a composition-product}
+
+We suppose now that $\Omega_t = \mathcal{A}_t \times \mathcal{R}_t$ for some measurable spaces $\mathcal{A}_t$ and $\mathcal{R}_t$, and that for all $t \in \mathbb{N}$, $\kappa_t = \pi_t \otimes \nu_t$ for kernels $\pi_t : \prod_{s=0}^t(\mathcal{A}_s \times \mathcal{R}_s) \rightsquigarrow \mathcal{A}$ and $\nu_t : \prod_{s=0}^t(\mathcal{A}_s \times \mathcal{R}_s) \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
+Likewise, $\mu = \alpha_0 \otimes \nu'_0$ for a probability measure $\alpha_0$ on $\mathcal{A}_0$ and a Markov kernel $\nu'_0 : \mathcal{A}_0 \rightsquigarrow \mathcal{R}_0$.
+That's the case of an algorithm interacting with an environment as described above.
+We write $A_t$ and $R_t$ for the projections of $X_t$ on $\mathcal{A}_t$ and $\mathcal{R}_t$ respectively.
+
+
+\begin{lemma}\label{lem:condDistrib_A_add_one}
+  \uses{def:history, def:trajMeasure, def:algorithm, def:environment}
+  \leanok
+  \lean{Learning.condDistrib_action}
+For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\pi_t$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:condDistrib_X_add_one}
+By Lemma~\ref{lem:condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
+Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}_{t+1}$, which is $\pi_t$.
+\end{proof}
+
+
+\begin{lemma}\label{lem:condDistrib_R_add_one}
+  \uses{def:history, def:trajMeasure, def:algorithm, def:environment}
+  \leanok
+  \lean{Learning.condDistrib_reward}
+For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right]$ is $((H_t, A_{t+1})_* P_{\mathcal{T}})$-almost surely equal to $\nu_t$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:condDistrib_X_add_one, lem:condDistrib_A_add_one}
+It suffices to show that $((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t = (H_t, A_{t+1}, R_{t+1})_* P_{\mathcal{T}} = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
+By Lemma~\ref{lem:condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
+Thus $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
+
+We thus have to prove that $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = ((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t$.
+
+By Lemma~\ref{lem:condDistrib_A_add_one}, $(H_t, A_{t+1})_* P_{\mathcal{T}} = (H_t)_* P_{\mathcal{T}} \otimes \pi_t$, and replacing this in the right-hand side gives the left-hand side (using associativity of the composition-product).
+\end{proof}
+
+
+\begin{lemma}\label{lem:law_A_zero}
+  \uses{def:history, def:trajMeasure, def:algorithm, def:environment}
+  \leanok
+  \lean{Learning.hasLaw_action_zero}
+The law of $A_0$ under $P_{\mathcal{T}}$ is $\alpha_0$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:law_X_zero}
+$X_0$ has law $\mu = \alpha_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ on the first space $\mathcal{A}_0$ and $\nu_0'$ is Markov, so $A_0$ has law $\alpha_0$.
+\end{proof}
+
+
+\begin{lemma}\label{lem:condDistrib_R_zero}
+  \uses{def:history, def:trajMeasure, def:algorithm, def:environment}
+  \leanok
+  \lean{Learning.condDistrib_reward_zero}
+The conditional distribution $P_{\mathcal{T}}\left[R_0 \mid A_0\right]$ is $(A_{0*} P_{\mathcal{T}})$-almost surely equal to $\nu'_0$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:law_X_zero}
+To prove almost sure equality, it is enough to prove that $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_{0*} P_{\mathcal{T}}) \otimes \nu'_0$.
+By definition of the conditional distribution, we have $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_0, R_0)_* P_{\mathcal{T}} = X_{0*} P_{\mathcal{T}}$.
+By Lemma~\ref{lem:law_X_zero}, $X_{0*} P_{\mathcal{T}} = \mu = \alpha_0 \otimes \nu'_0$.
+By Lemma~\ref{lem:law_A_zero}, $A_{0*} P_{\mathcal{T}} = \alpha_0$.
+Thus the two sides are equal.
+\end{proof}
+
+
+
+
+\section{Independence and Markov property}
+
+The structure of the sequence of kernels $(\kappa_t)_{t \in \mathbb{N}}$ is reflected in independence properties of the sequence of random variables $(X_t)_{t \in \mathbb{N}}$.

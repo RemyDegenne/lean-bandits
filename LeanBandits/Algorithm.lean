@@ -44,21 +44,6 @@ structure Environment (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wh
 instance (env : Environment α R) (n : ℕ) : IsMarkovKernel (env.feedback n) := env.h_feedback n
 instance (env : Environment α R) : IsMarkovKernel env.ν0 := env.hp0
 
-/-- A deterministic algorithm. -/
-noncomputable
-def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
-    (h_next : ∀ n, Measurable (nextaction n)) (action0 : α) :
-    Algorithm α R where
-  policy n := Kernel.deterministic (nextaction n) (h_next n)
-  p0 := Measure.dirac action0
-
-/-- A stationary environment, in which the distribution of the next reward depends only on the last
-action. -/
-@[simps]
-def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R where
-  feedback _ := ν.prodMkLeft _
-  ν0 := ν
-
 /-- Kernel describing the distribution of the next action-reward pair given the history
 up to `n`. -/
 noncomputable
@@ -200,33 +185,83 @@ lemma condDistrib_reward_zero [StandardBorelSpace R] [Nonempty R]
 
 section DetAlgorithm
 
+/-- A deterministic algorithm. -/
+@[simps]
+noncomputable
+def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
+    (h_next : ∀ n, Measurable (nextaction n)) (action0 : α) :
+    Algorithm α R where
+  policy n := Kernel.deterministic (nextaction n) (h_next n)
+  p0 := Measure.dirac action0
+
 variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}
   {action0 : α} {env : Environment α R}
 
-lemma HasLaw_action_zero_detAlgorithm :
-    HasLaw (action 0) (Measure.dirac action0)
-      (trajMeasure (detAlgorithm nextaction h_next action0) env) where
+local notation "𝔓" => trajMeasure (detAlgorithm nextaction h_next action0) env
+
+lemma HasLaw_action_zero_detAlgorithm : HasLaw (action 0) (Measure.dirac action0) 𝔓 where
   map_eq := (hasLaw_action_zero _ _).map_eq
 
-lemma action_zero_detAlgorithm [MeasurableSingletonClass α] :
-    action 0 =ᵐ[trajMeasure (detAlgorithm nextaction h_next action0) env] fun _ ↦ action0 := by
-  have h_eq : ∀ᵐ x ∂((trajMeasure (detAlgorithm nextaction h_next action0) env).map (action 0)), x
-      = action0 := by
+lemma action_zero_detAlgorithm [MeasurableSingletonClass α] : action 0 =ᵐ[𝔓] fun _ ↦ action0 := by
+  have h_eq : ∀ᵐ x ∂((𝔓).map (action 0)), x = action0 := by
     rw [(hasLaw_action_zero _ _).map_eq]
     simp [detAlgorithm]
   exact ae_of_ae_map (by fun_prop) h_eq
 
-lemma action_detAlgorithm_ae_eq (n : ℕ) :
-    action (n + 1) =ᵐ[trajMeasure (detAlgorithm nextaction h_next action0) env]
-      fun h ↦ nextaction n (fun i ↦ h i) := by
+lemma action_detAlgorithm_ae_eq
+    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (n : ℕ) :
+    action (n + 1) =ᵐ[𝔓] fun h ↦ nextaction n (fun i ↦ h i) := by
+  have h := condDistrib_action (detAlgorithm nextaction h_next action0) env n
+  simp only [detAlgorithm_policy] at h
   sorry
 
-example [MeasurableSingletonClass α] :
-    ∀ᵐ h ∂(trajMeasure (detAlgorithm nextaction h_next action0) env),
-    action 0 h = action0 ∧ ∀ n, action (n + 1) h = nextaction n (fun i ↦ h i) := by
+example [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R] :
+    ∀ᵐ h ∂𝔓, action 0 h = action0 ∧ ∀ n, action (n + 1) h = nextaction n (fun i ↦ h i) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨action_zero_detAlgorithm, action_detAlgorithm_ae_eq⟩
 
 end DetAlgorithm
+
+section stationaryEnv
+
+/-- A stationary environment, in which the distribution of the next reward depends only on the last
+action. -/
+@[simps]
+def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R where
+  feedback _ := ν.prodMkLeft _
+  ν0 := ν
+
+variable {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν]
+
+local notation "𝔓" => trajMeasure alg (stationaryEnv ν)
+
+lemma condDistrib_reward_stationaryEnv [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
+    condDistrib (reward n) (action n) 𝔓 =ᵐ[(𝔓).map (action n)] ν := by
+  cases n with
+  | zero =>
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)]
+    change (𝔓).map (step 0) = (𝔓).map (action 0) ⊗ₘ ν
+    rw [(hasLaw_action_zero alg (stationaryEnv ν)).map_eq,
+      (hasLaw_step_zero alg (stationaryEnv ν)).map_eq, stationaryEnv_ν0]
+  | succ n =>
+    have h_eq := condDistrib_reward alg (stationaryEnv ν) n
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_eq ⊢
+    have : (𝔓).map (action (n + 1)) = ((𝔓).map (fun x ↦ (hist n x, action (n + 1) x))).snd := by
+      rw [Measure.snd_map_prodMk (by fun_prop)]
+    simp only [stationaryEnv_feedback] at h_eq
+    rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
+      Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
+    congr
+
+lemma condIndepFun_reward_hist_action [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
+    CondIndepFun (MeasurableSpace.comap (action (n + 1)) inferInstance)
+      (measurable_action _).comap_le (reward (n + 1)) (hist n) (𝔓) :=
+  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
+    (by fun_prop) (by fun_prop) (by fun_prop) (condDistrib_reward alg (stationaryEnv ν) n)
+
+end stationaryEnv
 
 end Learning

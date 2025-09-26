@@ -17,7 +17,7 @@ open scoped ENNReal NNReal
 
 namespace Bandits
 
-variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {k : ℕ → α} {t : ℕ} {a : α}
+variable {α : Type*} {mα : MeasurableSpace α} {ν : Kernel α ℝ} {t : ℕ} {a : α}
 
 section Algorithm
 

@@ -10,6 +10,11 @@ open scoped ENNReal NNReal
 
 namespace ProbabilityTheory
 
+theorem mgf_const_mul {Ω : Type*} {m : MeasurableSpace Ω} {X : Ω → ℝ} {μ : Measure Ω}
+    {t : ℝ} (α : ℝ) : mgf (fun ω ↦ α * X ω) μ t = mgf X μ (α * t) := by
+  rw [← mgf_smul_left]
+  rfl
+
 namespace Kernel.HasSubgaussianMGF
 
 variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
@@ -23,8 +28,7 @@ protected lemma const_mul (h : HasSubgaussianMGF X c κ ν) (r : ℝ) :
   mgf_le := by
     filter_upwards [h.mgf_le] with ω hω t
     specialize hω (t * r)
-    rw [mgf] at hω ⊢
-    simp_rw [← mul_assoc]
+    rw [mgf_const_mul, mul_comm]
     refine hω.trans_eq ?_
     congr 1
     simp only [NNReal.coe_mul, NNReal.coe_mk]

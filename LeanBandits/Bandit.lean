@@ -138,22 +138,8 @@ lemma condDistrib_reward' [StandardBorelSpace α] [Nonempty α] [StandardBorelSp
 lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     condDistrib (reward n) (arm n) (Bandit.trajMeasure alg ν)
-      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν := by
-  cases n with
-  | zero =>
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)]
-    change (Bandit.trajMeasure alg ν).map (fun h ↦ h 0)
-      = (Bandit.trajMeasure alg ν).map (arm 0) ⊗ₘ ν
-    rw [(hasLaw_arm_zero alg ν).map_eq, (hasLaw_step_zero alg ν).map_eq]
-  | succ n =>
-    have h_eq := condDistrib_reward' alg ν n
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_eq ⊢
-    have : (Bandit.trajMeasure alg ν).map (arm (n + 1))
-        = ((Bandit.trajMeasure alg ν).map (fun x ↦ (hist n x, arm (n + 1) x))).snd := by
-      rw [Measure.snd_map_prodMk (by fun_prop)]
-    rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
-      Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
-    congr
+      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] ν :=
+   Learning.condDistrib_reward_stationaryEnv n
 
 lemma condDistrib_arm [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :

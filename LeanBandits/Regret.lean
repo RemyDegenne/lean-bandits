@@ -61,6 +61,12 @@ lemma pullCount_eq_pullCount_add_one (t : ℕ) (h : ℕ → α × ℝ) :
 lemma pullCount_eq_pullCount (ha : arm t h ≠ a) :  pullCount a (t + 1) h = pullCount a t h := by
   simp [pullCount, range_succ, filter_insert, ha]
 
+lemma pullCount_add_one :
+    pullCount a (t + 1) h = pullCount a t h + if arm t h = a then 1 else 0 := by
+  split_ifs with h
+  · rw [← h, pullCount_eq_pullCount_add_one]
+  · rw [pullCount_eq_pullCount h, add_zero]
+
 lemma pullCount_eq_sum (a : α) (t : ℕ) (h : ℕ → α × ℝ) :
     pullCount a t h = ∑ s ∈ range t, if arm s h = a then 1 else 0 := by simp [pullCount]
 

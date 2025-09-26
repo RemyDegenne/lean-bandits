@@ -58,14 +58,63 @@ lemma arm_ae_eq_etcNextArm (n : ℕ) :
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_detAlgorithm_ae_eq n
 
-lemma pullCount_mul (a : Fin K) :
-    pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m := by
+lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
+    arm n =ᵐ[𝔓b] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
+  cases n with
+  | zero => exact arm_zero
+  | succ n =>
+    filter_upwards [arm_ae_eq_etcNextArm n] with h hn_eq
+    rw [hn_eq, nextArm, dif_pos]
+    grind
+
+lemma arm_mul :
+    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+    arm (K * m) =ᵐ[𝔓b] fun h ↦ measurableArgmax (empMean' (K*m+1)) (fun i ↦ h i) := by
+  have : K * m = (K * m - 1) + 1 := by sorry
+  rw [this]
+  filter_upwards [arm_ae_eq_etcNextArm (K * m - 1)] with h hn_eq
+  rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
   sorry
+
+lemma arm_of_ge {n : ℕ} (hn : K * m ≤ n) : arm n =ᵐ[𝔓b] arm (K * m) := by
+  sorry
+
+lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m := by
+  rw [Filter.EventuallyEq]
+  simp_rw [pullCount_eq_sum]
+  have h_arm (n : range (K * m)) : arm n =ᵐ[𝔓b] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
+    arm_of_lt (mem_range.mp n.2)
+  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
+  filter_upwards [h_arm] with ω h_arm
+  have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : arm i ω = ⟨i % K, Nat.mod_lt _ hK⟩ := h_arm ⟨i, hi⟩
+  calc (∑ s ∈ range (K * m), if arm s ω = a then 1 else 0)
+  _ = (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) :=
+    sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
+  _ = m := by
+    sorry
+
+lemma pullCount_add_one_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    pullCount a (n + 1)
+      =ᵐ[𝔓b] fun ω ↦ pullCount a n ω + {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
+  simp_rw [Filter.EventuallyEq, pullCount_add_one]
+  filter_upwards [arm_of_ge hn] with ω h_arm
+  congr
 
 lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a n
       =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
-  sorry
+  have h_ae n : K * m ≤ n → pullCount a (n + 1)
+      =ᵐ[𝔓b] fun ω ↦ pullCount a n ω + {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω :=
+    pullCount_add_one_of_ge a
+  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
+  have h_ae_Km : pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m := pullCount_mul a
+  filter_upwards [h_ae_Km, h_ae] with ω h_Km h_ae
+  induction n, hn using Nat.le_induction with
+  | base => simp [h_Km]
+  | succ n hmn h_ind =>
+    rw [h_ae n hmn, h_ind, add_assoc, ← add_one_mul]
+    congr
+    grind
 
 lemma prob_arm_mul_eq_le (a : Fin K) :
     (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by

@@ -255,6 +255,13 @@ lemma condDistrib_reward_stationaryEnv [StandardBorelSpace α] [Nonempty α]
       Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
     congr
 
+lemma condIndepFun_reward_hist_action [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
+    CondIndepFun (MeasurableSpace.comap (action (n + 1)) inferInstance)
+      (measurable_action _).comap_le (reward (n + 1)) (hist n) (𝔓) :=
+  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
+    (by fun_prop) (by fun_prop) (by fun_prop) (condDistrib_reward alg (stationaryEnv ν) n)
+
 end stationaryEnv
 
 end Learning

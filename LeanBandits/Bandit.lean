@@ -153,8 +153,7 @@ lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
     CondIndepFun (MeasurableSpace.comap (arm (n + 1)) inferInstance)
       (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) :=
-  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
-    (by fun_prop) (by fun_prop) (by fun_prop) (condDistrib_reward' alg ν n)
+  Learning.condIndepFun_reward_hist_action n
 
 section DetAlgorithm
 

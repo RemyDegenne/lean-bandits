@@ -18,14 +18,14 @@ open scoped ENNReal NNReal
 namespace Bandits
 
 variable {α : Type*} [DecidableEq α] {mα : MeasurableSpace α} {ν : Kernel α ℝ}
-  {k : ℕ → α} {m n t : ℕ} {a : α} {h : ℕ → α × ℝ}
+  {h : ℕ → α × ℝ} {m n t : ℕ} {a : α} {h : ℕ → α × ℝ}
 
 /-! ### Definitions of regret, gaps, pull counts -/
 
 /-- Regret of a sequence of pulls `k : ℕ → α` at time `t` for the reward kernel `ν ; Kernel α ℝ`. -/
 noncomputable
-def regret (ν : Kernel α ℝ) (k : ℕ → α) (t : ℕ) : ℝ :=
-  t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (k s))[id]
+def regret (ν : Kernel α ℝ) (h : ℕ → α × ℝ) (t : ℕ) : ℝ :=
+  t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (arm s h))[id]
 
 /-- Gap of an arm `a`: difference between the highest mean of the arms and the mean of `a`. -/
 noncomputable
@@ -37,13 +37,13 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
 /-- Number of times arm `a` was pulled up to time `t` (excluding `t`). -/
-noncomputable def pullCount [DecidableEq α] (k : ℕ → α) (a : α) (t : ℕ) : ℕ :=
-  #(filter (fun s ↦ k s = a) (range t))
+noncomputable def pullCount [DecidableEq α] (h : ℕ → α × ℝ) (a : α) (t : ℕ) : ℕ :=
+  #(filter (fun s ↦ arm s h = a) (range t))
 
 @[simp]
-lemma pullCount_zero (k : ℕ → α) (a : α) : pullCount k a 0 = 0 := by simp [pullCount]
+lemma pullCount_zero (h : ℕ → α × ℝ) (a : α) : pullCount h a 0 = 0 := by simp [pullCount]
 
-lemma pullCount_one : pullCount k a 1 = if k 0 = a then 1 else 0 := by
+lemma pullCount_one : pullCount h a 1 = if arm 0 h = a then 1 else 0 := by
   simp only [pullCount, range_one]
   split_ifs with h
   · rw [card_eq_one]
@@ -51,27 +51,27 @@ lemma pullCount_one : pullCount k a 1 = if k 0 = a then 1 else 0 := by
   · simp [h]
 
 open Classical in
-lemma monotone_pullCount (k : ℕ → α) (a : α) : Monotone (pullCount k a) :=
+lemma monotone_pullCount (h : ℕ → α × ℝ) (a : α) : Monotone (pullCount h a) :=
   fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
 
-lemma pullCount_eq_pullCount_add_one (k : ℕ → α) (t : ℕ) :
-    pullCount k (k t) (t + 1) = pullCount k (k t) t + 1 := by
+lemma pullCount_eq_pullCount_add_one (h : ℕ → α × ℝ) (t : ℕ) :
+    pullCount h (arm t h) (t + 1) = pullCount h (arm t h) t + 1 := by
   simp [pullCount, range_succ, filter_insert]
 
-lemma pullCount_eq_pullCount (h : k t ≠ a) :  pullCount k a (t + 1) = pullCount k a t := by
-  simp [pullCount, range_succ, filter_insert, h]
+lemma pullCount_eq_pullCount (ha : arm t h ≠ a) :  pullCount h a (t + 1) = pullCount h a t := by
+  simp [pullCount, range_succ, filter_insert, ha]
 
-lemma pullCount_eq_sum (k : ℕ → α) (a : α) (t : ℕ) :
-    pullCount k a t = ∑ s ∈ range t, if k s = a then 1 else 0 := by simp [pullCount]
+lemma pullCount_eq_sum (h : ℕ → α × ℝ) (a : α) (t : ℕ) :
+    pullCount h a t = ∑ s ∈ range t, if arm s h = a then 1 else 0 := by simp [pullCount]
 
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
-def stepsUntil (k : ℕ → α) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount k a (s + 1) = m})
+def stepsUntil (h : ℕ → α × ℝ) (a : α) (m : ℕ) : ℕ∞ := sInf ((↑) '' {s | pullCount h a (s + 1) = m})
 
-lemma stepsUntil_eq_top_iff : stepsUntil k a m = ⊤ ↔ ∀ s, pullCount k a (s + 1) ≠ m := by
+lemma stepsUntil_eq_top_iff : stepsUntil h a m = ⊤ ↔ ∀ s, pullCount h a (s + 1) ≠ m := by
   simp [stepsUntil, sInf_eq_top]
 
-lemma stepsUntil_zero_of_ne (hka : k 0 ≠ a) : stepsUntil k a 0 = 0 := by
+lemma stepsUntil_zero_of_ne (hka : arm 0 h ≠ a) : stepsUntil h a 0 = 0 := by
   unfold stepsUntil
   simp_rw [← bot_eq_zero, sInf_eq_bot, bot_eq_zero]
   intro n hn
@@ -80,75 +80,77 @@ lemma stepsUntil_zero_of_ne (hka : k 0 ≠ a) : stepsUntil k a 0 = 0 := by
   rw [← zero_add 1, pullCount_eq_pullCount hka]
   simp
 
-lemma stepsUntil_zero_of_eq (hka : k 0 = a) : stepsUntil k a 0 = ⊤ := by
+lemma stepsUntil_zero_of_eq (hka : arm 0 h = a) : stepsUntil h a 0 = ⊤ := by
   rw [stepsUntil_eq_top_iff]
-  suffices 0 < pullCount k a 1 by
+  suffices 0 < pullCount h a 1 by
     intro n hn
     refine lt_irrefl 0 ?_
     exact this.trans_le (le_trans (monotone_pullCount _ _ (by omega)) hn.le)
   rw [← hka, ← zero_add 1, pullCount_eq_pullCount_add_one]
   simp
 
-lemma stepsUntil_eq_dite (k : ℕ → α) (a : α) (m : ℕ) [Decidable (∃ s, pullCount k a (s + 1) = m)] :
-    stepsUntil k a m =
-      if h : ∃ s, pullCount k a (s + 1) = m then (Nat.find h : ℕ∞) else ⊤ := by
+lemma stepsUntil_eq_dite (h : ℕ → α × ℝ) (a : α) (m : ℕ)
+    [Decidable (∃ s, pullCount h a (s + 1) = m)] :
+    stepsUntil h a m =
+      if h : ∃ s, pullCount h a (s + 1) = m then (Nat.find h : ℕ∞) else ⊤ := by
   unfold stepsUntil
-  split_ifs with h
+  split_ifs with h'
   · refine le_antisymm ?_ ?_
     · refine sInf_le ?_
-      simpa using Nat.find_spec h
+      simpa using Nat.find_spec h'
     · simp only [le_sInf_iff, Set.mem_image, Set.mem_setOf_eq, forall_exists_index, and_imp,
         forall_apply_eq_imp_iff₂, Nat.cast_le, Nat.find_le_iff]
       exact fun n hn ↦ ⟨n, le_rfl, hn⟩
-  · push_neg at h
-    suffices {s | pullCount k a (s + 1) = m} = ∅ by simp [this]
+  · push_neg at h'
+    suffices {s | pullCount h a (s + 1) = m} = ∅ by simp [this]
     ext s
-    simpa using (h s)
+    simpa using (h' s)
 
-lemma stepsUntil_pullCount_le (k : ℕ → α) (a : α) (t : ℕ) :
-    stepsUntil k a (pullCount k a (t + 1)) ≤ t := by
+lemma stepsUntil_pullCount_le (h : ℕ → α × ℝ) (a : α) (t : ℕ) :
+    stepsUntil h a (pullCount h a (t + 1)) ≤ t := by
   rw [stepsUntil]
   exact csInf_le (OrderBot.bddBelow _) ⟨t, rfl, rfl⟩
 
-lemma stepsUntil_pullCount_eq (k : ℕ → α) (t : ℕ) :
-    stepsUntil k (k t) (pullCount k (k t) (t + 1)) = t := by
-  apply le_antisymm (stepsUntil_pullCount_le k (k t) t)
-  suffices ∀ t', pullCount k (k t) (t' + 1) = pullCount k (k t) t + 1 → t ≤ t' by
+lemma stepsUntil_pullCount_eq (h : ℕ → α × ℝ) (t : ℕ) :
+    stepsUntil h (arm t h) (pullCount h (arm t h) (t + 1)) = t := by
+  apply le_antisymm (stepsUntil_pullCount_le h (arm t h) t)
+  suffices ∀ t', pullCount h (arm t h) (t' + 1) = pullCount h (arm t h) t + 1 → t ≤ t' by
     simpa [stepsUntil, pullCount_eq_pullCount_add_one]
-  exact fun t' h ↦ Nat.le_of_lt_succ ((monotone_pullCount k (k t)).reflect_lt (h ▸ lt_add_one _))
+  exact fun t' h' ↦ Nat.le_of_lt_succ ((monotone_pullCount h (arm t h)).reflect_lt
+    (h' ▸ lt_add_one _))
 
 /-- If we pull arm `a` at time 0, the first time at which it is pulled once is 0. -/
-lemma stepsUntil_one_of_eq (hka : k 0 = a) : stepsUntil k a 1 = 0 := by
+lemma stepsUntil_one_of_eq (hka : arm 0 h = a) : stepsUntil h a 1 = 0 := by
   classical
-  have h_pull : pullCount k a 1 = 1 := by simp [pullCount_one, hka]
-  have h_le := stepsUntil_pullCount_le k a 0
+  have h_pull : pullCount h a 1 = 1 := by simp [pullCount_one, hka]
+  have h_le := stepsUntil_pullCount_le h a 0
   simpa [h_pull] using h_le
 
 lemma stepsUntil_eq_zero_iff :
-    stepsUntil k a m = 0 ↔ (m = 0 ∧ k 0 ≠ a) ∨ (m = 1 ∧ k 0 = a) := by
+    stepsUntil h a m = 0 ↔ (m = 0 ∧ arm 0 h ≠ a) ∨ (m = 1 ∧ arm 0 h = a) := by
   classical
-  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
-  · have h_exists : ∃ s, pullCount k a (s + 1) = m := by
+  refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
+  · have h_exists : ∃ s, pullCount h a (s + 1) = m := by
       by_contra! h_contra
       rw [← stepsUntil_eq_top_iff] at h_contra
-      simp [h_contra] at h
+      simp [h_contra] at h'
     simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, Nat.cast_eq_zero, Nat.find_eq_zero,
-      zero_add] at h
-    rw [pullCount_one] at h
-    by_cases hka : k 0 = a
-    · simp only [hka, ↓reduceIte] at h
-      simp [h.symm, hka]
-    · simp only [hka, ↓reduceIte] at h
-      simp [h.symm, hka]
-  · cases h with
+      zero_add] at h'
+    rw [pullCount_one] at h'
+    by_cases hka : arm 0 h = a
+    · simp only [hka, ↓reduceIte] at h'
+      simp [h'.symm, hka]
+    · simp only [hka, ↓reduceIte] at h'
+      simp [h'.symm, hka]
+  · cases h' with
   | inl h =>
     rw [h.1, stepsUntil_zero_of_ne h.2]
   | inr h =>
     rw [h.1]
     exact stepsUntil_one_of_eq h.2
 
-lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount (arm · h) a (s + 1) = m) :
-    arm (stepsUntil (arm · h) a m).toNat h = a := by
+lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount h a (s + 1) = m) :
+    arm (stepsUntil h a m).toNat h = a := by
   classical
   simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, ENat.toNat_coe]
   have h_spec := Nat.find_spec h_exists
@@ -168,55 +170,54 @@ lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount (arm · h) a (s
   exact h_ne
 
 lemma arm_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ} (hm : m ≠ 0)
-    (h : stepsUntil (arm · ω) a m = n) :
+    (h : stepsUntil ω a m = n) :
     arm n ω = a := by
-  have : n = (stepsUntil (fun x ↦ arm x ω) a m).toNat := by simp [h]
+  have : n = (stepsUntil ω a m).toNat := by simp [h]
   rw [this, arm_stepsUntil hm]
   by_contra! h_contra
   rw [← stepsUntil_eq_top_iff] at h_contra
   simp [h_contra] at h
 
-lemma stepsUntil_eq_congr {k' : ℕ → α} (h : ∀ i ≤ n, k i = k' i) :
-    stepsUntil k a m = n ↔ stepsUntil k' a m = n := by
+lemma stepsUntil_eq_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h = arm i h') :
+    stepsUntil h a m = n ↔ stepsUntil h' a m = n := by
   sorry
 
-lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount k a (s + 1) = m) :
-    pullCount k a (stepsUntil k a m + 1).toNat = m := by
+lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount h a (s + 1) = m) :
+    pullCount h a (stepsUntil h a m + 1).toNat = m := by
   sorry
 
-lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount k a (s + 1) = m) :
-    pullCount k a (stepsUntil k a m).toNat = m - 1 := by
+lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount h a (s + 1) = m) :
+    pullCount h a (stepsUntil h a m).toNat = m - 1 := by
   sorry
 
 /-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable
 def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
-  match (stepsUntil (arm · h) a m) with
+  match (stepsUntil h a m) with
   | ⊤ => z m a
   | (n : ℕ) => reward n h
 
 lemma rewardByCount_eq_ite (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     rewardByCount a m h z =
-      if (stepsUntil (arm · h) a m) = ⊤ then z m a
-      else reward (stepsUntil (arm · h) a m).toNat h := by
+      if (stepsUntil h a m) = ⊤ then z m a else reward (stepsUntil h a m).toNat h := by
   unfold rewardByCount
-  cases stepsUntil (arm · h) a m <;> simp
+  cases stepsUntil h a m <;> simp
 
 lemma rewardByCount_of_stepsUntil_eq_top {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
-    (h : stepsUntil (arm · ω.1) a m = ⊤) :
+    (h : stepsUntil ω.1 a m = ⊤) :
     rewardByCount a m ω.1 ω.2 = ω.2 m a := by simp [rewardByCount_eq_ite, h]
 
 lemma rewardByCount_of_stepsUntil_eq_coe {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
-    (h : stepsUntil (arm · ω.1) a m = n) :
+    (h : stepsUntil ω.1 a m = n) :
     rewardByCount a m ω.1 ω.2 = reward n ω.1 := by simp [rewardByCount_eq_ite, h]
 
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    rewardByCount (arm t h) (pullCount (arm · h) (arm t h) t + 1) h z = reward t h := by
+    rewardByCount (arm t h) (pullCount h (arm t h) t + 1) h z = reward t h := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
 
 lemma sum_rewardByCount_eq_sum_reward
     (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    ∑ m ∈ Icc 1 (pullCount (arm · h) a t), rewardByCount a m h z =
+    ∑ m ∈ Icc 1 (pullCount h a t), rewardByCount a m h z =
       ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0 := by
   induction' t with t ht
   · simp [pullCount]
@@ -226,22 +227,22 @@ lemma sum_rewardByCount_eq_sum_reward
     rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
   · rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
 
-lemma sum_pullCount_mul [Fintype α] (k : ℕ → α) (f : α → ℝ) (t : ℕ) :
-    ∑ a, pullCount k a t * f a = ∑ s ∈ range t, f (k s) := by
+lemma sum_pullCount_mul [Fintype α] (h : ℕ → α × ℝ) (f : α → ℝ) (t : ℕ) :
+    ∑ a, pullCount h a t * f a = ∑ s ∈ range t, f (arm s h) := by
   unfold pullCount
   classical
   simp_rw [card_eq_sum_ones]
   push_cast
   simp_rw [sum_mul, one_mul]
-  exact sum_fiberwise' (range t) k f
+  exact sum_fiberwise' (range t) (arm · h) f
 
-lemma sum_pullCount [Fintype α] : ∑ a, pullCount k a t = t := by
-  suffices ∑ a, pullCount k a t * (1 : ℝ) = t by norm_cast at this; simpa
+lemma sum_pullCount [Fintype α] : ∑ a, pullCount h a t = t := by
+  suffices ∑ a, pullCount h a t * (1 : ℝ) = t by norm_cast at this; simpa
   rw [sum_pullCount_mul]
   simp
 
 lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
-    regret ν k t = ∑ a, pullCount k a t * gap ν a := by
+    regret ν h t = ∑ a, pullCount h a t * gap ν a := by
   simp_rw [sum_pullCount_mul, regret, gap, sum_sub_distrib]
   simp
 

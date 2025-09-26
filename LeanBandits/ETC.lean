@@ -59,11 +59,11 @@ lemma arm_ae_eq_etcNextArm (n : ℕ) :
   exact arm_detAlgorithm_ae_eq n
 
 lemma pullCount_mul (a : Fin K) :
-    (fun ω ↦ pullCount (arm · ω) a (K * m)) =ᵐ[𝔓b] fun _ ↦ m := by
+    (fun ω ↦ pullCount ω a (K * m)) =ᵐ[𝔓b] fun _ ↦ m := by
   sorry
 
 lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
-    (fun ω ↦ pullCount (arm · ω) a n)
+    (fun ω ↦ pullCount ω a n)
       =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
   sorry
 
@@ -84,9 +84,9 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
   _ ≤ (𝔓).real {ω | ∑ s ∈ range (K * m), (if (arm s ω.1) = bestArm ν then (reward s ω.1) else 0)
       ≤ ∑ s ∈ range (K * m), if (arm s ω.1) = a then (reward s ω.1) else 0} := by
     sorry
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (arm · ω.1) (bestArm ν) (K * m)),
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount ω.1 (bestArm ν) (K * m)),
         rewardByCount (bestArm ν) s ω.1 ω.2
-      ≤ ∑ s ∈ Icc 1 (pullCount (arm · ω.1) a (K * m)), rewardByCount a s ω.1 ω.2} := by
+      ≤ ∑ s ∈ Icc 1 (pullCount ω.1 a (K * m)), rewardByCount a s ω.1 ω.2} := by
     sorry
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
@@ -118,9 +118,9 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
       norm_num
 
 lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
-    𝔓b[fun ω ↦ (pullCount (arm · ω) a n : ℝ)]
+    𝔓b[fun ω ↦ (pullCount ω a n : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
-  have : (fun ω ↦ (pullCount (arm · ω) a n : ℝ))
+  have : (fun ω ↦ (pullCount ω a n : ℝ))
       =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
     filter_upwards [pullCount_of_ge a hn] with ω h
     simp only [h, Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
@@ -143,7 +143,7 @@ lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
 lemma regret_le (n : ℕ) (hn : K * m ≤ n) :
-    𝔓b[fun ω ↦ regret ν (arm · ω) n]
+    𝔓b[fun ω ↦ regret ν ω n]
       ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]

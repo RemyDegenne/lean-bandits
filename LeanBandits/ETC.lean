@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmBuilding
+import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.Regret
 
 /-! # The Explore-Then-Commit Algorithm
@@ -116,7 +117,7 @@ lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     congr
     grind
 
-lemma prob_arm_mul_eq_le (a : Fin K) :
+lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
     (𝔓b).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   -- extend the probability space to include the stream of independent rewards
@@ -156,7 +157,11 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
         sorry
       sorry
     · intro i him
-      sorry
+      rw [← one_add_one_eq_two]
+      refine HasSubgaussianMGF.sub_of_indepFun ?_ ?_ ?_
+      · sorry
+      · sorry
+      · sorry
     · have : 0 ≤ gap ν a := gap_nonneg
       positivity
     · congr 1
@@ -166,7 +171,8 @@ lemma prob_arm_mul_eq_le (a : Fin K) :
         not_false_eq_true, pow_eq_zero_iff, Nat.cast_eq_zero]
       norm_num
 
-lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     𝔓b[fun ω ↦ (pullCount a n ω : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : (fun ω ↦ (pullCount a n ω : ℝ))
@@ -188,10 +194,11 @@ lemma expectation_pullCount_le (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     simp
   rw [integral_indicator_const, smul_eq_mul, mul_one]
   · rw [← neg_mul]
-    exact prob_arm_mul_eq_le a
+    exact prob_arm_mul_eq_le hν a
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma regret_le (n : ℕ) (hn : K * m ≤ n) :
+lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (n : ℕ) (hn : K * m ≤ n) :
     𝔓b[regret ν n] ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]
@@ -202,7 +209,7 @@ lemma regret_le (n : ℕ) (hn : K * m ≤ n) :
   rw [mul_comm (gap _ _), integral_mul_const]
   gcongr
   · exact gap_nonneg
-  · exact expectation_pullCount_le a hn
+  · exact expectation_pullCount_le hν a hn
 
 end ETC
 

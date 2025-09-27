@@ -27,7 +27,7 @@ def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
     ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
   else
     if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
-    else (h ⟨n - 1, by simp⟩).1
+    else (h ⟨n, by simp⟩).1
 
 @[fun_prop]
 lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
@@ -68,17 +68,32 @@ lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
     rw [hn_eq, nextArm, dif_pos]
     grind
 
-lemma arm_mul :
+lemma arm_mul (hm : m ≠ 0) :
     have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-    arm (K * m) =ᵐ[𝔓b] fun h ↦ measurableArgmax (empMean' (K*m+1)) (fun i ↦ h i) := by
-  have : K * m = (K * m - 1) + 1 := by sorry
+    arm (K * m) =ᵐ[𝔓b] fun h ↦ measurableArgmax (empMean' (K * m - 1)) (fun i ↦ h i) := by
+  have : K * m = (K * m - 1) + 1 := by
+    have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+    grind
   rw [this]
   filter_upwards [arm_ae_eq_etcNextArm (K * m - 1)] with h hn_eq
   rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
-  sorry
+  exact this ▸ rfl
 
-lemma arm_of_ge {n : ℕ} (hn : K * m ≤ n) : arm n =ᵐ[𝔓b] arm (K * m) := by
-  sorry
+lemma arm_add_one_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
+    arm (n + 1) =ᵐ[𝔓b] fun ω ↦ arm n ω := by
+  filter_upwards [arm_ae_eq_etcNextArm n] with ω hn_eq
+  rw [hn_eq, nextArm, dif_neg (by grind), dif_neg]
+  · rfl
+  · have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+    grind
+
+lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓b] arm (K * m) := by
+  have h_ae n : K * m ≤ n → arm (n + 1) =ᵐ[𝔓b] fun ω ↦ arm n ω := arm_add_one_of_ge hm
+  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
+  filter_upwards [h_ae] with ω h_ae
+  induction n, hn using Nat.le_induction with
+  | base => rfl
+  | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
 lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
@@ -94,19 +109,19 @@ lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m :=
   _ = m := by
     sorry
 
-lemma pullCount_add_one_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+lemma pullCount_add_one_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a (n + 1)
       =ᵐ[𝔓b] fun ω ↦ pullCount a n ω + {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
   simp_rw [Filter.EventuallyEq, pullCount_add_one]
-  filter_upwards [arm_of_ge hn] with ω h_arm
+  filter_upwards [arm_of_ge hm hn] with ω h_arm
   congr
 
-lemma pullCount_of_ge (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a n
       =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
   have h_ae n : K * m ≤ n → pullCount a (n + 1)
       =ᵐ[𝔓b] fun ω ↦ pullCount a n ω + {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω :=
-    pullCount_add_one_of_ge a
+    pullCount_add_one_of_ge a hm
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
   have h_ae_Km : pullCount a (K * m) =ᵐ[𝔓b] fun _ ↦ m := pullCount_mul a
   filter_upwards [h_ae_Km, h_ae] with ω h_Km h_ae
@@ -172,12 +187,12 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       norm_num
 
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
+    (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     𝔓b[fun ω ↦ (pullCount a n ω : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : (fun ω ↦ (pullCount a n ω : ℝ))
       =ᵐ[𝔓b] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
-    filter_upwards [pullCount_of_ge a hn] with ω h
+    filter_upwards [pullCount_of_ge a hm hn] with ω h
     simp only [h, Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
       Nat.cast_ite, CharP.cast_eq_zero, add_right_inj]
     norm_cast
@@ -197,7 +212,7 @@ lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (�
     exact prob_arm_mul_eq_le hν a
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     𝔓b[regret ν n] ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
@@ -209,7 +224,7 @@ lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν
   rw [mul_comm (gap _ _), integral_mul_const]
   gcongr
   · exact gap_nonneg
-  · exact expectation_pullCount_le hν a hn
+  · exact expectation_pullCount_le hν a hm hn
 
 end ETC
 

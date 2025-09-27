@@ -193,6 +193,12 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
   · simp [ha, hm]
   · simp [h_best, hm]
 
+lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
+    s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
+  rw [Filter.EventuallyEq]
+  simp only [eq_iff_iff]
+  congr!
+
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -225,7 +231,19 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     congr! 1 <;> rw [sum_rewardByCount_eq_sumRewards]
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
-    sorry
+    simp_rw [measureReal_def]
+    congr 1
+    refine measure_congr ?_
+    have ha := pullCount_mul a (hK := hK) (ν := ν) (m := m)
+    have h_best := pullCount_mul (bestArm ν) (hK := hK) (ν := ν) (m := m)
+    rw [ae_eq_set_iff]
+    change ∀ᵐ ω ∂((𝔓t).prod _), _
+    rw [Measure.ae_prod_iff_ae_ae]
+    · filter_upwards [ha, h_best] with ω ha h_best
+      refine ae_of_all _ fun ω' ↦ ?_
+      rw [ha, h_best]
+    · simp only [Set.mem_setOf_eq]
+      sorry
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     sorry
   _ = (𝔓).real {ω | m * gap ν a
@@ -234,13 +252,16 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     simp only [gap_eq_bestArm_sub, id_eq, sum_sub_distrib, sum_const, card_range, nsmul_eq_mul]
     ring_nf
     simp
+  _ = (Bandit.streamMeasure ν).real {ω | m * gap ν a
+      ≤ ∑ s ∈ range m, ((ω s a - (ν a)[id]) - (ω s (bestArm ν) - (ν (bestArm ν))[id]))} := by
+    have : Bandit.streamMeasure ν = (𝔓).map Prod.snd := by rw [← Measure.snd, Bandit.snd_measure]
+    rw [this, measureReal_def, measureReal_def, Measure.map_apply (by fun_prop)]
+    · rfl
+    · exact measurableSet_le (by fun_prop) (by fun_prop)
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
     refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
       ?_ ?_ ?_).trans_eq ?_
-    · suffices iIndepFun (fun s ω ↦ ω s a - (ν a)[id] - (ω s (bestArm ν) - (ν (bestArm ν))[id]))
-          (Bandit.streamMeasure ν) by
-        sorry
-      sorry
+    · sorry
     · intro i him
       rw [← one_add_one_eq_two]
       refine HasSubgaussianMGF.sub_of_indepFun ?_ ?_ ?_

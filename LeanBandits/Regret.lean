@@ -70,6 +70,9 @@ lemma pullCount_add_one :
 lemma pullCount_eq_sum (a : α) (t : ℕ) (h : ℕ → α × ℝ) :
     pullCount a t h = ∑ s ∈ range t, if arm s h = a then 1 else 0 := by simp [pullCount]
 
+lemma pullCount_le (a : α) (t : ℕ) (h : ℕ → α × ℝ) : pullCount a t h ≤ t :=
+  (card_filter_le _ _).trans_eq (by simp)
+
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
 def stepsUntil (a : α) (m : ℕ) (h : ℕ → α × ℝ) : ℕ∞ := sInf ((↑) '' {s | pullCount a (s + 1) h = m})

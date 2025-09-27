@@ -7,6 +7,7 @@ import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmBuilding
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.Regret
+import LeanBandits.RewardByCountMeasure
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -192,26 +193,36 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
   · simp [ha, hm]
   · simp [h_best, hm]
 
-lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
+lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
+    (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  have h_pos : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+  have h_le : (𝔓t).real {ω | arm (K * m) ω = a}
+      ≤ (𝔓t).real {ω | sumRewards (bestArm ν) (K * m) ω ≤ sumRewards a (K * m) ω} := by
+    simp_rw [measureReal_def]
+    gcongr 1
+    · simp
+    refine measure_mono_ae ?_
+    exact sumRewards_bestArm_le_of_arm_mul_eq a hm
+  refine h_le.trans ?_
   -- extend the probability space to include the stream of independent rewards
-  suffices (𝔓).real {ω | arm (K * m) ω.1 = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
-    suffices (𝔓t).real {ω | arm (K * m) ω = a} = (𝔓).real {ω | arm (K * m) ω.1 = a} by
-      rwa [this]
-    calc (𝔓t).real {ω | arm (K * m) ω = a}
-    _ = ((𝔓).fst).real {ω | arm (K * m) ω = a} := by simp
-    _ = (𝔓).real {ω | arm (K * m) ω.1 = a} := by
+  suffices (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1}
+      ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
+    suffices (𝔓t).real {ω | sumRewards (bestArm ν) (K * m) ω ≤ sumRewards a (K * m) ω}
+      = (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1} by rwa [this]
+    calc (𝔓t).real {ω | sumRewards (bestArm ν) (K * m) ω ≤ sumRewards a (K * m) ω}
+    _ = ((𝔓).fst).real {ω | sumRewards (bestArm ν) (K * m) ω ≤ sumRewards a (K * m) ω} := by simp
+    _ = (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1} := by
       rw [Measure.fst, map_measureReal_apply (by fun_prop)]
       · rfl
-      · exact (measurableSet_singleton _).preimage (by fun_prop)
-  calc (𝔓).real {ω | arm (K * m) ω.1 = a}
-  _ ≤ (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1} := by
-    sorry
+      · exact measurableSet_le (by fun_prop) (by fun_prop)
+  calc (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1}
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1),
         rewardByCount (bestArm ν) s ω.1 ω.2
       ≤ ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2} := by
-    sorry
+    congr with ω
+    congr! 1 <;> rw [sum_rewardByCount_eq_sumRewards]
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
     sorry
@@ -242,7 +253,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       field_simp
       simp_rw [mul_assoc]
       simp only [NNReal.coe_ofNat, neg_inj, mul_eq_mul_left_iff, ne_eq, OfNat.ofNat_ne_zero,
-        not_false_eq_true, pow_eq_zero_iff, Nat.cast_eq_zero]
+        not_false_eq_true, pow_eq_zero_iff]
       norm_num
 
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
@@ -268,17 +279,21 @@ lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (�
     simp
   rw [integral_indicator_const, smul_eq_mul, mul_one]
   · rw [← neg_mul]
-    exact prob_arm_mul_eq_le hν a
+    exact prob_arm_mul_eq_le hν a hm
   · exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma integrable_pullCount (a : Fin K) (n : ℕ) : Integrable (fun ω ↦ (pullCount a n ω : ℝ)) 𝔓t := by
+  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
+    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
+  simp only [Nat.cast_le]
+  exact pullCount_le a n ω
 
 lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     𝔓t[regret ν n] ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]
-  swap
-  · refine fun i _ ↦ Integrable.mul_const ?_ _
-    sorry
+  swap; · exact fun i _ ↦ (integrable_pullCount i n).mul_const _
   gcongr with a
   rw [mul_comm (gap _ _), integral_mul_const]
   gcongr

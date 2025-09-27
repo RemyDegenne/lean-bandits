@@ -6,6 +6,7 @@ import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.KernelCompositionParallelComp
 import LeanBandits.ForMathlib.KernelSub
+import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
 import LeanBandits.Regret
 import LeanBandits.RewardByCountMeasure

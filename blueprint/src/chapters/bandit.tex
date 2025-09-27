@@ -267,7 +267,7 @@ By Lemma~\ref{lem:stepsUntil_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < 
 \begin{lemma}\label{lem:sum_rewardByCount}
   \uses{def:rewardByCount,def:pullCount}
   \leanok
-  \lean{Bandits.sum_rewardByCount_eq_sum_reward}
+  \lean{Bandits.sum_rewardByCount_eq_sumRewards}
 \begin{align*}
   \sum_{n=1}^{N_{t, a}} Y_{n, a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} X_s
   \: .

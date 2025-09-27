@@ -25,6 +25,14 @@ lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun h ↦ pullCount 
   fun_prop
 
 @[fun_prop]
+lemma measurable_sumRewards (a : α) (t : ℕ) : Measurable (sumRewards a t) := by
+  unfold sumRewards
+  have h_meas s : Measurable (fun h : ℕ → α × ℝ ↦ if arm s h = a then reward s h else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+@[fun_prop]
 lemma measurable_stepsUntil (a : α) (m : ℕ) : Measurable (fun h ↦ stepsUntil a m h) := by
   classical
   have h_union : {h' | ∃ s, pullCount a (s + 1) h' = m}

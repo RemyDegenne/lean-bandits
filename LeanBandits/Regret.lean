@@ -196,6 +196,23 @@ lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount a (s + 1)
     pullCount a (stepsUntil a m h).toNat h = m - 1 := by
   sorry
 
+section SumRewards
+
+/-- Sum of rewards obtained when pulling arm `a` up to time `t` (exclusive). -/
+def sumRewards (a : α) (t : ℕ) (h : ℕ → α × ℝ) : ℝ :=
+  ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0
+
+/-- Empirical mean reward obtained when pulling arm `a` up to time `t` (exclusive). -/
+noncomputable
+def empMean (a : α) (t : ℕ) (h : ℕ → α × ℝ) : ℝ := sumRewards a t h / pullCount a t h
+
+lemma sumRewards_eq_pullCount_mul_empMean (h_pull : pullCount a t h ≠ 0) :
+    sumRewards a t h = pullCount a t h * empMean a t h := by unfold empMean; field_simp
+
+end SumRewards
+
+section RewardByCount
+
 /-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable
 def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
@@ -221,17 +238,18 @@ lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ
     rewardByCount (arm t h) (pullCount (arm t h) t h + 1) h z = reward t h := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
 
-lemma sum_rewardByCount_eq_sum_reward
+lemma sum_rewardByCount_eq_sumRewards
     (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    ∑ m ∈ Icc 1 (pullCount a t h), rewardByCount a m h z =
-      ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0 := by
+    ∑ m ∈ Icc 1 (pullCount a t h), rewardByCount a m h z = sumRewards a t h := by
   induction' t with t ht
-  · simp [pullCount]
+  · simp [pullCount, sumRewards]
   by_cases hta : arm t h = a
   · rw [← hta] at ht ⊢
     rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
+    unfold sumRewards
     rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
-  · rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
+  · unfold sumRewards
+    rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
 
 lemma sum_pullCount_mul [Fintype α] (h : ℕ → α × ℝ) (f : α → ℝ) (t : ℕ) :
     ∑ a, pullCount a t h * f a = ∑ s ∈ range t, f (arm s h) := by
@@ -251,6 +269,8 @@ lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
     regret ν t h = ∑ a, pullCount a t h * gap ν a := by
   simp_rw [sum_pullCount_mul, regret, gap, sum_sub_distrib]
   simp
+
+end RewardByCount
 
 section BestArm
 

@@ -132,6 +132,66 @@ lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     congr
     grind
 
+lemma pullCount_add_one_eq_pullCount' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
+    pullCount a (n + 1) h = pullCount' n (fun i ↦ h i) a := by
+  rw [pullCount_eq_sum, pullCount'_eq_sum]
+  unfold arm
+  rw [Finset.sum_coe_sort (f := fun s ↦ if (h s).1 = a then 1 else 0) (Iic n)]
+  congr with m
+  simp only [mem_range, mem_Iic]
+  grind
+
+lemma pullCount_eq_pullCount' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
+    pullCount a n h = pullCount' (n - 1) (fun i ↦ h i) a := by
+  cases n with
+  | zero => exact absurd rfl hn
+  | succ n =>
+    rw [pullCount_add_one_eq_pullCount']
+    have : n + 1 - 1 = n := by simp
+    exact this ▸ rfl
+
+lemma sumRewards_add_one_eq_sumRewards' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
+    sumRewards a (n + 1) h = sumRewards' n (fun i ↦ h i) a := by
+  unfold sumRewards sumRewards' arm reward
+  rw [Finset.sum_coe_sort (f := fun s ↦ if (h s).1 = a then (h s).2 else 0) (Iic n)]
+  congr with m
+  simp only [mem_range, mem_Iic]
+  grind
+
+lemma sumRewards_eq_sumRewards' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
+    sumRewards a n h = sumRewards' (n - 1) (fun i ↦ h i) a := by
+  cases n with
+  | zero => exact absurd rfl hn
+  | succ n =>
+    rw [sumRewards_add_one_eq_sumRewards']
+    have : n + 1 - 1 = n := by simp
+    exact this ▸ rfl
+
+lemma empMean_add_one_eq_empMean' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
+    empMean a (n + 1) h = empMean' n (fun i ↦ h i) a := by
+  unfold empMean empMean'
+  rw [sumRewards_add_one_eq_sumRewards', pullCount_add_one_eq_pullCount']
+
+lemma empMean_eq_empMean' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
+    empMean a n h = empMean' (n - 1) (fun i ↦ h i) a := by
+  unfold empMean empMean'
+  rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
+
+lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
+    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+    ∀ᵐ h ∂𝔓t, arm (K * m) h = a → sumRewards (bestArm ν) (K * m) h ≤ sumRewards a (K * m) h := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  filter_upwards [arm_mul hm, pullCount_mul a, pullCount_mul (bestArm ν)] with h h_arm ha h_best
+    h_eq
+  have h_max := isMaxOn_measurableArgmax (empMean' (K * m - 1)) (fun i ↦ h i) (bestArm ν)
+  rw [← h_arm, h_eq] at h_max
+  rw [sumRewards_eq_pullCount_mul_empMean, sumRewards_eq_pullCount_mul_empMean, ha, h_best]
+  · gcongr
+    have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+    rwa [empMean_eq_empMean' this.ne', empMean_eq_empMean' this.ne']
+  · simp [ha, hm]
+  · simp [h_best, hm]
+
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
@@ -146,8 +206,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       · rfl
       · exact (measurableSet_singleton _).preimage (by fun_prop)
   calc (𝔓).real {ω | arm (K * m) ω.1 = a}
-  _ ≤ (𝔓).real {ω | ∑ s ∈ range (K * m), (if (arm s ω.1) = bestArm ν then (reward s ω.1) else 0)
-      ≤ ∑ s ∈ range (K * m), if (arm s ω.1) = a then (reward s ω.1) else 0} := by
+  _ ≤ (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1} := by
     sorry
   _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1),
         rewardByCount (bestArm ν) s ω.1 ω.2

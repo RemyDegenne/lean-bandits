@@ -261,17 +261,20 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
     refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
       ?_ ?_ ?_).trans_eq ?_
-    · sorry
+    · suffices iIndepFun (fun s ω ↦ ω s a - ω s (bestArm ν)) (Bandit.streamMeasure ν) by
+        sorry
+      sorry
     · intro i him
       rw [← one_add_one_eq_two]
       refine HasSubgaussianMGF.sub_of_indepFun ?_ ?_ ?_
       · refine (hν a).congr_identDistrib ?_
-        refine IdentDistrib.sub_const ?_ _
-        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm
+        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
       · refine (hν (bestArm ν)).congr_identDistrib ?_
-        refine IdentDistrib.sub_const ?_ _
-        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm
-      · sorry
+        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
+      · suffices IndepFun (fun ω ↦ ω i a) (fun ω ↦ ω i (bestArm ν)) (Bandit.streamMeasure ν) by
+          exact this.comp (φ := fun x ↦ x - (ν a)[id]) (ψ := fun x ↦ x - (ν (bestArm ν))[id])
+            (by fun_prop) (by fun_prop)
+        sorry
     · have : 0 ≤ gap ν a := gap_nonneg
       positivity
     · congr 1

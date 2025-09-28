@@ -20,6 +20,21 @@ namespace Kernel.HasSubgaussianMGF
 variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {ν : Measure Ω'} {κ : Kernel Ω' Ω} {X : Ω → ℝ} {c : ℝ≥0}
 
+lemma id_map_iff (hX : Measurable X) :
+    HasSubgaussianMGF X c κ ν ↔ HasSubgaussianMGF id c (κ.map X) ν := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · constructor
+    · intro t
+      rw [← Kernel.deterministic_comp_eq_map hX, ← Measure.comp_assoc,
+        Measure.deterministic_comp_eq_map]
+      rw [integrable_map_measure (by fun_prop) hX.aemeasurable]
+      exact h.integrable_exp_mul t
+    · simp_rw [Kernel.map_apply _ hX, mgf_id_map hX.aemeasurable]
+      exact h.mgf_le
+  · have : X = id ∘ X := rfl
+    rw [this]
+    exact .of_map hX h
+
 protected lemma const_mul (h : HasSubgaussianMGF X c κ ν) (r : ℝ) :
     HasSubgaussianMGF (fun ω ↦ r * X ω) (⟨r ^ 2, sq_nonneg r⟩ * c) κ ν where
   integrable_exp_mul t := by
@@ -39,6 +54,26 @@ end Kernel.HasSubgaussianMGF
 namespace HasSubgaussianMGF
 
 variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X : Ω → ℝ} {c : ℝ≥0}
+
+lemma id_map_iff (hX : AEMeasurable X μ) :
+    HasSubgaussianMGF X c μ ↔ HasSubgaussianMGF id c (μ.map X) := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · constructor
+    · intro t
+      rw [integrable_map_measure (by fun_prop) hX]
+      exact h.integrable_exp_mul t
+    · intro t
+      rw [mgf_id_map hX]
+      exact h.mgf_le t
+  · have : X = id ∘ X := rfl
+    rw [this]
+    exact .of_map hX h
+
+lemma congr_identDistrib {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {μ' : Measure Ω'}
+    {Y : Ω' → ℝ} (hX : HasSubgaussianMGF X c μ) (hXY : IdentDistrib X Y μ μ') :
+    HasSubgaussianMGF Y c μ' := by
+  rw [id_map_iff hXY.aemeasurable_fst] at hX
+  rwa [id_map_iff hXY.aemeasurable_snd, ← hXY.map_eq]
 
 protected lemma const_mul (h : HasSubgaussianMGF X c μ) (r : ℝ) :
     HasSubgaussianMGF (fun ω ↦ r * X ω) (⟨r ^ 2, sq_nonneg r⟩ * c) μ := by

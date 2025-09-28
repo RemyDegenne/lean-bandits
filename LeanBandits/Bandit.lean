@@ -74,6 +74,33 @@ lemma snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] 
 
 end Bandit
 
+section StreamMeasure
+
+lemma _root_.hasLaw_eval_infinitePi {ι : Type*} {X : ι → Type*} {mX : ∀ i, MeasurableSpace (X i)}
+  (μ : (i : ι) → Measure (X i)) [hμ : ∀ i, IsProbabilityMeasure (μ i)] (i : ι) :
+    HasLaw (Function.eval i) (μ i) (Measure.infinitePi μ) where
+  aemeasurable := Measurable.aemeasurable (by fun_prop)
+  map_eq := by exact (measurePreserving_eval_infinitePi μ i).map_eq
+
+lemma hasLaw_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+    HasLaw (fun h : ℕ → α → R ↦ h n) (Measure.infinitePi ν) (Bandit.streamMeasure ν) :=
+  hasLaw_eval_infinitePi (fun _ ↦ Measure.infinitePi ν) n
+
+lemma hasLaw_eval_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) (a : α) :
+    HasLaw (fun h : ℕ → α → R ↦ h n a) (ν a) (Bandit.streamMeasure ν) :=
+  (hasLaw_eval_infinitePi ν a).comp (hasLaw_eval_streamMeasure ν n)
+
+lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) (a : α) :
+    IdentDistrib (fun h : ℕ → α → R ↦ h n a) id (Bandit.streamMeasure ν) (ν a) where
+  aemeasurable_fst := Measurable.aemeasurable (by fun_prop)
+  aemeasurable_snd := Measurable.aemeasurable (by fun_prop)
+  map_eq := by
+    rw [← (hasLaw_eval_eval_streamMeasure ν n a).map_eq,
+      Measure.map_map (by fun_prop) (by fun_prop)]
+    simp
+
+end StreamMeasure
+
 /-- `arm n` is the arm pulled at time `n`. This is a random variable on the measurable space
 `ℕ → α × ℝ`. -/
 def arm (n : ℕ) (h : ℕ → α × R) : α := (h n).1

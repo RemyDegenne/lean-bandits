@@ -265,8 +265,12 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     · intro i him
       rw [← one_add_one_eq_two]
       refine HasSubgaussianMGF.sub_of_indepFun ?_ ?_ ?_
-      · sorry
-      · sorry
+      · refine (hν a).congr_identDistrib ?_
+        refine IdentDistrib.sub_const ?_ _
+        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm
+      · refine (hν (bestArm ν)).congr_identDistrib ?_
+        refine IdentDistrib.sub_const ?_ _
+        exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm
       · sorry
     · have : 0 ≤ gap ν a := gap_nonneg
       positivity

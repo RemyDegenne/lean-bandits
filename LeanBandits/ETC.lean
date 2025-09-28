@@ -259,13 +259,17 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     · rfl
     · exact measurableSet_le (by fun_prop) (by fun_prop)
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+    by_cases ha : a = bestArm ν
+    · simp [ha]
     refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
       ?_ ?_ ?_).trans_eq ?_
     · suffices iIndepFun (fun s ω ↦ ω s a - ω s (bestArm ν)) (Bandit.streamMeasure ν) by
         convert this.comp (fun _ x ↦ x - (ν a)[id] + (ν (bestArm ν))[id]) (by fun_prop) with n h
         simp only [id_eq, Function.comp_apply]
         ring
-      sorry
+      suffices iIndepFun (fun s ω ↦ ω s) (Bandit.streamMeasure ν) from
+        this.comp (fun _ x ↦ x a - x (bestArm ν)) (by fun_prop)
+      exact iIndepFun_eval_streamMeasure' ν
     · intro i him
       rw [← one_add_one_eq_two]
       refine HasSubgaussianMGF.sub_of_indepFun ?_ ?_ ?_
@@ -276,7 +280,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       · suffices IndepFun (fun ω ↦ ω i a) (fun ω ↦ ω i (bestArm ν)) (Bandit.streamMeasure ν) by
           exact this.comp (φ := fun x ↦ x - (ν a)[id]) (ψ := fun x ↦ x - (ν (bestArm ν))[id])
             (by fun_prop) (by fun_prop)
-        sorry
+        exact indepFun_eval_streamMeasure (ν := ν) (by grind)
     · have : 0 ≤ gap ν a := gap_nonneg
       positivity
     · congr 1

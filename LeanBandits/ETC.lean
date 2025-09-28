@@ -262,7 +262,9 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 2) (ε := m * gap ν a)
       ?_ ?_ ?_).trans_eq ?_
     · suffices iIndepFun (fun s ω ↦ ω s a - ω s (bestArm ν)) (Bandit.streamMeasure ν) by
-        sorry
+        convert this.comp (fun _ x ↦ x - (ν a)[id] + (ν (bestArm ν))[id]) (by fun_prop) with n h
+        simp only [id_eq, Function.comp_apply]
+        ring
       sorry
     · intro i him
       rw [← one_add_one_eq_two]

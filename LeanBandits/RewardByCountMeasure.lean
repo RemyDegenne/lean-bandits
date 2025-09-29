@@ -313,6 +313,19 @@ lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempt
   aemeasurable_snd := by fun_prop
   map_eq := by rw [(hasLaw_rewardByCount a n hn).map_eq, (hasLaw_rewardByCount a m hm).map_eq]
 
+lemma identDistrib_rewardByCount_id [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) (n : ℕ) (hn : n ≠ 0) :
+    IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) id (Bandit.measure alg ν) (ν a) where
+  aemeasurable_fst := by fun_prop
+  aemeasurable_snd := Measurable.aemeasurable <| by fun_prop
+  map_eq := by rw [(hasLaw_rewardByCount a n hn).map_eq, Measure.map_id]
+
+lemma identDistrib_rewardByCount_eval [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) (n m : ℕ) (hn : n ≠ 0) :
+    IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ ω m a)
+      (Bandit.measure alg ν) (Bandit.streamMeasure ν) :=
+  (identDistrib_rewardByCount_id a n hn).trans (identDistrib_eval_eval_id_streamMeasure ν m a).symm
+
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
     iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
   sorry

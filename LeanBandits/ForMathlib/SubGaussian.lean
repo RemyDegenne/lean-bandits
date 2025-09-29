@@ -162,6 +162,19 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     · rw [integral_finset_sum _ hY_int]
     · rw [integral_finset_sum _ hX_int]
 
+lemma measure_sum_le_sum_le' [IsFiniteMeasure μ]
+    (hX_indep : iIndepFun X μ) (hY_indep : iIndepFun Y μ)
+    (hX_subG : ∀ i ∈ s, HasSubgaussianMGF (fun ω ↦ X i ω - μ[X i]) (cX i) μ)
+    (hY_subG : ∀ j ∈ t, HasSubgaussianMGF (fun ω ↦ Y j ω - μ[Y j]) (cY j) μ)
+    (h_indep_sum : IndepFun (fun ω ↦ (X · ω)) (fun ω ↦ (Y · ω)) μ)
+    (h_le : ∑ j ∈ t, μ[Y j] ≤ ∑ i ∈ s, μ[X i]) :
+    μ.real {ω | ∑ i ∈ s, X i ω ≤ ∑ j ∈ t, Y j ω}
+      ≤ Real.exp (- (∑ j ∈ t, μ[Y j] - ∑ i ∈ s, μ[X i]) ^ 2
+        / (2 * (∑ i ∈ s, cX i + ∑ j ∈ t, cY j))) := by
+  refine measure_sum_le_sum_le hX_indep hY_indep hX_subG hY_subG ?_ h_le
+  exact h_indep_sum.comp (φ := fun p ↦ ∑ i ∈ s, p i) (ψ := fun p ↦ ∑ j ∈ t, p j)
+    (by fun_prop) (by fun_prop)
+
 end Sum
 
 end HasSubgaussianMGF

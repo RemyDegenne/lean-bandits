@@ -99,15 +99,15 @@ lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel α R) [IsMarkovKernel
       Measure.map_map (by fun_prop) (by fun_prop)]
     simp
 
-lemma iIndepFun_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] :
+lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
     iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
   sorry
 
-lemma iIndepFun_eval_streamMeasure' (ν : Kernel α ℝ) [IsMarkovKernel ν] :
+lemma iIndepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] :
     iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) := by
   sorry
 
-lemma indepFun_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
+lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
     (h : n ≠ m ∨ a ≠ b) :
     IndepFun (fun ω ↦ ω n a) (fun ω ↦ ω m b) (Bandit.streamMeasure ν) := by
   change IndepFun (fun ω ↦ ω (n, a).1 (n, a).2) (fun ω ↦ ω (m, b).1 (m, b).2)

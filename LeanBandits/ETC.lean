@@ -97,6 +97,10 @@ lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓t] 
   | base => rfl
   | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
+lemma sum_mod_range_mul {K : ℕ} (hK : 0 < K) (m : ℕ) (a : Fin K) :
+    (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = m := by
+  sorry
+
 lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓t] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
@@ -108,8 +112,7 @@ lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓t] fun _ ↦ m :=
   calc (∑ s ∈ range (K * m), if arm s ω = a then 1 else 0)
   _ = (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) :=
     sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
-  _ = m := by
-    sorry
+  _ = m := sum_mod_range_mul hK m a
 
 lemma pullCount_add_one_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a (n + 1)
@@ -268,7 +271,52 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       refine ae_of_all _ fun ω' ↦ ?_
       rw [ha, h_best]
     · simp only [Set.mem_setOf_eq]
-      sorry
+      let f₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
+        ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω.1 ω.2
+      let g₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
+        ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2
+      let f₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
+        ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
+      let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+      have hf₁ : Measurable f₁ := by
+        -- todo: extract a lemma?
+        have h_eq : f₁ = fun ω ↦ ∑ n ∈ range (K * m + 1), if pullCount (bestArm ν) (K * m) ω.1 = n
+            then ∑ s ∈ Icc 1 n, rewardByCount (bestArm ν) s ω.1 ω.2 else 0 := by
+          ext ω
+          simp only [f₁]
+          rw [sum_ite_eq_of_mem]
+          have h_le := pullCount_le (bestArm ν) (K * m) ω.1
+          grind
+        rw [h_eq]
+        refine measurable_sum _ fun n hn ↦ ?_
+        refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+        exact (measurableSet_singleton _).preimage (by fun_prop)
+      have hg₁ : Measurable g₁ := by
+        -- todo: extract a lemma?
+        have h_eq : g₁ = fun ω ↦ ∑ n ∈ range (K * m + 1), if pullCount a (K * m) ω.1 = n
+            then ∑ s ∈ Icc 1 n, rewardByCount a s ω.1 ω.2 else 0 := by
+          ext ω
+          simp only [g₁]
+          rw [sum_ite_eq_of_mem]
+          have h_le := pullCount_le a (K * m) ω.1
+          grind
+        rw [h_eq]
+        refine measurable_sum _ fun n hn ↦ ?_
+        refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+        exact (measurableSet_singleton _).preimage (by fun_prop)
+      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
+      simp_rw [iff_def, imp_iff_not_or]
+      change MeasurableSet ({x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} ∩ {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x})
+      have h1 : {x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} = {x | f₁ x ≤ g₁ x}ᶜ ∪ {x | f₂ x ≤ g₂ x} := by
+        ext; simp
+      have h2 : {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x} = {x | f₂ x ≤ g₂ x}ᶜ ∪ {x | f₁ x ≤ g₁ x} := by
+        ext; simp
+      rw [h1, h2]
+      refine (MeasurableSet.union ?_ ?_).inter (MeasurableSet.union ?_ ?_)
+      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
+      · exact measurableSet_le (by fun_prop) (by fun_prop)
+      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
+      · exact measurableSet_le (by fun_prop) (by fun_prop)
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]
     congr 1

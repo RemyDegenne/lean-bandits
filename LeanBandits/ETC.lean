@@ -227,6 +227,21 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
         (by fun_prop) (by fun_prop)
     sorry
 
+--todo: generalize Icc
+lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
+    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
+    (hg : Measurable g) :
+    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
+  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
+      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
+    ext ω
+    rw [sum_ite_eq_of_mem]
+    grind
+  rw [h_eq]
+  refine measurable_sum _ fun n hn ↦ ?_
+  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
+
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -279,31 +294,18 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
         ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
       have hf₁ : Measurable f₁ := by
-        -- todo: extract a lemma?
-        have h_eq : f₁ = fun ω ↦ ∑ n ∈ range (K * m + 1), if pullCount (bestArm ν) (K * m) ω.1 = n
-            then ∑ s ∈ Icc 1 n, rewardByCount (bestArm ν) s ω.1 ω.2 else 0 := by
-          ext ω
-          simp only [f₁]
-          rw [sum_ite_eq_of_mem]
-          have h_le := pullCount_le (bestArm ν) (K * m) ω.1
-          grind
-        rw [h_eq]
-        refine measurable_sum _ fun n hn ↦ ?_
-        refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-        exact (measurableSet_singleton _).preimage (by fun_prop)
+        refine measurable_sum_of_le (n := K * m + 1)
+          (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount (bestArm ν) (K * m) ω.1)
+          (f := fun s ω ↦ rewardByCount (bestArm ν) s ω.1 ω.2) (fun ω ↦ ?_)
+          (by fun_prop) (by fun_prop)
+        have h_le := pullCount_le (bestArm ν) (K * m) ω.1
+        grind
       have hg₁ : Measurable g₁ := by
-        -- todo: extract a lemma?
-        have h_eq : g₁ = fun ω ↦ ∑ n ∈ range (K * m + 1), if pullCount a (K * m) ω.1 = n
-            then ∑ s ∈ Icc 1 n, rewardByCount a s ω.1 ω.2 else 0 := by
-          ext ω
-          simp only [g₁]
-          rw [sum_ite_eq_of_mem]
-          have h_le := pullCount_le a (K * m) ω.1
-          grind
-        rw [h_eq]
-        refine measurable_sum _ fun n hn ↦ ?_
-        refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-        exact (measurableSet_singleton _).preimage (by fun_prop)
+        refine measurable_sum_of_le (n := K * m + 1)
+          (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount a (K * m) ω.1)
+          (f := fun s ω ↦ rewardByCount a s ω.1 ω.2) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
+        have h_le := pullCount_le a (K * m) ω.1
+        grind
       change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
       simp_rw [iff_def, imp_iff_not_or]
       change MeasurableSet ({x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} ∩ {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x})

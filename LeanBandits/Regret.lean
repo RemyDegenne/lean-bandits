@@ -295,6 +295,11 @@ lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   refine le_antisymm ?_ (le_ciSup (f := fun a ↦ (ν a)[id]) (by simp) (bestArm ν))
   exact ciSup_le le_bestArm
 
+omit [DecidableEq α] in
+@[simp]
+lemma gap_bestArm : gap ν (bestArm ν) = 0 := by
+  rw [gap_eq_bestArm_sub, sub_self]
+
 end BestArm
 
 end Bandits

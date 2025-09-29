@@ -99,6 +99,51 @@ lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel α R) [IsMarkovKernel
       Measure.map_map (by fun_prop) (by fun_prop)]
     simp
 
+lemma Integrable.congr_identDistrib {Ω Ω' : Type*}
+    {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+    {μ : Measure Ω} {μ' : Measure Ω'} {X : Ω → ℝ} {Y : Ω' → ℝ}
+    (hX : Integrable X μ) (hXY : IdentDistrib X Y μ μ') :
+    Integrable Y μ' := by
+  have hX' : Integrable id (μ.map X) := by
+    rwa [integrable_map_measure (by fun_prop) hXY.aemeasurable_fst]
+  rw [hXY.map_eq] at hX'
+  rwa [integrable_map_measure (by fun_prop) hXY.aemeasurable_snd] at hX'
+
+lemma integrable_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] (n : ℕ) (a : α)
+    (h_int : Integrable id (ν a)) :
+    Integrable (fun h : ℕ → α → ℝ ↦ h n a) (Bandit.streamMeasure ν) :=
+  Integrable.congr_identDistrib h_int (identDistrib_eval_eval_id_streamMeasure ν n a).symm
+
+lemma integral_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] (n : ℕ) (a : α) :
+    ∫ h, h n a ∂(Bandit.streamMeasure ν) = (ν a)[id] := by
+  calc ∫ h, h n a ∂(Bandit.streamMeasure ν)
+  _ = ∫ x, x ∂((Bandit.streamMeasure ν).map (fun h ↦ h n a)) := by
+    rw [integral_map (Measurable.aemeasurable (by fun_prop)) (by fun_prop)]
+  _ = (ν a)[id] := by simp [(hasLaw_eval_eval_streamMeasure ν n a).map_eq]
+
+lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
+  sorry
+
+lemma iIndepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] :
+    iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) := by
+  sorry
+
+lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a : α) :
+    iIndepFun (fun n ω ↦ ω n a) (Bandit.streamMeasure ν) := by
+  sorry
+
+lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
+    (h : n ≠ m ∨ a ≠ b) :
+    IndepFun (fun ω ↦ ω n a) (fun ω ↦ ω m b) (Bandit.streamMeasure ν) := by
+  change IndepFun (fun ω ↦ ω (n, a).1 (n, a).2) (fun ω ↦ ω (m, b).1 (m, b).2)
+    (Bandit.streamMeasure ν)
+  exact (iIndepFun_eval_streamMeasure ν).indepFun (by grind)
+
+lemma indepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] {a b : α} (h : a ≠ b) :
+    IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (Bandit.streamMeasure ν) := by
+  sorry
+
 end StreamMeasure
 
 /-- `arm n` is the arm pulled at time `n`. This is a random variable on the measurable space

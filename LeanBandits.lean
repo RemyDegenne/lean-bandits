@@ -3,6 +3,7 @@ import LeanBandits.AlgorithmBuilding
 import LeanBandits.Bandit
 import LeanBandits.ETC
 import LeanBandits.ForMathlib.CondDistrib
+import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.KernelCompositionParallelComp
 import LeanBandits.ForMathlib.KernelSub

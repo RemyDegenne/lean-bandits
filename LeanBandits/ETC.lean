@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmBuilding
+import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.Regret
 import LeanBandits.RewardByCountMeasure
@@ -203,7 +204,25 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
       (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2, ∑ s ∈ Icc 1 m, rewardByCount b s ω.1 ω.2))
       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
-  sorry
+  have h1 (a : Fin K) :
+      IdentDistrib (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 := by
+    sorry
+  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2)
+      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
+    sorry
+  by_cases hab : a = b
+  · simp only [hab]
+    exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
+  refine (h2 a).prod (h2 b) ?_ ?_
+  · suffices IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+        𝔓 by
+      exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
+        (by fun_prop) (by fun_prop)
+    sorry
+  · suffices IndepFun (fun ω s ↦ ω.2 s a) (fun ω s ↦ ω.2 s b) 𝔓 by
+      exact this.comp (φ := fun p ↦ ∑ i ∈ range m, p i) (ψ := fun p ↦ ∑ j ∈ range m, p j)
+        (by fun_prop) (by fun_prop)
+    sorry
 
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :

@@ -126,12 +126,13 @@ lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
   sorry
 
 lemma iIndepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] :
-    iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) := by
-  sorry
+    iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) :=
+  iIndepFun_infinitePi (μ := fun (_ : ℕ) ↦ Measure.infinitePi ν) (Ω := fun _ ↦ α → R)
+    (X := fun i u ↦ u) (fun i ↦ by fun_prop)
 
 lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a : α) :
-    iIndepFun (fun n ω ↦ ω n a) (Bandit.streamMeasure ν) := by
-  sorry
+    iIndepFun (fun n ω ↦ ω n a) (Bandit.streamMeasure ν) :=
+  (iIndepFun_eval_streamMeasure' ν).comp (g := fun i ω ↦ ω a) (by fun_prop)
 
 lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
     (h : n ≠ m ∨ a ≠ b) :

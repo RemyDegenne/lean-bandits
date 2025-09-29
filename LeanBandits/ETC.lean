@@ -245,6 +245,16 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
     · simp only [Set.mem_setOf_eq]
       sorry
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
+    simp_rw [measureReal_def]
+    congr 1
+    suffices (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2,
+          ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2))
+        = (𝔓).map (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) by
+      rw [Measure.ext_iff] at this
+      have h_meas : MeasurableSet {x : ℝ × ℝ | x.1 ≤ x.2} :=
+        measurableSet_le (by fun_prop) (by fun_prop)
+      specialize this {x | x.1 ≤ x.2} h_meas
+      rwa [Measure.map_apply (by fun_prop) h_meas, Measure.map_apply (by fun_prop) h_meas] at this
     sorry
   _ = (Bandit.streamMeasure ν).real
       {ω | ∑ s ∈ range m, ω s (bestArm ν) ≤ ∑ s ∈ range m, ω s a} := by

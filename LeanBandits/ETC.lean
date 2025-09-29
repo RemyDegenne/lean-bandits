@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
+import LeanBandits.AlgorithmAndRandomVariables
 import LeanBandits.AlgorithmBuilding
 import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.SubGaussian
@@ -16,6 +17,27 @@ import LeanBandits.RewardByCountMeasure
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
+
+lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
+    s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
+  rw [Filter.EventuallyEq]
+  simp only [eq_iff_iff]
+  congr!
+
+--todo: generalize Icc
+lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
+    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
+    (hg : Measurable g) :
+    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
+  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
+      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
+    ext ω
+    rw [sum_ite_eq_of_mem]
+    grind
+  rw [h_eq]
+  refine measurable_sum _ fun n hn ↦ ?_
+  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
 
 namespace Bandits
 
@@ -137,51 +159,6 @@ lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     congr
     grind
 
-lemma pullCount_add_one_eq_pullCount' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
-    pullCount a (n + 1) h = pullCount' n (fun i ↦ h i) a := by
-  rw [pullCount_eq_sum, pullCount'_eq_sum]
-  unfold arm
-  rw [Finset.sum_coe_sort (f := fun s ↦ if (h s).1 = a then 1 else 0) (Iic n)]
-  congr with m
-  simp only [mem_range, mem_Iic]
-  grind
-
-lemma pullCount_eq_pullCount' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
-    pullCount a n h = pullCount' (n - 1) (fun i ↦ h i) a := by
-  cases n with
-  | zero => exact absurd rfl hn
-  | succ n =>
-    rw [pullCount_add_one_eq_pullCount']
-    have : n + 1 - 1 = n := by simp
-    exact this ▸ rfl
-
-lemma sumRewards_add_one_eq_sumRewards' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
-    sumRewards a (n + 1) h = sumRewards' n (fun i ↦ h i) a := by
-  unfold sumRewards sumRewards' arm reward
-  rw [Finset.sum_coe_sort (f := fun s ↦ if (h s).1 = a then (h s).2 else 0) (Iic n)]
-  congr with m
-  simp only [mem_range, mem_Iic]
-  grind
-
-lemma sumRewards_eq_sumRewards' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
-    sumRewards a n h = sumRewards' (n - 1) (fun i ↦ h i) a := by
-  cases n with
-  | zero => exact absurd rfl hn
-  | succ n =>
-    rw [sumRewards_add_one_eq_sumRewards']
-    have : n + 1 - 1 = n := by simp
-    exact this ▸ rfl
-
-lemma empMean_add_one_eq_empMean' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} :
-    empMean a (n + 1) h = empMean' n (fun i ↦ h i) a := by
-  unfold empMean empMean'
-  rw [sumRewards_add_one_eq_sumRewards', pullCount_add_one_eq_pullCount']
-
-lemma empMean_eq_empMean' {a : Fin K} {n : ℕ} {h : ℕ → Fin K × ℝ} (hn : n ≠ 0) :
-    empMean a n h = empMean' (n - 1) (fun i ↦ h i) a := by
-  unfold empMean empMean'
-  rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
-
 lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
     have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
     ∀ᵐ h ∂𝔓t, arm (K * m) h = a → sumRewards (bestArm ν) (K * m) h ≤ sumRewards a (K * m) h := by
@@ -196,12 +173,6 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
     rwa [empMean_eq_empMean' this.ne', empMean_eq_empMean' this.ne']
   · simp [ha, hm]
   · simp [h_best, hm]
-
-lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
-    s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
-  rw [Filter.EventuallyEq]
-  simp only [eq_iff_iff]
-  congr!
 
 lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
@@ -226,21 +197,6 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
       exact this.comp (φ := fun p ↦ ∑ i ∈ range m, p i) (ψ := fun p ↦ ∑ j ∈ range m, p j)
         (by fun_prop) (by fun_prop)
     sorry
-
---todo: generalize Icc
-lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
 
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :

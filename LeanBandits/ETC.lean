@@ -199,6 +199,12 @@ lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s
   simp only [eq_iff_iff]
   congr!
 
+lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
+    IdentDistrib
+      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2, ∑ s ∈ Icc 1 m, rewardByCount b s ω.1 ω.2))
+      (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
+  sorry
+
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -247,15 +253,15 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]
     congr 1
-    suffices (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2,
+    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2,
           ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2))
-        = (𝔓).map (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) by
-      rw [Measure.ext_iff] at this
-      have h_meas : MeasurableSet {x : ℝ × ℝ | x.1 ≤ x.2} :=
-        measurableSet_le (by fun_prop) (by fun_prop)
-      specialize this {x | x.1 ≤ x.2} h_meas
-      rwa [Measure.map_apply (by fun_prop) h_meas, Measure.map_apply (by fun_prop) h_meas] at this
-    sorry
+        = (𝔓).map (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) :=
+      (identDistrib_aux m (bestArm ν) a).map_eq
+    rw [Measure.ext_iff] at this
+    have h_meas : MeasurableSet {x : ℝ × ℝ | x.1 ≤ x.2} :=
+      measurableSet_le (by fun_prop) (by fun_prop)
+    specialize this {x | x.1 ≤ x.2} h_meas
+    rwa [Measure.map_apply (by fun_prop) h_meas, Measure.map_apply (by fun_prop) h_meas] at this
   _ = (Bandit.streamMeasure ν).real
       {ω | ∑ s ∈ range m, ω s (bestArm ν) ≤ ∑ s ∈ range m, ω s a} := by
     simp_rw [measureReal_def]

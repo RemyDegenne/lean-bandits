@@ -121,16 +121,18 @@ lemma integral_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] (n : 
     rw [integral_map (Measurable.aemeasurable (by fun_prop)) (by fun_prop)]
   _ = (ν a)[id] := by simp [(hasLaw_eval_eval_streamMeasure ν n a).map_eq]
 
-lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
-    iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
-  sorry
-
 lemma iIndepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] :
-    iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) := by
-  sorry
+    iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) :=
+  iIndepFun_infinitePi (μ := fun (_ : ℕ) ↦ Measure.infinitePi ν) (Ω := fun _ ↦ α → R)
+    (X := fun i u ↦ u) (fun i ↦ by fun_prop)
 
 lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a : α) :
-    iIndepFun (fun n ω ↦ ω n a) (Bandit.streamMeasure ν) := by
+    iIndepFun (fun n ω ↦ ω n a) (Bandit.streamMeasure ν) :=
+  (iIndepFun_eval_streamMeasure' ν).comp (g := fun i ω ↦ ω a) (by fun_prop)
+
+lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
+  have h_ind := iIndepFun_eval_streamMeasure' ν
   sorry
 
 lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}

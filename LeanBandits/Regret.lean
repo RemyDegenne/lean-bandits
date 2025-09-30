@@ -193,11 +193,24 @@ lemma stepsUntil_eq_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h 
 
 lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount a (s + 1) h = m) :
     pullCount a (stepsUntil a m h + 1).toNat h = m := by
-  sorry
+  classical
+  have h_eq := stepsUntil_eq_dite a m h
+  simp only [h_exists, ↓reduceDIte] at h_eq
+  have h' := Nat.find_spec h_exists
+  rw [h_eq]
+  rw [ENat.toNat_add (by simp) (by simp)]
+  simp only [ENat.toNat_coe, ENat.toNat_one]
+  exact h'
 
 lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount a (s + 1) h = m) :
     pullCount a (stepsUntil a m h).toNat h = m - 1 := by
-  sorry
+  have h_arm := arm_eq_of_stepsUntil_eq_coe (n := (stepsUntil a m h).toNat) (a := a) (ω := h) hm ?_
+  swap; · symm; simpa [stepsUntil_eq_top_iff]
+  have h_add_one := pullCount_stepsUntil_add_one h_exists
+  nth_rw 1 [← h_arm] at h_add_one
+  rw [ENat.toNat_add ?_ (by simp), ENat.toNat_one, pullCount_eq_pullCount_add_one] at h_add_one
+  swap; · simpa [stepsUntil_eq_top_iff]
+  grind
 
 section SumRewards
 

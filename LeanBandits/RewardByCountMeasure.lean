@@ -101,8 +101,6 @@ notation "𝓛[" Y " | " s "; " μ "]" => Measure.map Y (μ[|s])
 notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s])
 /-- Law of `Y` conditioned on the event that `X` equals `x`. -/
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
-/-- Law of `Y` conditioned on `X`. -/
-notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
@@ -219,48 +217,10 @@ lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] 
     (a : α) (m n : ℕ) (hm : m ≠ 0) :
     CondIndepFun (mα.comap (fun ω ↦ arm n ω.1)) ((measurable_arm n).comp measurable_fst).comap_le
       (fun ω ↦ reward n ω.1) ({ω | stepsUntil a m ω.1 = ↑n}.indicator (fun _ ↦ 1))
-      (Bandit.measure alg ν) := by
-  have h_indep : CondIndepFun (mα.comap (arm n)) (measurable_arm n).comap_le
-      (reward n) ({ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1))
-      (Bandit.trajMeasure alg ν) :=
-    condIndepFun_reward_stepsUntil_arm' a m n hm
-  have h_meas := measurable_indicator_stepsUntil_eq a m n
-  -- todo: extract lemma
-  have h1 : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; Bandit.measure alg ν]
-      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)]
-        𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
-    condDistrib_fst_prod (Y := reward n) (X := arm n) (ν := Bandit.streamMeasure ν)
-      (μ := Bandit.trajMeasure alg ν) (by fun_prop) (by fun_prop)
-  have h2 : 𝓛[fun ω ↦ {ω | stepsUntil a m ω = ↑n}.indicator (fun x ↦ 1) ω.1 | fun ω ↦ arm n ω.1;
-        Bandit.measure alg ν]
-      =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)]
-        𝓛[{ω | stepsUntil a m ω = ↑n}.indicator fun x ↦ 1 | arm n; Bandit.trajMeasure alg ν] :=
-    condDistrib_fst_prod (Y := {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1)) (X := arm n)
-      (ν := Bandit.streamMeasure ν) (μ := Bandit.trajMeasure alg ν) (by fun_prop) ?_
-  swap; · exact h_meas.aemeasurable
-  rw [condIndepFun_comap_iff_map_prod_eq_prod_condDistrib_prod_condDistrib (by fun_prop)
-    ?_ (by fun_prop)] at h_indep ⊢
-  rotate_left
-  · exact h_meas.comp measurable_fst
-  · exact h_meas
-  have h_fst1 : (Bandit.measure alg ν).map (fun ω ↦ arm n ω.1)
-      = (Bandit.trajMeasure alg ν).map (arm n) := by
-    rw [← Bandit.fst_measure, Measure.fst, Measure.map_map (by fun_prop) (by fun_prop)]
-    rfl
-  have h_fst2 : (Bandit.measure alg ν).map
-        (fun ω ↦ (arm n ω.1, reward n ω.1, {ω | stepsUntil a m ω.1 = ↑n}.indicator (fun x ↦ 1) ω))
-      = (Bandit.trajMeasure alg ν).map (fun ω ↦ (arm n ω, reward n ω,
-          {ω | stepsUntil a m ω = ↑n}.indicator (fun x ↦ 1) ω)) := by
-    rw [← Bandit.fst_measure, Measure.fst, Measure.map_map _ (by fun_prop)]
-    · rfl
-    · exact Measurable.prodMk (by fun_prop)
-        (Measurable.prodMk (by fun_prop) h_meas)
-  rw [h_fst1, h_fst2, h_indep]
-  refine Measure.bind_congr_right ?_
-  filter_upwards [h1, h2] with x hx1 hx2
-  simp_rw [Kernel.prod_apply]
-  rw [hx1, ← hx2]
-  rfl
+      (Bandit.measure alg ν) :=
+  condIndepFun_fst_prod (ν := Bandit.streamMeasure ν)
+    (measurable_indicator_stepsUntil_eq a m n) (by fun_prop) (by fun_prop)
+    (condIndepFun_reward_stepsUntil_arm' a m n hm)
 
 lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
     (hm : m ≠ 0)

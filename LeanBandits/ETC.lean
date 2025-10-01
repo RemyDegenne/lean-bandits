@@ -6,7 +6,6 @@ Authors: Rémy Degenne
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmAndRandomVariables
 import LeanBandits.AlgorithmBuilding
-import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.Regret
 import LeanBandits.RewardByCountMeasure
@@ -178,12 +177,17 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
       (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2, ∑ s ∈ Icc 1 m, rewardByCount b s ω.1 ω.2))
       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have h1 (a : Fin K) :
-      IdentDistrib (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 := by
-    sorry
+      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω.1 ω.2) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
+    identDistrib_rewardByCount_stream a
   have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2)
       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
-    sorry
+    have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+        = ∑ s ∈ range m, rewardByCount a (s + 1) ω.1 ω.2 := by
+      sorry
+    simp_rw [h_eq]
+    exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
   by_cases hab : a = b
   · simp only [hab]
     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit
+import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.Regret
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
@@ -338,8 +339,31 @@ lemma identDistrib_rewardByCount_eval [Countable α] [StandardBorelSpace α] [No
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) :=
   (identDistrib_rewardByCount_id a n hn).trans (identDistrib_eval_eval_id_streamMeasure ν m a).symm
 
+lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
+    iIndepFun (fun n ω ↦ rewardByCount a n ω.1 ω.2) (Bandit.measure alg ν) := by
+  sorry
+
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
     iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
   sorry
+
+lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) :
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω n a)
+      (Bandit.measure alg ν) (Bandit.streamMeasure ν) := by
+  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
+  · refine identDistrib_rewardByCount_eval a (n + 1) n (by simp) (ν := ν)
+  · sorry
+  · exact iIndepFun_eval_streamMeasure'' ν a
+
+lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) :
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω.2 n a)
+      (Bandit.measure alg ν) (Bandit.measure alg ν) := by
+  refine (identDistrib_rewardByCount_stream' a).trans ?_
+  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
+  · sorry
+  · sorry
+  · sorry
 
 end Bandits

@@ -366,4 +366,9 @@ lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [
   · sorry
   · sorry
 
+lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
+    IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+      (Bandit.measure alg ν) := by
+  sorry
+
 end Bandits

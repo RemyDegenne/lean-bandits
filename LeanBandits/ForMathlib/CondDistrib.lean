@@ -877,6 +877,54 @@ lemma condIndepFun_fst_prod [StandardBorelSpace α] [StandardBorelSpace β] [Non
   simp_rw [Kernel.prod_apply]
   rw [hx1, ← hx2]
 
+omit [StandardBorelSpace Ω] [Nonempty Ω] in
+lemma indepFun_fst_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_indep : IndepFun X Y μ)
+    (ν : Measure γ) [IsProbabilityMeasure ν] :
+    IndepFun (fun ω ↦ X ω.1) (fun ω ↦ Y ω.1) (μ.prod ν) := by
+  rw [indepFun_iff_map_prod_eq_prod_map_map (by fun_prop) (by fun_prop)] at h_indep ⊢
+  have :  AEMeasurable (fun ω ↦ (X ω, Y ω)) (Measure.map Prod.fst (μ.prod ν)) := by
+    simp only [Measure.map_fst_prod, measure_univ, one_smul]
+    fun_prop
+  have :  AEMeasurable X (Measure.map Prod.fst (μ.prod ν)) := by
+    simp only [Measure.map_fst_prod, measure_univ, one_smul]
+    fun_prop
+  have :  AEMeasurable Y (Measure.map Prod.fst (μ.prod ν)) := by
+    simp only [Measure.map_fst_prod, measure_univ, one_smul]
+    fun_prop
+  have h : (μ.prod ν).map (fun ω ↦ (X ω.1, Y ω.1)) = μ.map (fun ω ↦ (X ω, Y ω)) := by
+    conv_rhs => rw [← Measure.fst_prod (μ := μ) (ν := ν), Measure.fst,
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+    rfl
+  rw [h, h_indep]
+  conv_lhs => rw [← Measure.fst_prod (μ := μ) (ν := ν), Measure.fst,
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop),
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+  rfl
+
+omit [StandardBorelSpace Ω] [Nonempty Ω] in
+lemma indepFun_snd_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_indep : IndepFun X Y μ)
+    (ν : Measure γ) [IsProbabilityMeasure ν] :
+    IndepFun (fun ω ↦ X ω.2) (fun ω ↦ Y ω.2) (ν.prod μ) := by
+  rw [indepFun_iff_map_prod_eq_prod_map_map (by fun_prop) (by fun_prop)] at h_indep ⊢
+  have :  AEMeasurable (fun ω ↦ (X ω, Y ω)) (Measure.map Prod.snd (ν.prod μ)) := by
+    simp only [Measure.map_snd_prod, measure_univ, one_smul]
+    fun_prop
+  have :  AEMeasurable X (Measure.map Prod.snd (ν.prod μ)) := by
+    simp only [Measure.map_snd_prod, measure_univ, one_smul]
+    fun_prop
+  have :  AEMeasurable Y (Measure.map Prod.snd (ν.prod μ)) := by
+    simp only [Measure.map_snd_prod, measure_univ, one_smul]
+    fun_prop
+  have h : (ν.prod μ).map (fun ω ↦ (X ω.2, Y ω.2)) = μ.map (fun ω ↦ (X ω, Y ω)) := by
+    conv_rhs => rw [← Measure.snd_prod (μ := ν) (ν := μ), Measure.snd,
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+    rfl
+  rw [h, h_indep]
+  conv_lhs => rw [← Measure.snd_prod (μ := ν) (ν := μ), Measure.snd,
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop),
+      AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+  rfl
+
 end CondDistrib
 
 section Cond

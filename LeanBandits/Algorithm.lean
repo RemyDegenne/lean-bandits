@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.KernelCompositionLemmas
+import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.Traj
 
 /-!
@@ -223,10 +224,8 @@ lemma measurable_hist_filtration (n : ℕ) : Measurable[Learning.filtration α R
 
 lemma measurable_action_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (action n) := by
   simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
-  rw [action_eq_eval_comp_hist, measurable_iff_comap_le, ← MeasurableSpace.comap_comp]
-  refine MeasurableSpace.comap_mono ?_
-  rw [← measurable_iff_comap_le]
-  fun_prop
+  rw [action_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
 
 lemma adapted_action [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
     [SecondCountableTopology α] [OpensMeasurableSpace α] :
@@ -235,10 +234,8 @@ lemma adapted_action [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpa
 
 lemma measurable_reward_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (reward n) := by
   simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
-  rw [reward_eq_eval_comp_hist, measurable_iff_comap_le, ← MeasurableSpace.comap_comp]
-  refine MeasurableSpace.comap_mono ?_
-  rw [← measurable_iff_comap_le]
-  fun_prop
+  rw [reward_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
 
 lemma adapted_reward [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
     [SecondCountableTopology R] [OpensMeasurableSpace R] :

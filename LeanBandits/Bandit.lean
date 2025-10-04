@@ -146,6 +146,13 @@ lemma indepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] {a b :
     IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (Bandit.streamMeasure ν) := by
   sorry
 
+lemma indepFun_eval_snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+    {a b : α} (h : a ≠ b) :
+    IndepFun (fun ω n ↦ ω.2 n a) (fun ω n ↦ ω.2 n b) (Bandit.measure alg ν) := by
+  refine indepFun_snd_prod ?_ ?_ (indepFun_eval_streamMeasure' ν h) (Bandit.trajMeasure alg ν)
+  · exact Measurable.aemeasurable (by fun_prop)
+  · exact Measurable.aemeasurable (by fun_prop)
+
 end StreamMeasure
 
 /-- `arm n` is the arm pulled at time `n`. This is a random variable on the measurable space

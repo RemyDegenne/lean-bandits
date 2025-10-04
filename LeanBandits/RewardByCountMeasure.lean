@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit
+import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.Regret
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
@@ -101,8 +102,6 @@ notation "𝓛[" Y " | " s "; " μ "]" => Measure.map Y (μ[|s])
 notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s])
 /-- Law of `Y` conditioned on the event that `X` equals `x`. -/
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
-/-- Law of `Y` conditioned on `X`. -/
-notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
@@ -139,18 +138,52 @@ lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : 
   rw [h_ra] at h_eq
   exact h_eq.symm
 
-lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
+-- after the Mathlib stopping time refactor, we will be able to prove that stepsUntil is a
+-- stopping time
+lemma measurable_comap_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
+    Measurable[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
+      ({ω | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
+  let k : ((Iic (n - 1) → α × ℝ) × α) → (ℕ → α × ℝ) := fun x i ↦
+    if hi : i ∈ Iic (n - 1) then (x.1 ⟨i, hi⟩) else if i = n then (x.2, 0) else (a, 0)
+  have hk : Measurable k := by
+    unfold k
+    rw [measurable_pi_iff]
+    intro i
+    split_ifs <;> fun_prop
+  let φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ := fun x ↦ if stepsUntil a m (k x) = ↑n then 1 else 0
+  have hφ : Measurable φ :=
+    Measurable.ite ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop)
+  suffices {ω | stepsUntil a m ω = ↑n}.indicator (fun x ↦ 1)
+      = φ ∘ fun ω ↦ (hist (n - 1) ω, arm n ω) from this ▸ measurable_comp_comap _ hφ
+  ext ω
+  classical
+  simp only [Set.indicator_apply, Set.mem_setOf_eq, Function.comp_apply, φ]
+  congr 1
+  rw [stepsUntil_eq_congr]
+  intro i hin
+  simp only [arm, mem_Iic, hist, dite_eq_ite, k]
+  grind
+
+lemma measurable_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
+    Measurable ({ω | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
+  refine (measurable_comap_indicator_stepsUntil_eq a m n).mono ?_ le_rfl
+  refine Measurable.comap_le ?_
+  fun_prop
+
+lemma measurableSet_stepsUntil_eq (a : α) (m n : ℕ) :
+    MeasurableSet[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
+      {ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n} := by
+  let mProd := MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance
+  suffices Measurable[mProd] ({ω | stepsUntil a m ω = ↑n}.indicator fun x ↦ 1) by
+    rwa [measurable_indicator_const_iff] at this
+  exact measurable_comap_indicator_stepsUntil_eq a m n
+
+lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α] [Nonempty α]
     (a : α) (m n : ℕ) (hm : m ≠ 0) :
-    CondIndepFun (mα.comap (fun ω ↦ arm n ω.1)) ((measurable_arm n).comp measurable_fst).comap_le
-      (fun ω ↦ reward n ω.1) ({ω | stepsUntil a m ω.1 = ↑n}.indicator (fun _ ↦ 1))
-      (Bandit.measure alg ν) := by
-  -- first restrict to the `trajMeasure` side
-  suffices h_indep :
-      CondIndepFun (mα.comap (arm n)) (measurable_arm n).comap_le
-        (reward n) ({ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1))
-        (Bandit.trajMeasure alg ν) by
-    sorry
-  -- Now prove the independence : the indicator of `stepsUntil ... = n` is a function of
+    CondIndepFun (mα.comap (arm n)) (measurable_arm n).comap_le
+      (reward n) ({ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1))
+      (Bandit.trajMeasure alg ν) := by
+  -- the indicator of `stepsUntil ... = n` is a function of
   -- `hist (n-1)` and `arm n`.
   -- It thus suffices to prove the independence of `reward n` and `hist (n-1)` conditionally
   -- on `arm n`.
@@ -175,45 +208,25 @@ lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] 
   have h_indep' : CondIndepFun (mα.comap (arm n)) (measurable_arm n).comap_le (reward n)
       (fun ω ↦ (hist (n - 1) ω, arm n ω)) (Bandit.trajMeasure alg ν) :=
     h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
-  suffices ∃ φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ, Measurable φ ∧
-      ({ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1))
-        = φ ∘ (fun ω : ℕ → α × ℝ ↦ (hist (n - 1) ω, arm n ω)) by
-    obtain ⟨φ, hφ_meas, h_eq⟩ := this
-    rw [h_eq]
-    exact h_indep'.comp measurable_id hφ_meas
-  -- it would follow from measurability wrt the sigma-algebra generated by
-  -- `hist (n-1)` and `arm n`, but we can also give an explicit function
-  let k : ((Iic (n - 1) → α × ℝ) × α) → (ℕ → α × ℝ) := fun x i ↦
-    if hi : i ∈ Iic (n - 1) then (x.1 ⟨i, hi⟩) else if i = n then (x.2, 0) else (a, 0)
-  let φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ := fun x ↦ if stepsUntil a m (k x) = ↑n then 1 else 0
-  classical
-  have hφ_meas : Measurable φ := by
-    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    refine (measurableSet_singleton _).preimage ?_
-    refine (measurable_stepsUntil a m).comp ?_
-    unfold k
-    rw [measurable_pi_iff]
-    intro i
-    split_ifs <;> fun_prop
-  refine ⟨φ, hφ_meas, ?_⟩
-  ext ω
-  classical
-  simp only [Set.indicator_apply, Set.mem_setOf_eq, Function.comp_apply, φ]
-  congr 1
-  rw [stepsUntil_eq_congr]
-  intro i hin
-  simp only [arm, mem_Iic, hist, dite_eq_ite, k]
-  split_ifs with h1 h2
-  · rfl
-  · simp [h2]
-  · exfalso
-    grind
+  obtain ⟨φ, hφ_meas, h_eq⟩ : ∃ φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ, Measurable φ ∧
+      {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) = φ ∘ (fun ω ↦ (hist (n - 1) ω, arm n ω)) :=
+    (measurable_comap_indicator_stepsUntil_eq a m n).exists_eq_measurable_comp
+  rw [h_eq]
+  exact h_indep'.comp measurable_id hφ_meas
+
+lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
+    (a : α) (m n : ℕ) (hm : m ≠ 0) :
+    CondIndepFun (mα.comap (fun ω ↦ arm n ω.1)) ((measurable_arm n).comp measurable_fst).comap_le
+      (fun ω ↦ reward n ω.1) ({ω | stepsUntil a m ω.1 = ↑n}.indicator (fun _ ↦ 1))
+      (Bandit.measure alg ν) :=
+  condIndepFun_fst_prod (ν := Bandit.streamMeasure ν)
+    (measurable_indicator_stepsUntil_eq a m n) (by fun_prop) (by fun_prop)
+    (condIndepFun_reward_stepsUntil_arm' a m n hm)
 
 lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
     (hm : m ≠ 0)
     (hμn : (Bandit.measure alg ν) ((fun ω ↦ stepsUntil a m ω.1) ⁻¹' {↑n}) ≠ 0) :
-    𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil a m ω.1 ← (n : ℕ∞);
-      Bandit.measure alg ν] = ν a := by
+    𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ stepsUntil a m ω.1 ← ↑n; Bandit.measure alg ν] = ν a := by
   let μ := Bandit.measure alg ν
   have hμna :
       μ ((fun ω ↦ stepsUntil a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}) ≠ 0 := by
@@ -326,8 +339,36 @@ lemma identDistrib_rewardByCount_eval [Countable α] [StandardBorelSpace α] [No
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) :=
   (identDistrib_rewardByCount_id a n hn).trans (identDistrib_eval_eval_id_streamMeasure ν m a).symm
 
+lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
+    iIndepFun (fun n ω ↦ rewardByCount a n ω.1 ω.2) (Bandit.measure alg ν) := by
+  sorry
+
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
     iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
+  sorry
+
+lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) :
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω n a)
+      (Bandit.measure alg ν) (Bandit.streamMeasure ν) := by
+  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
+  · refine identDistrib_rewardByCount_eval a (n + 1) n (by simp) (ν := ν)
+  · sorry
+  · exact iIndepFun_eval_streamMeasure'' ν a
+
+lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) :
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω.2 n a)
+      (Bandit.measure alg ν) (Bandit.measure alg ν) := by
+  refine (identDistrib_rewardByCount_stream' a).trans ?_
+  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
+  · sorry
+  · sorry
+  · sorry
+
+lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
+    IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+      (Bandit.measure alg ν) := by
   sorry
 
 end Bandits

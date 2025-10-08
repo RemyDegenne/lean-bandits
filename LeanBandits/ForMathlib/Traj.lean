@@ -49,9 +49,11 @@ lemma traj_map_eq_kernel {a : ℕ} : (traj κ a).map (fun x ↦ x (a + 1)) = κ 
   have hp : g ∘ IicProdIoc a (a + 1) = (piSingleton a).symm ∘ Prod.snd := by
     ext
     simp [g, _root_.IicProdIoc, piSingleton]
-  rw [hf, map_comp_right, traj_map_frestrictLe, partialTraj_succ_self, ← map_comp_right, hp,
-   map_comp_right, ← snd_eq, snd_prod, ← map_comp_right]
-  all_goals measurability
+  rw [hf, map_comp_right _ (by fun_prop) (by fun_prop), traj_map_frestrictLe, partialTraj_succ_self,
+    ← map_comp_right _ (by fun_prop) (by fun_prop), hp,
+    map_comp_right _ (by fun_prop) (by fun_prop), ← snd_eq, snd_prod,
+    ← map_comp_right _ (by fun_prop) (by fun_prop)]
+  simp
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
 lemma partialTraj_compProd_kernel_eq_traj_map {a : ℕ} {x₀ : Π n : Iic 0, X n} :
@@ -59,22 +61,18 @@ lemma partialTraj_compProd_kernel_eq_traj_map {a : ℕ} {x₀ : Π n : Iic 0, X 
   set f := fun x ↦ (frestrictLe a x, x (a + 1))
   set g := fun x ↦ (frestrictLe a x, x)
   have hf : f = (Prod.map id (fun x ↦ x (a + 1))) ∘ g := rfl
-  rw [hf, ← Measure.map_map, ← partialTraj_compProd_traj, ← MeasureTheory.Measure.compProd_map,
-    traj_map_eq_kernel]
-  all_goals measurability
+  rw [hf, ← Measure.map_map (by fun_prop) (by fun_prop), ← partialTraj_compProd_traj zero_le',
+    ← MeasureTheory.Measure.compProd_map (by fun_prop), traj_map_eq_kernel]
 
 -- (Extract kernel lemmas from rewrites?) Probability/Kernel/IonescuTulcea/Traj.lean
 lemma trajMeasure_map_frestrictLe_compProd_kernel_eq_trajMeasure_map {a : ℕ} :
     (trajMeasure μ₀ κ).map (frestrictLe a) ⊗ₘ κ a =
       (trajMeasure μ₀ κ).map (fun x ↦ (frestrictLe a x, x (a + 1))) := by
-  rw [Measure.compProd_eq_comp_prod, trajMeasure, Measure.map_comp, traj_map_frestrictLe,
-    Measure.comp_assoc, Measure.map_comp]
-  any_goals fun_prop
-  congr
-  ext1 x₀
-  rw [comp_apply, ← Measure.compProd_eq_comp_prod, map_apply,
+  rw [Measure.compProd_eq_comp_prod, trajMeasure, Measure.map_comp _ _ (by fun_prop),
+    traj_map_frestrictLe, Measure.comp_assoc, Measure.map_comp _ _ (by fun_prop)]
+  congr with x₀
+  rw [comp_apply, ← Measure.compProd_eq_comp_prod, map_apply _ (by fun_prop),
     partialTraj_compProd_kernel_eq_traj_map]
-  fun_prop
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
 lemma condDistrib_trajMeasure_ae_eq_kernel {a : ℕ}

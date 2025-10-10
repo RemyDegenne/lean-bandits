@@ -10,3 +10,23 @@ The result is that we have only one hand-written algorithm, and even though the 
 This is in stark contrast with the situation in the literature, where the theoretical algorithm is specified in pseudo-code in LaTeX and the experiments are done on a separately written implementation, typically in Python. The experimental version may or may not be also implementing a series of tricks or optimizations of constants.
 
 TODO: describe the translation tactic. It should basically be like \texttt{to\_additive}.
+
+
+\paragraph{Alternative strategy: atomic typeclasses}
+
+The ETC algorithm makes sense for any reward type on which we can define addition and the maximum.
+As written, it also requires division by natural numbers but we could equivalently compare sums of rewards instead of empirical means. The UCB algorithm also requires multiplication, a square root and a logarithm.
+
+We can write the algorithm under typeclasses stating that those operations exist. Those typeclasses would be satisfied by both the real numbers and floating point numbers.
+That way, the algorithm is only written once.
+We would still only get theorems about the real number version because proving theorems will actually require algebraic properties on the reward type, but we don't need to write a translation tactic.
+
+
+\paragraph{Error sensitivity analysis}
+
+A more theoretically satisfying but more involved method to link the Float and Real worlds is to assume in the theoretical analysis that each of the operations performed by the algorithm is imprecise: it is only supposed to give the expected result up to a specified error margin.
+Then we could prove regret bounds on the algorithm that apply under that imprecise assumption.
+
+Finally, we need to prove such error bounds for Float operations. The bounds might depend on the magnitude of the numbers involved.
+
+This method would give theoretical guarantees about the algorithm that is actually running, but the theoretical analysis would depart from the standard literature on bandits and would be more tedious because of the need to track error terms.

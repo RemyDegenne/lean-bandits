@@ -133,7 +133,7 @@ lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a :
 lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
     iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
   have h_ind := iIndepFun_eval_streamMeasure' ν
-  sorry
+  sorry -- essentially done by Etienne in Mathlib PRs
 
 lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
     (h : n ≠ m ∨ a ≠ b) :

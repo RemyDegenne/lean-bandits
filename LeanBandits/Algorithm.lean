@@ -132,6 +132,54 @@ protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R]
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
+lemma step_eq_eval_comp_hist (n : ℕ) :
+    step (α := α) (R := R) n = (fun x ↦ x ⟨n, by simp⟩) ∘ (hist n) := rfl
+
+lemma action_eq_eval_comp_hist (n : ℕ) :
+    action (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).1) ∘ (hist n) := rfl
+
+lemma reward_eq_eval_comp_hist (n : ℕ) :
+    reward (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (hist n) := rfl
+
+lemma measurable_step_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (step n) := by
+  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
+  rw [step_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
+
+lemma adapted_step [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α]
+    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R] :
+    Adapted (Learning.filtration α R) (fun n ↦ step (α := α) (R := R) n) :=
+  fun n ↦ (measurable_step_filtration n).stronglyMeasurable
+
+lemma measurable_hist_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (hist n) := by
+  simp [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe,
+    measurable_iff_comap_le]
+
+-- todo: due to the type of `Adapted` and the fact that `Iic n → α × R` depends on `n`, we cannot
+-- state that `hist` is adapted.
+
+lemma measurable_action_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (action n) := by
+  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
+  rw [action_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
+
+lemma adapted_action [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α] :
+    Adapted (Learning.filtration α R) action :=
+  fun n ↦ (measurable_action_filtration n).stronglyMeasurable
+
+lemma measurable_reward_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (reward n) := by
+  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
+  rw [reward_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
+
+lemma adapted_reward [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R] :
+    Adapted (Learning.filtration α R) reward :=
+  fun n ↦ (measurable_reward_filtration n).stronglyMeasurable
+
 lemma condDistrib_step [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
     condDistrib (step (n + 1)) (hist n) (trajMeasure alg env)
@@ -208,39 +256,6 @@ lemma action_zero_detAlgorithm [MeasurableSingletonClass α] : action 0 =ᵐ[�
     rw [(hasLaw_action_zero _ _).map_eq]
     simp [detAlgorithm]
   exact ae_of_ae_map (by fun_prop) h_eq
-
-lemma action_eq_eval_comp_hist (n : ℕ) :
-    action (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).1) ∘ (hist n) := rfl
-
-lemma reward_eq_eval_comp_hist (n : ℕ) :
-    reward (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (hist n) := rfl
-
-lemma measurable_hist_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (hist n) := by
-  simp [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe,
-    measurable_iff_comap_le]
-
--- todo: due to the type of `Adapted` and the fact that `Iic n → α × R` depends on `n`, we cannot
--- state that `hist` is adapted.
-
-lemma measurable_action_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (action n) := by
-  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
-  rw [action_eq_eval_comp_hist]
-  exact measurable_comp_comap _ (by fun_prop)
-
-lemma adapted_action [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
-    [SecondCountableTopology α] [OpensMeasurableSpace α] :
-    Adapted (Learning.filtration α R) action :=
-  fun n ↦ (measurable_action_filtration n).stronglyMeasurable
-
-lemma measurable_reward_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (reward n) := by
-  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
-  rw [reward_eq_eval_comp_hist]
-  exact measurable_comp_comap _ (by fun_prop)
-
-lemma adapted_reward [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
-    [SecondCountableTopology R] [OpensMeasurableSpace R] :
-    Adapted (Learning.filtration α R) reward :=
-  fun n ↦ (measurable_reward_filtration n).stronglyMeasurable
 
 lemma action_detAlgorithm_ae_eq
     [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]

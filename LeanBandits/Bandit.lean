@@ -259,6 +259,7 @@ lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
 
 lemma arm_detAlgorithm_ae_eq (n : ℕ) :
     arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) := by
+  -- rhs equals nextArm n ∘ hist n
   sorry
 
 example [MeasurableSingletonClass α] :

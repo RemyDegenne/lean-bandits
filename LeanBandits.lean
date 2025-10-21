@@ -5,6 +5,7 @@ import LeanBandits.Bandit
 import LeanBandits.ETC
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.IdentDistrib
+import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.KernelSub
 import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.SubGaussian

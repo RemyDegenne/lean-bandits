@@ -247,18 +247,22 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact arm_eq_of_stepsUntil_eq_coe hm
-  _ = (μ[|{ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) | stepsUntil a m ω.1 = ↑n}.indicator 1 ⁻¹' {1}
-      ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}]).map (fun ω ↦ reward n ω.1) := by
-    congr 3 with ω
-    simp [Set.indicator_apply]
+  _ = (μ[|(fun ω ↦ arm n ω.1) ⁻¹' {a}
+      ∩ {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) | stepsUntil a m ω.1 = ↑n}.indicator 1 ⁻¹' {1} ]).map
+      (fun ω ↦ reward n ω.1) := by
+    congr 2 with ω
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.indicator_apply,
+      Set.mem_setOf_eq, Pi.one_apply, ite_eq_left_iff, zero_ne_one, imp_false, Decidable.not_not]
+    rw [and_comm]
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
     rw [cond_of_condIndepFun (by fun_prop)]
     · exact condIndepFun_reward_stepsUntil_arm a m n hm
     · refine measurable_one.indicator ?_
       exact measurableSet_eq_fun' (by fun_prop) (by fun_prop)
     · fun_prop
-    · convert hμna
-      ext ω
+    · convert hμna using 2
+      rw [Set.inter_comm]
+      congr 1 with ω
       simp [Set.indicator_apply]
   _ = ν a := reward_cond_arm a n hμa
 

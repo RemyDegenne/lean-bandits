@@ -6,7 +6,6 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib
 import LeanBandits.Algorithm
 import LeanBandits.ForMathlib.CondDistrib
-import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.Traj
 
 /-!

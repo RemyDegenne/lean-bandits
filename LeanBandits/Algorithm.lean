@@ -5,7 +5,6 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib
 import LeanBandits.ForMathlib.CondDistrib
-import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.Traj
 
@@ -191,7 +190,7 @@ lemma condDistrib_action [StandardBorelSpace α] [Nonempty α] [StandardBorelSpa
     condDistrib (action (n + 1)) (hist n) (trajMeasure alg env)
       =ᵐ[(trajMeasure alg env).map (hist n)] alg.policy n := by
   rw [← fst_comp_step]
-  refine (condDistrib_comp' (by fun_prop) (by fun_prop) (by fun_prop)).trans ?_
+  refine (condDistrib_comp _ (by fun_prop) (by fun_prop)).trans ?_
   filter_upwards [condDistrib_step alg env n] with h h_eq
   rw [Kernel.map_apply _ (by fun_prop), h_eq, ← Kernel.map_apply _ (by fun_prop), ← Kernel.fst_eq,
     fst_stepKernel]
@@ -202,8 +201,8 @@ lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpa
       =ᵐ[(trajMeasure alg env).map (fun ω ↦ (hist n ω, action (n + 1) ω))] env.feedback n := by
   have h_step := condDistrib_step alg env n
   have h_action := condDistrib_action alg env n
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_step h_action ⊢
-  rw [h_action, Measure.compProd_assoc, ← stepKernel, ← h_step,
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_step h_action ⊢
+  rw [h_action, ← Measure.compProd_assoc, ← stepKernel, ← h_step,
     Measure.map_map (by fun_prop) (by fun_prop)]
   rfl
 
@@ -230,7 +229,7 @@ lemma condDistrib_reward_zero [StandardBorelSpace R] [Nonempty R]
       =ᵐ[(trajMeasure alg env).map (action 0)] env.ν0 := by
   have h_step := (hasLaw_step_zero alg env).map_eq
   have h_action := (hasLaw_action_zero alg env).map_eq
-  rwa [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop), h_action]
+  rwa [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop), h_action]
 
 section DetAlgorithm
 
@@ -290,13 +289,13 @@ lemma condDistrib_reward_stationaryEnv [StandardBorelSpace α] [Nonempty α]
     condDistrib (reward n) (action n) 𝔓 =ᵐ[(𝔓).map (action n)] ν := by
   cases n with
   | zero =>
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)]
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
     change (𝔓).map (step 0) = (𝔓).map (action 0) ⊗ₘ ν
     rw [(hasLaw_action_zero alg (stationaryEnv ν)).map_eq,
       (hasLaw_step_zero alg (stationaryEnv ν)).map_eq, stationaryEnv_ν0]
   | succ n =>
     have h_eq := condDistrib_reward alg (stationaryEnv ν) n
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_eq ⊢
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
     have : (𝔓).map (action (n + 1)) = ((𝔓).map (fun x ↦ (hist n x, action (n + 1) x))).snd := by
       rw [Measure.snd_map_prodMk (by fun_prop)]
     simp only [stationaryEnv_feedback] at h_eq

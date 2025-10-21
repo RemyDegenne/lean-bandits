@@ -1,7 +1,6 @@
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mathlib.Probability.Kernel.CondDistrib
 import LeanBandits.ForMathlib.CondDistrib
-import LeanBandits.ForMathlib.KernelCompositionLemmas
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory
 
@@ -38,7 +37,7 @@ def trajMeasure (μ₀ : Measure (X 0)) (κ : (n : ℕ) → Kernel (Π i : Iic n
 instance : IsProbabilityMeasure (trajMeasure μ₀ κ) := by
   rw [trajMeasure]
   have : IsProbabilityMeasure (μ₀.map (MeasurableEquiv.piIicZero _).symm) :=
-    isProbabilityMeasure_map <| by fun_prop
+    Measure.isProbabilityMeasure_map <| by fun_prop
   infer_instance
 
 -- Probability/Kernel/IonescuTulcea/Traj.lean
@@ -79,7 +78,7 @@ lemma condDistrib_trajMeasure_ae_eq_kernel {a : ℕ}
     [StandardBorelSpace (X (a + 1))] [Nonempty (X (a + 1))] :
     condDistrib (fun x ↦ x (a + 1)) (frestrictLe a) (trajMeasure μ₀ κ)
       =ᵐ[(trajMeasure μ₀ κ).map (frestrictLe a)] κ a := by
-  apply condDistrib_ae_eq_of_measure_eq_compProd₀ (by measurability) (by measurability)
+  apply condDistrib_ae_eq_of_measure_eq_compProd _ (by measurability)
   exact trajMeasure_map_frestrictLe_compProd_kernel_eq_trajMeasure_map.symm
 
 lemma traj_zero_map_eval_zero :

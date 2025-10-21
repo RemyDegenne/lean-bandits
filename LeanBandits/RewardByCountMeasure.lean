@@ -119,7 +119,7 @@ lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
   rw [h_law]
   have h_prod : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ]
       =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] 𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
-    condDistrib_fst_prod (by fun_prop) (by fun_prop) _
+    condDistrib_fst_prod _ (by fun_prop) _
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
   rw [h_prod, h_eq]
 
@@ -193,7 +193,7 @@ lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α]
     by_cases hm1 : m = 1
     · simp only [hm1, true_and]
       have h_indep := condIndepFun_self_right (X := reward 0) (Z := arm 0)
-        (mβ := inferInstance) (mδ := inferInstance) (μ := Bandit.trajMeasure alg ν)
+        (mβ := inferInstance) (mβ' := inferInstance) (μ := Bandit.trajMeasure alg ν)
         (by fun_prop) (by fun_prop)
       have : {ω : ℕ → α × ℝ | arm 0 ω = a}.indicator (fun x ↦ 1)
           = {b | b = a}.indicator (fun _ ↦ 1) ∘ arm 0 := by ext; simp [Set.indicator]
@@ -315,7 +315,7 @@ lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]
     _ = ν a := by
       have : IsProbabilityMeasure
           ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil a m ω.1)) :=
-        isProbabilityMeasure_map (by fun_prop)
+        Measure.isProbabilityMeasure_map (by fun_prop)
       simp
 
 lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α] (a : α) (n m : ℕ)

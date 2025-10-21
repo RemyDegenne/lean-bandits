@@ -5,7 +5,6 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib
 import LeanBandits.ForMathlib.CondDistrib
-import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.Traj
 
@@ -132,88 +131,26 @@ protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R]
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
-lemma condDistrib_step [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
-    condDistrib (step (n + 1)) (hist n) (trajMeasure alg env)
-      =ᵐ[(trajMeasure alg env).map (hist n)] stepKernel alg env n :=
-  Kernel.condDistrib_trajMeasure_ae_eq_kernel
-
-lemma condDistrib_action [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
-    condDistrib (action (n + 1)) (hist n) (trajMeasure alg env)
-      =ᵐ[(trajMeasure alg env).map (hist n)] alg.policy n := by
-  rw [← fst_comp_step]
-  refine (condDistrib_comp' (by fun_prop) (by fun_prop) (by fun_prop)).trans ?_
-  filter_upwards [condDistrib_step alg env n] with h h_eq
-  rw [Kernel.map_apply _ (by fun_prop), h_eq, ← Kernel.map_apply _ (by fun_prop), ← Kernel.fst_eq,
-    fst_stepKernel]
-
-lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
-    condDistrib (reward (n + 1)) (fun ω ↦ (hist n ω, action (n + 1) ω)) (trajMeasure alg env)
-      =ᵐ[(trajMeasure alg env).map (fun ω ↦ (hist n ω, action (n + 1) ω))] env.feedback n := by
-  have h_step := condDistrib_step alg env n
-  have h_action := condDistrib_action alg env n
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_step h_action ⊢
-  rw [h_action, Measure.compProd_assoc, ← stepKernel, ← h_step,
-    Measure.map_map (by fun_prop) (by fun_prop)]
-  rfl
-
-lemma hasLaw_step_zero (alg : Algorithm α R) (env : Environment α R) :
-    HasLaw (step 0) (alg.p0 ⊗ₘ env.ν0) (trajMeasure alg env) where
-  aemeasurable := Measurable.aemeasurable (by fun_prop)
-  map_eq := by
-    unfold step
-    simp only [trajMeasure, Kernel.trajMeasure]
-    rw [← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
-      Kernel.deterministic_comp_eq_map, Kernel.traj_zero_map_eval_zero,
-      Measure.deterministic_comp_eq_map, Measure.map_map (by fun_prop) (by fun_prop)]
-    simp
-
-lemma hasLaw_action_zero (alg : Algorithm α R) (env : Environment α R) :
-    HasLaw (action 0) alg.p0 (trajMeasure alg env) where
-  map_eq := by
-    rw [← fst_comp_step, ← Measure.map_map (by fun_prop) (by fun_prop),
-      (hasLaw_step_zero alg env).map_eq, ← Measure.fst, Measure.fst_compProd]
-
-lemma condDistrib_reward_zero [StandardBorelSpace R] [Nonempty R]
-    (alg : Algorithm α R) (env : Environment α R) :
-    condDistrib (reward 0) (action 0) (trajMeasure alg env)
-      =ᵐ[(trajMeasure alg env).map (action 0)] env.ν0 := by
-  have h_step := (hasLaw_step_zero alg env).map_eq
-  have h_action := (hasLaw_action_zero alg env).map_eq
-  rwa [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop), h_action]
-
-section DetAlgorithm
-
-/-- A deterministic algorithm. -/
-@[simps]
-noncomputable
-def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
-    (h_next : ∀ n, Measurable (nextaction n)) (action0 : α) :
-    Algorithm α R where
-  policy n := Kernel.deterministic (nextaction n) (h_next n)
-  p0 := Measure.dirac action0
-
-variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}
-  {action0 : α} {env : Environment α R}
-
-local notation "𝔓" => trajMeasure (detAlgorithm nextaction h_next action0) env
-
-lemma HasLaw_action_zero_detAlgorithm : HasLaw (action 0) (Measure.dirac action0) 𝔓 where
-  map_eq := (hasLaw_action_zero _ _).map_eq
-
-lemma action_zero_detAlgorithm [MeasurableSingletonClass α] : action 0 =ᵐ[𝔓] fun _ ↦ action0 := by
-  have h_eq : ∀ᵐ x ∂((𝔓).map (action 0)), x = action0 := by
-    rw [(hasLaw_action_zero _ _).map_eq]
-    simp [detAlgorithm]
-  exact ae_of_ae_map (by fun_prop) h_eq
+lemma step_eq_eval_comp_hist (n : ℕ) :
+    step (α := α) (R := R) n = (fun x ↦ x ⟨n, by simp⟩) ∘ (hist n) := rfl
 
 lemma action_eq_eval_comp_hist (n : ℕ) :
     action (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).1) ∘ (hist n) := rfl
 
 lemma reward_eq_eval_comp_hist (n : ℕ) :
     reward (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (hist n) := rfl
+
+lemma measurable_step_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (step n) := by
+  simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]
+  rw [step_eq_eval_comp_hist]
+  exact measurable_comp_comap _ (by fun_prop)
+
+lemma adapted_step [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α]
+    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R] :
+    Adapted (Learning.filtration α R) (fun n ↦ step (α := α) (R := R) n) :=
+  fun n ↦ (measurable_step_filtration n).stronglyMeasurable
 
 lemma measurable_hist_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (hist n) := by
   simp [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe,
@@ -241,6 +178,83 @@ lemma adapted_reward [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpac
     [SecondCountableTopology R] [OpensMeasurableSpace R] :
     Adapted (Learning.filtration α R) reward :=
   fun n ↦ (measurable_reward_filtration n).stronglyMeasurable
+
+lemma condDistrib_step [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
+    condDistrib (step (n + 1)) (hist n) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (hist n)] stepKernel alg env n :=
+  Kernel.condDistrib_trajMeasure_ae_eq_kernel
+
+lemma condDistrib_action [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
+    condDistrib (action (n + 1)) (hist n) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (hist n)] alg.policy n := by
+  rw [← fst_comp_step]
+  refine (condDistrib_comp _ (by fun_prop) (by fun_prop)).trans ?_
+  filter_upwards [condDistrib_step alg env n] with h h_eq
+  rw [Kernel.map_apply _ (by fun_prop), h_eq, ← Kernel.map_apply _ (by fun_prop), ← Kernel.fst_eq,
+    fst_stepKernel]
+
+lemma condDistrib_reward [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
+    condDistrib (reward (n + 1)) (fun ω ↦ (hist n ω, action (n + 1) ω)) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (fun ω ↦ (hist n ω, action (n + 1) ω))] env.feedback n := by
+  have h_step := condDistrib_step alg env n
+  have h_action := condDistrib_action alg env n
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_step h_action ⊢
+  rw [h_action, ← Measure.compProd_assoc, ← stepKernel, ← h_step,
+    Measure.map_map (by fun_prop) (by fun_prop)]
+  rfl
+
+lemma hasLaw_step_zero (alg : Algorithm α R) (env : Environment α R) :
+    HasLaw (step 0) (alg.p0 ⊗ₘ env.ν0) (trajMeasure alg env) where
+  aemeasurable := Measurable.aemeasurable (by fun_prop)
+  map_eq := by
+    unfold step
+    simp only [trajMeasure, Kernel.trajMeasure]
+    rw [← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
+      Kernel.deterministic_comp_eq_map, Kernel.traj_zero_map_eval_zero,
+      Measure.deterministic_comp_eq_map, Measure.map_map (by fun_prop) (by fun_prop)]
+    simp
+
+lemma hasLaw_action_zero (alg : Algorithm α R) (env : Environment α R) :
+    HasLaw (action 0) alg.p0 (trajMeasure alg env) where
+  map_eq := by
+    rw [← fst_comp_step, ← Measure.map_map (by fun_prop) (by fun_prop),
+      (hasLaw_step_zero alg env).map_eq, ← Measure.fst, Measure.fst_compProd]
+
+lemma condDistrib_reward_zero [StandardBorelSpace R] [Nonempty R]
+    (alg : Algorithm α R) (env : Environment α R) :
+    condDistrib (reward 0) (action 0) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (action 0)] env.ν0 := by
+  have h_step := (hasLaw_step_zero alg env).map_eq
+  have h_action := (hasLaw_action_zero alg env).map_eq
+  rwa [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop), h_action]
+
+section DetAlgorithm
+
+/-- A deterministic algorithm. -/
+@[simps]
+noncomputable
+def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
+    (h_next : ∀ n, Measurable (nextaction n)) (action0 : α) :
+    Algorithm α R where
+  policy n := Kernel.deterministic (nextaction n) (h_next n)
+  p0 := Measure.dirac action0
+
+variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}
+  {action0 : α} {env : Environment α R}
+
+local notation "𝔓" => trajMeasure (detAlgorithm nextaction h_next action0) env
+
+lemma HasLaw_action_zero_detAlgorithm : HasLaw (action 0) (Measure.dirac action0) 𝔓 where
+  map_eq := (hasLaw_action_zero _ _).map_eq
+
+lemma action_zero_detAlgorithm [MeasurableSingletonClass α] : action 0 =ᵐ[𝔓] fun _ ↦ action0 := by
+  have h_eq : ∀ᵐ x ∂((𝔓).map (action 0)), x = action0 := by
+    rw [(hasLaw_action_zero _ _).map_eq]
+    simp [detAlgorithm]
+  exact ae_of_ae_map (by fun_prop) h_eq
 
 lemma action_detAlgorithm_ae_eq
     [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
@@ -275,13 +289,13 @@ lemma condDistrib_reward_stationaryEnv [StandardBorelSpace α] [Nonempty α]
     condDistrib (reward n) (action n) 𝔓 =ᵐ[(𝔓).map (action n)] ν := by
   cases n with
   | zero =>
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)]
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
     change (𝔓).map (step 0) = (𝔓).map (action 0) ⊗ₘ ν
     rw [(hasLaw_action_zero alg (stationaryEnv ν)).map_eq,
       (hasLaw_step_zero alg (stationaryEnv ν)).map_eq, stationaryEnv_ν0]
   | succ n =>
     have h_eq := condDistrib_reward alg (stationaryEnv ν) n
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd₀ (by fun_prop) (by fun_prop)] at h_eq ⊢
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
     have : (𝔓).map (action (n + 1)) = ((𝔓).map (fun x ↦ (hist n x, action (n + 1) x))).snd := by
       rw [Measure.snd_map_prodMk (by fun_prop)]
     simp only [stationaryEnv_feedback] at h_eq

@@ -56,10 +56,10 @@ lemma monotone_pullCount (a : α) (h : ℕ → α × ℝ) : Monotone (pullCount 
 
 lemma pullCount_eq_pullCount_add_one (t : ℕ) (h : ℕ → α × ℝ) :
     pullCount (arm t h) (t + 1) h = pullCount (arm t h) t h + 1 := by
-  simp [pullCount, range_succ, filter_insert]
+  simp [pullCount, range_add_one, filter_insert]
 
 lemma pullCount_eq_pullCount (ha : arm t h ≠ a) :  pullCount a (t + 1) h = pullCount a t h := by
-  simp [pullCount, range_succ, filter_insert, ha]
+  simp [pullCount, range_add_one, filter_insert, ha]
 
 lemma pullCount_add_one :
     pullCount a (t + 1) h = pullCount a t h + if arm t h = a then 1 else 0 := by
@@ -257,15 +257,16 @@ lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ
 lemma sum_rewardByCount_eq_sumRewards
     (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
     ∑ m ∈ Icc 1 (pullCount a t h), rewardByCount a m h z = sumRewards a t h := by
-  induction' t with t ht
-  · simp [pullCount, sumRewards]
-  by_cases hta : arm t h = a
-  · rw [← hta] at ht ⊢
-    rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
-    unfold sumRewards
-    rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
-  · unfold sumRewards
-    rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
+  induction t with
+  | zero => simp [pullCount, sumRewards]
+  | succ t ht =>
+    by_cases hta : arm t h = a
+    · rw [← hta] at ht ⊢
+      rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
+      unfold sumRewards
+      rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
+    · unfold sumRewards
+      rwa [pullCount_eq_pullCount hta, sum_range_succ, if_neg hta, add_zero]
 
 lemma sum_pullCount_mul [Fintype α] (h : ℕ → α × ℝ) (f : α → ℝ) (t : ℕ) :
     ∑ a, pullCount a t h * f a = ∑ s ∈ range t, f (arm s h) := by

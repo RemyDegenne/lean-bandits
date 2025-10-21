@@ -119,7 +119,7 @@ lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
   rw [h_law]
   have h_prod : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; μ]
       =ᵐ[(Bandit.trajMeasure alg ν).map (arm n)] 𝓛[reward n | arm n; Bandit.trajMeasure alg ν] :=
-    condDistrib_fst_prod (by fun_prop) (by fun_prop) _
+    condDistrib_fst_prod _ (by fun_prop) _
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
   rw [h_prod, h_eq]
 
@@ -193,7 +193,7 @@ lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α]
     by_cases hm1 : m = 1
     · simp only [hm1, true_and]
       have h_indep := condIndepFun_self_right (X := reward 0) (Z := arm 0)
-        (mβ := inferInstance) (mδ := inferInstance) (μ := Bandit.trajMeasure alg ν)
+        (mβ := inferInstance) (mβ' := inferInstance) (μ := Bandit.trajMeasure alg ν)
         (by fun_prop) (by fun_prop)
       have : {ω : ℕ → α × ℝ | arm 0 ω = a}.indicator (fun x ↦ 1)
           = {b | b = a}.indicator (fun _ ↦ 1) ∘ arm 0 := by ext; simp [Set.indicator]
@@ -247,18 +247,22 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact arm_eq_of_stepsUntil_eq_coe hm
-  _ = (μ[|{ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) | stepsUntil a m ω.1 = ↑n}.indicator 1 ⁻¹' {1}
-      ∩ (fun ω ↦ arm n ω.1) ⁻¹' {a}]).map (fun ω ↦ reward n ω.1) := by
-    congr 3 with ω
-    simp [Set.indicator_apply]
+  _ = (μ[|(fun ω ↦ arm n ω.1) ⁻¹' {a}
+      ∩ {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) | stepsUntil a m ω.1 = ↑n}.indicator 1 ⁻¹' {1} ]).map
+      (fun ω ↦ reward n ω.1) := by
+    congr 2 with ω
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.indicator_apply,
+      Set.mem_setOf_eq, Pi.one_apply, ite_eq_left_iff, zero_ne_one, imp_false, Decidable.not_not]
+    rw [and_comm]
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; μ] := by
     rw [cond_of_condIndepFun (by fun_prop)]
     · exact condIndepFun_reward_stepsUntil_arm a m n hm
     · refine measurable_one.indicator ?_
       exact measurableSet_eq_fun' (by fun_prop) (by fun_prop)
     · fun_prop
-    · convert hμna
-      ext ω
+    · convert hμna using 2
+      rw [Set.inter_comm]
+      congr 1 with ω
       simp [Set.indicator_apply]
   _ = ν a := reward_cond_arm a n hμa
 
@@ -315,7 +319,7 @@ lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]
     _ = ν a := by
       have : IsProbabilityMeasure
           ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil a m ω.1)) :=
-        isProbabilityMeasure_map (by fun_prop)
+        Measure.isProbabilityMeasure_map (by fun_prop)
       simp
 
 lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α] (a : α) (n m : ℕ)

@@ -6,7 +6,6 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib
 import LeanBandits.Algorithm
 import LeanBandits.ForMathlib.CondDistrib
-import LeanBandits.ForMathlib.KernelCompositionLemmas
 import LeanBandits.ForMathlib.Traj
 
 /-!
@@ -196,6 +195,8 @@ protected def filtration (α R : Type*) [MeasurableSpace α] [MeasurableSpace R]
     Filtration ℕ (inferInstance : MeasurableSpace (ℕ → α × R)) :=
   MeasureTheory.Filtration.piLE (X := fun _ ↦ α × R)
 
+section Laws
+
 lemma hasLaw_step_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     HasLaw (fun h : ℕ → α × R ↦ h 0) (alg.p0 ⊗ₘ ν) (Bandit.trajMeasure alg ν) :=
   Learning.hasLaw_step_zero alg (stationaryEnv ν)
@@ -236,32 +237,32 @@ lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
       (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) :=
   Learning.condIndepFun_reward_hist_action n
 
+end Laws
+
 section DetAlgorithm
 
 variable {nextArm : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextArm n)}
   {arm0 : α} {ν : Kernel α R} [IsMarkovKernel ν]
 
-lemma HasLaw_arm_zero_detAlgorithm :
-    HasLaw (arm 0) (Measure.dirac arm0)
-      (Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν) where
+local notation "𝔓t" => Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν
+
+lemma HasLaw_arm_zero_detAlgorithm : HasLaw (arm 0) (Measure.dirac arm0) 𝔓t where
   map_eq := (hasLaw_arm_zero _ _).map_eq
 
 lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
-    arm 0 =ᵐ[Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν] fun _ ↦ arm0 := by
-  have h_eq : ∀ᵐ x ∂((Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν).map (arm 0)), x
-      = arm0 := by
+    arm 0 =ᵐ[𝔓t] fun _ ↦ arm0 := by
+  have h_eq : ∀ᵐ x ∂(((𝔓t).map (arm 0))), x = arm0 := by
     rw [(hasLaw_arm_zero _ _).map_eq]
     simp [detAlgorithm]
   exact ae_of_ae_map (by fun_prop) h_eq
 
 lemma arm_detAlgorithm_ae_eq (n : ℕ) :
-    arm (n + 1) =ᵐ[Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν]
-      fun h ↦ nextArm n (fun i ↦ h i) := by
+    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) := by
+  -- rhs equals nextArm n ∘ hist n
   sorry
 
 example [MeasurableSingletonClass α] :
-    ∀ᵐ h ∂(Bandit.trajMeasure (detAlgorithm nextArm h_next arm0) ν),
-    arm 0 h = arm0 ∧ ∀ n, arm (n + 1) h = nextArm n (fun i ↦ h i) := by
+    ∀ᵐ h ∂(𝔓t), arm 0 h = arm0 ∧ ∀ n, arm (n + 1) h = nextArm n (fun i ↦ h i) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero_detAlgorithm, arm_detAlgorithm_ae_eq⟩
 

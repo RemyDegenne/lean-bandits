@@ -14,7 +14,7 @@ lemma iIndepFun_nat_iff_forall_indepFun {X : ℕ → Ω → E} (hX : ∀ n, AEMe
     let f : (({n + 1} : Finset ℕ) → E) → E := fun x ↦ x ⟨n + 1, by simp⟩
     have hf : Measurable f := by unfold f; fun_prop
     have h_eq : X (n + 1) = f ∘ (fun ω (i : ({n + 1} : Finset ℕ)) ↦ X i ω) := rfl
-    refine h'.comp (ψ := id) hf measurable_id
+    exact h'.comp (ψ := id) hf measurable_id
   · intro h
     rw [iIndepFun_iff_finset]
     intro s

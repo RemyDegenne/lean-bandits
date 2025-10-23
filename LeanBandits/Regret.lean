@@ -73,12 +73,30 @@ lemma pullCount_eq_sum (a : α) (t : ℕ) (h : ℕ → α × ℝ) :
 lemma pullCount_le (a : α) (t : ℕ) (h : ℕ → α × ℝ) : pullCount a t h ≤ t :=
   (card_filter_le _ _).trans_eq (by simp)
 
+lemma pullCount_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h = arm i h') :
+    pullCount a (n + 1) h = pullCount a (n + 1) h' := by
+  unfold pullCount
+  congr 1 with s
+  simp only [mem_filter, mem_range, and_congr_right_iff]
+  intro hs
+  rw [Nat.lt_add_one_iff] at hs
+  rw [h_eq s hs]
+
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
 def stepsUntil (a : α) (m : ℕ) (h : ℕ → α × ℝ) : ℕ∞ := sInf ((↑) '' {s | pullCount a (s + 1) h = m})
 
 lemma stepsUntil_eq_top_iff : stepsUntil a m h = ⊤ ↔ ∀ s, pullCount a (s + 1) h ≠ m := by
   simp [stepsUntil, sInf_eq_top]
+
+lemma stepsUntil_ne_top (h_exists : ∃ s, pullCount a (s + 1) h = m) : stepsUntil a m h ≠ ⊤ := by
+  simpa [stepsUntil_eq_top_iff]
+
+lemma exists_pullCount_eq (h' : stepsUntil a m h ≠ ⊤) :
+    ∃ s, pullCount a (s + 1) h = m := by
+  by_contra! h_contra
+  rw [← stepsUntil_eq_top_iff] at h_contra
+  simp [h_contra] at h'
 
 lemma stepsUntil_zero_of_ne (hka : arm 0 h ≠ a) : stepsUntil a 0 h = 0 := by
   unfold stepsUntil
@@ -139,10 +157,7 @@ lemma stepsUntil_eq_zero_iff :
     stepsUntil a m h = 0 ↔ (m = 0 ∧ arm 0 h ≠ a) ∨ (m = 1 ∧ arm 0 h = a) := by
   classical
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
-  · have h_exists : ∃ s, pullCount a (s + 1) h = m := by
-      by_contra! h_contra
-      rw [← stepsUntil_eq_top_iff] at h_contra
-      simp [h_contra] at h'
+  · have h_exists : ∃ s, pullCount a (s + 1) h = m := exists_pullCount_eq (by simp [h'])
     simp only [stepsUntil_eq_dite, h_exists, ↓reduceDIte, Nat.cast_eq_zero, Nat.find_eq_zero,
       zero_add] at h'
     rw [pullCount_one] at h'
@@ -183,13 +198,7 @@ lemma arm_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ} (hm : m ≠ 0)
     arm n ω = a := by
   have : n = (stepsUntil a m ω).toNat := by simp [h]
   rw [this, arm_stepsUntil hm]
-  by_contra! h_contra
-  rw [← stepsUntil_eq_top_iff] at h_contra
-  simp [h_contra] at h
-
-lemma stepsUntil_eq_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h = arm i h') :
-    stepsUntil a m h = n ↔ stepsUntil a m h' = n := by
-  sorry
+  exact exists_pullCount_eq (by simp [h])
 
 lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount a (s + 1) h = m) :
     pullCount a (stepsUntil a m h + 1).toNat h = m := by
@@ -211,6 +220,63 @@ lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount a (s + 1)
   rw [ENat.toNat_add ?_ (by simp), ENat.toNat_one, pullCount_eq_pullCount_add_one] at h_add_one
   swap; · simpa [stepsUntil_eq_top_iff]
   grind
+
+lemma pullCount_lt_of_le_stepsUntil (a : α) {n m : ℕ} (h : ℕ → α × ℝ)
+    (h_exists : ∃ s, pullCount a (s + 1) h = m) (hn : n < stepsUntil a m h) :
+    pullCount a (n + 1) h < m := by
+  classical
+  have h_eq := stepsUntil_eq_dite a m h
+  simp only [h_exists, ↓reduceDIte] at h_eq
+  rw [← ENat.coe_toNat (stepsUntil_ne_top h_exists)] at hn
+  refine lt_of_le_of_ne ?_ ?_
+  · calc pullCount a (n + 1) h
+    _ ≤ pullCount a (stepsUntil a m h + 1).toNat h := by
+      refine monotone_pullCount a h ?_
+      rw [ENat.toNat_add (stepsUntil_ne_top h_exists) (by simp)]
+      simp only [ENat.toNat_one, add_le_add_iff_right]
+      exact mod_cast hn.le
+    _ = m := pullCount_stepsUntil_add_one h_exists
+  · refine Nat.find_min h_exists (m := n) ?_
+    suffices n < (stepsUntil a m h).toNat by
+      rwa [h_eq, ENat.toNat_coe] at this
+    exact mod_cast hn
+
+lemma pullCount_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ} (hm : m ≠ 0)
+    (h : stepsUntil a m ω = n) :
+    pullCount a n ω = m - 1 := by
+  have : n = (stepsUntil a m ω).toNat := by simp [h]
+  rw [this, pullCount_stepsUntil hm]
+  exact exists_pullCount_eq (by simp [h])
+
+lemma pullCount_add_one_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ}
+    (h : stepsUntil a m ω = n) :
+    pullCount a (n + 1) ω = m := by
+  have : n + 1 = (stepsUntil a m ω + 1).toNat := by
+    rw [ENat.toNat_add (by simp [h]) (by simp)]; simp [h]
+  rw [this, pullCount_stepsUntil_add_one]
+  exact exists_pullCount_eq (by simp [h])
+
+lemma stepsUntil_eq_iff {ω : ℕ → α × ℝ} (n : ℕ) :
+    stepsUntil a m ω = n ↔
+      pullCount a (n + 1) ω = m ∧ (∀ k < n, pullCount a (k + 1) ω < m) := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · have h_exists : ∃ s, pullCount a (s + 1) ω = m := exists_pullCount_eq (by simp [h])
+    refine ⟨pullCount_add_one_eq_of_stepsUntil_eq_coe h, fun k hk ↦ ?_⟩
+    exact pullCount_lt_of_le_stepsUntil a ω h_exists (by rw [h]; exact mod_cast hk)
+  · classical
+    rw [stepsUntil_eq_dite a m ω, dif_pos ⟨n, h.1⟩]
+    simp only [Nat.cast_inj]
+    rw [Nat.find_eq_iff]
+    exact ⟨h.1, fun k hk ↦ (h.2 k hk).ne⟩
+
+lemma stepsUntil_eq_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h = arm i h') :
+    stepsUntil a m h = n ↔ stepsUntil a m h' = n := by
+  simp_rw [stepsUntil_eq_iff n]
+  congr! 1
+  · rw [pullCount_congr h_eq]
+  · congr! 3 with k hk
+    rw [pullCount_congr]
+    grind
 
 section SumRewards
 

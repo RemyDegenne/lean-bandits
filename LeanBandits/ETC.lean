@@ -244,25 +244,6 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
         (by fun_prop) (by fun_prop)
     exact indepFun_eval_snd_measure _ ν hab
 
-lemma MeasurableSet.imp {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
-    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
-    MeasurableSet {x | p x → q x} := by
-  have h_eq : {x | p x → q x} = {x | p x}ᶜ ∪ {x | q x} := by
-    ext x
-    grind
-  rw [h_eq]
-  exact MeasurableSet.union hs.compl ht
-
-lemma MeasurableSet.iff {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
-    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
-    MeasurableSet {x | p x ↔ q x} := by
-  have h_eq : {x | p x ↔ q x} = ({x | p x}ᶜ ∪ {x | q x}) ∩ ({x | q x}ᶜ ∪ {x | p x}) := by
-    ext x
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_union, Set.mem_compl_iff]
-    grind
-  rw [h_eq]
-  exact (MeasurableSet.union hs.compl ht).inter (MeasurableSet.union ht.compl hs)
-
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by

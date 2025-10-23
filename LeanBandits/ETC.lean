@@ -244,6 +244,25 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
         (by fun_prop) (by fun_prop)
     exact indepFun_eval_snd_measure _ ν hab
 
+lemma MeasurableSet.imp {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
+    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
+    MeasurableSet {x | p x → q x} := by
+  have h_eq : {x | p x → q x} = {x | p x}ᶜ ∪ {x | q x} := by
+    ext x
+    grind
+  rw [h_eq]
+  exact MeasurableSet.union hs.compl ht
+
+lemma MeasurableSet.iff {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
+    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
+    MeasurableSet {x | p x ↔ q x} := by
+  have h_eq : {x | p x ↔ q x} = ({x | p x}ᶜ ∪ {x | q x}) ∩ ({x | q x}ᶜ ∪ {x | p x}) := by
+    ext x
+    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_union, Set.mem_compl_iff]
+    grind
+  rw [h_eq]
+  exact (MeasurableSet.union hs.compl ht).inter (MeasurableSet.union ht.compl hs)
+
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -295,6 +314,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       let f₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
         ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
       have hf₁ : Measurable f₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount (bestArm ν) (K * m) ω.1)
@@ -308,18 +328,8 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
           (f := fun s ω ↦ rewardByCount a s ω.1 ω.2) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
         have h_le := pullCount_le a (K * m) ω.1
         grind
-      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
-      simp_rw [iff_def, imp_iff_not_or]
-      change MeasurableSet ({x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} ∩ {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x})
-      have h1 : {x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} = {x | f₁ x ≤ g₁ x}ᶜ ∪ {x | f₂ x ≤ g₂ x} := by
-        ext; simp
-      have h2 : {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x} = {x | f₂ x ≤ g₂ x}ᶜ ∪ {x | f₁ x ≤ g₁ x} := by
-        ext; simp
-      rw [h1, h2]
-      refine (MeasurableSet.union ?_ ?_).inter (MeasurableSet.union ?_ ?_)
-      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
+      refine MeasurableSet.iff ?_ ?_
       · exact measurableSet_le (by fun_prop) (by fun_prop)
-      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
       · exact measurableSet_le (by fun_prop) (by fun_prop)
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]

@@ -365,7 +365,8 @@ lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] 
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) := by
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
   · refine identDistrib_rewardByCount_eval a (n + 1) n (by simp) (ν := ν)
-  · sorry
+  · have h_indep := iIndepFun_rewardByCount' alg ν a
+    exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
   · exact iIndepFun_eval_streamMeasure'' ν a
 
 lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
@@ -374,9 +375,15 @@ lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [
       (Bandit.measure alg ν) (Bandit.measure alg ν) := by
   refine (identDistrib_rewardByCount_stream' a).trans ?_
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
-  · sorry
-  · sorry
-  · sorry
+  · rw [← Bandit.snd_measure alg ν, Measure.snd,
+      identDistrib_map_left_iff (by fun_prop) (by fun_prop)
+        (Measurable.aemeasurable <| by fun_prop)]
+    exact IdentDistrib.refl (by fun_prop)
+  · exact iIndepFun_eval_streamMeasure'' ν a
+  · change iIndepFun (fun n ↦ ((fun ω ↦ ω n a) ∘ Prod.snd)) (Bandit.measure alg ν)
+    rw [← iIndepFun_map_iff (by fun_prop) (fun _ ↦ Measurable.aemeasurable (by fun_prop))]
+    rw [← Measure.snd, Bandit.snd_measure]
+    exact iIndepFun_eval_streamMeasure'' ν a
 
 lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
     IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)

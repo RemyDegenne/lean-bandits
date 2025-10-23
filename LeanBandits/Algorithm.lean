@@ -156,8 +156,12 @@ lemma measurable_hist_filtration (n : ℕ) : Measurable[Learning.filtration α R
   simp [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe,
     measurable_iff_comap_le]
 
--- todo: due to the type of `Adapted` and the fact that `Iic n → α × R` depends on `n`, we cannot
--- state that `hist` is adapted.
+lemma adapted_hist [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α]
+    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R] :
+    Adapted (Learning.filtration α R) hist :=
+  fun n ↦ (measurable_hist_filtration n).stronglyMeasurable
 
 lemma measurable_action_filtration (n : ℕ) : Measurable[Learning.filtration α R n] (action n) := by
   simp only [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe]

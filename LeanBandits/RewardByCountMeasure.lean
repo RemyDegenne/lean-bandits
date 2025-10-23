@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit
 import LeanBandits.ForMathlib.IdentDistrib
+import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.Regret
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
@@ -343,9 +344,16 @@ lemma identDistrib_rewardByCount_eval [Countable α] [StandardBorelSpace α] [No
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) :=
   (identDistrib_rewardByCount_id a n hn).trans (identDistrib_eval_eval_id_streamMeasure ν m a).symm
 
+lemma indepFun_rewardByCount_Iic (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α)
+    (n : ℕ) :
+    (fun ω ↦ rewardByCount a (n + 1) ω.1 ω.2) ⟂ᵢ[Bandit.measure alg ν]
+      fun ω (i : Iic n) ↦ rewardByCount a i ω.1 ω.2 := by
+  sorry
+
 lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
     iIndepFun (fun n ω ↦ rewardByCount a n ω.1 ω.2) (Bandit.measure alg ν) := by
-  sorry
+  rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
+  exact indepFun_rewardByCount_Iic alg ν a
 
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
     iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by

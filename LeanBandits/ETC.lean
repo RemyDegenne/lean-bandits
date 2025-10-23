@@ -118,9 +118,42 @@ lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓t] 
   | base => rfl
   | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
+lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :
+    (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = 1 := by
+  have h_iff (s : ℕ) (hs : s < K) : ⟨s % K, Nat.mod_lt _ hK⟩ = a ↔ s = a := by
+    simp only [Nat.mod_eq_of_lt hs, Fin.ext_iff]
+  calc (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+  _ = ∑ s ∈ range K, if s = a then 1 else 0 := sum_congr rfl fun s hs ↦ by grind
+  _ = _ := by
+    rw [sum_ite_eq']
+    simp
+
 lemma sum_mod_range_mul {K : ℕ} (hK : 0 < K) (m : ℕ) (a : Fin K) :
     (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = m := by
-  sorry
+  induction m with
+  | zero => simp
+  | succ n hn =>
+    calc (∑ s ∈ range (K * (n + 1)), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+    _ = (∑ s ∈ range (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by ring_nf
+    _ = (∑ s ∈ range (K * n), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+        + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      rw [sum_range_add_sum_Ico]
+      grind
+    _ = n + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      rw [hn]
+    _ = n + (∑ s ∈ range K, if ⟨(s + K * n) % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      congr 1
+      let e : ℕ ↪ ℕ := ⟨fun i : ℕ ↦ i + K * n, fun i j hij ↦ by grind⟩
+      have : Finset.map e (range K) = Ico (K * n) (K * n + K) := by
+        ext x
+        simp only [mem_map, mem_range, Function.Embedding.coeFn_mk, mem_Ico, e]
+        refine ⟨fun h ↦ by grind, fun h ↦ ?_⟩
+        use x - K * n
+        grind
+      rw [← this, Finset.sum_map]
+      congr
+    _ = n + (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by simp
+    _ = n + 1 := by rw [sum_mod_range hK]
 
 lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓t] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
@@ -262,6 +295,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       let f₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
         ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
       let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
       have hf₁ : Measurable f₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount (bestArm ν) (K * m) ω.1)
@@ -275,18 +309,8 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
           (f := fun s ω ↦ rewardByCount a s ω.1 ω.2) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
         have h_le := pullCount_le a (K * m) ω.1
         grind
-      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
-      simp_rw [iff_def, imp_iff_not_or]
-      change MeasurableSet ({x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} ∩ {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x})
-      have h1 : {x | ¬f₁ x ≤ g₁ x ∨ f₂ x ≤ g₂ x} = {x | f₁ x ≤ g₁ x}ᶜ ∪ {x | f₂ x ≤ g₂ x} := by
-        ext; simp
-      have h2 : {x | ¬f₂ x ≤ g₂ x ∨ f₁ x ≤ g₁ x} = {x | f₂ x ≤ g₂ x}ᶜ ∪ {x | f₁ x ≤ g₁ x} := by
-        ext; simp
-      rw [h1, h2]
-      refine (MeasurableSet.union ?_ ?_).inter (MeasurableSet.union ?_ ?_)
-      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
+      refine MeasurableSet.iff ?_ ?_
       · exact measurableSet_le (by fun_prop) (by fun_prop)
-      · exact (measurableSet_le (by fun_prop) (by fun_prop)).compl
       · exact measurableSet_le (by fun_prop) (by fun_prop)
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib
-import LeanBandits.SequentialLearning.Algorithm
+import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.Traj
 

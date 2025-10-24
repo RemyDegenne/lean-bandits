@@ -3,12 +3,10 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import LeanBandits.ForMathlib.KernelSub
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
-import Mathlib.Probability.Kernel.CompProdEqIff
-import Mathlib.Probability.Kernel.Composition.Lemmas
-import LeanBandits.ForMathlib.KernelSub
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal

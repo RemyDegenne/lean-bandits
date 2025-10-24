@@ -1,4 +1,5 @@
-import Mathlib
+import Mathlib.Probability.IdentDistrib
+import Mathlib.Probability.Independence.InfinitePi
 
 open MeasureTheory Finset
 

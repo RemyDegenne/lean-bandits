@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 import LeanBandits.AlgorithmBuilding
 import LeanBandits.Bandit.Regret
+import LeanBandits.ForMathlib.MeasurableArgMax
 
 /-!
 # UCB algorithm

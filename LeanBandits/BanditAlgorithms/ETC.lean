@@ -6,8 +6,8 @@ Authors: Rémy Degenne
 import Mathlib.Probability.Moments.SubGaussian
 import LeanBandits.AlgorithmAndRandomVariables
 import LeanBandits.AlgorithmBuilding
+import LeanBandits.Bandit.Regret
 import LeanBandits.ForMathlib.SubGaussian
-import LeanBandits.Regret
 import LeanBandits.RewardByCountMeasure
 
 /-! # The Explore-Then-Commit Algorithm

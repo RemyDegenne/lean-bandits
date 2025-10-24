@@ -1,8 +1,9 @@
-import LeanBandits.Algorithm
 import LeanBandits.AlgorithmAndRandomVariables
 import LeanBandits.AlgorithmBuilding
-import LeanBandits.Bandit
-import LeanBandits.ETC
+import LeanBandits.Bandit.Bandit
+import LeanBandits.Bandit.Regret
+import LeanBandits.BanditAlgorithms.ETC
+import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.IndepFun
@@ -10,6 +11,5 @@ import LeanBandits.ForMathlib.KernelSub
 import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
-import LeanBandits.Regret
 import LeanBandits.RewardByCountMeasure
-import LeanBandits.UCB
+import LeanBandits.SequentialLearning.Algorithm

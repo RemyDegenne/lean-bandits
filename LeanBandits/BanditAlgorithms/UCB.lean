@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.AlgorithmBuilding
-import LeanBandits.Regret
+import LeanBandits.Bandit.Regret
+import LeanBandits.ForMathlib.MeasurableArgMax
 
 /-!
 # UCB algorithm

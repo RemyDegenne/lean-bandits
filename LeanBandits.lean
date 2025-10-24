@@ -9,6 +9,7 @@ import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.KernelSub
 import LeanBandits.ForMathlib.Measurable
+import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
 import LeanBandits.RewardByCountMeasure

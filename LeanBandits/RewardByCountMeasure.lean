@@ -350,10 +350,14 @@ lemma indepFun_rewardByCount_Iic (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [
       fun ω (i : Iic n) ↦ rewardByCount a i ω.1 ω.2 := by
   sorry
 
-lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
+lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
     iIndepFun (fun n ω ↦ rewardByCount a n ω.1 ω.2) (Bandit.measure alg ν) := by
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   exact indepFun_rewardByCount_Iic alg ν a
+
+lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
+  sorry
 
 lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) :
@@ -361,7 +365,7 @@ lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] 
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) := by
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
   · refine identDistrib_rewardByCount_eval a (n + 1) n (by simp) (ν := ν)
-  · have h_indep := iIndepFun_rewardByCount alg ν a
+  · have h_indep := iIndepFun_rewardByCount' alg ν a
     exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
   · exact iIndepFun_eval_streamMeasure'' ν a
 

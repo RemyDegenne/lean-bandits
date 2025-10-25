@@ -249,11 +249,8 @@ lemma HasLaw_arm_zero_detAlgorithm : HasLaw (arm 0) (Measure.dirac arm0) 𝔓t w
   map_eq := (hasLaw_arm_zero _ _).map_eq
 
 lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
-    arm 0 =ᵐ[𝔓t] fun _ ↦ arm0 := by
-  have h_eq : ∀ᵐ x ∂(((𝔓t).map (arm 0))), x = arm0 := by
-    rw [(hasLaw_arm_zero _ _).map_eq]
-    simp [detAlgorithm]
-  exact ae_of_ae_map (by fun_prop) h_eq
+    arm 0 =ᵐ[𝔓t] fun _ ↦ arm0 :=
+  Learning.action_zero_detAlgorithm
 
 lemma arm_detAlgorithm_ae_eq [StandardBorelSpace α] [Nonempty α]
     [StandardBorelSpace R] [Nonempty R] (n : ℕ) :

@@ -44,6 +44,7 @@ lemma action_detAlgorithm_ae_eq
     [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (n : ℕ) :
     action (n + 1) =ᵐ[𝔓] fun h ↦ nextaction n (fun i ↦ h i) := by
+  -- rhs equals nextAction n ∘ hist n
   have h := condDistrib_action (detAlgorithm nextaction h_next action0) env n
   simp only [detAlgorithm_policy] at h
   sorry

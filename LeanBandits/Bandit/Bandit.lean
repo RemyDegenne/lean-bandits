@@ -255,12 +255,13 @@ lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
     simp [detAlgorithm]
   exact ae_of_ae_map (by fun_prop) h_eq
 
-lemma arm_detAlgorithm_ae_eq (n : ℕ) :
-    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) := by
-  -- rhs equals nextArm n ∘ hist n
-  sorry
+lemma arm_detAlgorithm_ae_eq [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
+    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) :=
+  Learning.action_detAlgorithm_ae_eq n
 
-example [MeasurableSingletonClass α] :
+example [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] :
     ∀ᵐ h ∂(𝔓t), arm 0 h = arm0 ∧ ∀ n, arm (n + 1) h = nextArm n (fun i ↦ h i) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero_detAlgorithm, arm_detAlgorithm_ae_eq⟩

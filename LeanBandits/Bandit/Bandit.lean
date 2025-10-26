@@ -48,9 +48,12 @@ deriving IsProbabilityMeasure
 
 /-- Measure of an infinite stream of rewards from each arm. -/
 noncomputable
-def streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] : Measure (ℕ → α → R) :=
+def streamMeasure (ν : Kernel α R) : Measure (ℕ → α → R) :=
   Measure.infinitePi fun _ ↦ Measure.infinitePi ν
-deriving IsProbabilityMeasure
+
+instance (ν : Kernel α R) [IsMarkovKernel ν] : IsProbabilityMeasure (streamMeasure ν) := by
+  unfold streamMeasure
+  infer_instance
 
 /-- Joint distribution of the sequence of arm pulled and rewards, and a stream of independent
 rewards from all arms. -/

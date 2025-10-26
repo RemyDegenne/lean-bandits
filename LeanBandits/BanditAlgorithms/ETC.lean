@@ -217,8 +217,12 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
         = ∑ s ∈ range m, rewardByCount a (s + 1) ω.1 ω.2 := by
       let e : Icc 1 m ≃ range m :=
-      { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; grind⟩
-        invFun x := ⟨x + 1, by have h := x.2; simp only [mem_Icc]; grind⟩
+      { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
+        invFun x := ⟨x + 1, by
+          have h := x.2
+          simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
+          simp only [mem_range] at h
+          grind⟩
         left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
         right_inv x := by have h := x.2; grind }
       rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]

@@ -48,9 +48,12 @@ deriving IsProbabilityMeasure
 
 /-- Measure of an infinite stream of rewards from each arm. -/
 noncomputable
-def streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] : Measure (ℕ → α → R) :=
+def streamMeasure (ν : Kernel α R) : Measure (ℕ → α → R) :=
   Measure.infinitePi fun _ ↦ Measure.infinitePi ν
-deriving IsProbabilityMeasure
+
+instance (ν : Kernel α R) [IsMarkovKernel ν] : IsProbabilityMeasure (streamMeasure ν) := by
+  unfold streamMeasure
+  infer_instance
 
 /-- Joint distribution of the sequence of arm pulled and rewards, and a stream of independent
 rewards from all arms. -/
@@ -121,7 +124,7 @@ lemma integral_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] (n : 
 
 lemma iIndepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] :
     iIndepFun (fun n ω ↦ ω n) (Bandit.streamMeasure ν) :=
-  iIndepFun_infinitePi (μ := fun (_ : ℕ) ↦ Measure.infinitePi ν) (Ω := fun _ ↦ α → R)
+  iIndepFun_infinitePi (P := fun (_ : ℕ) ↦ Measure.infinitePi ν) (Ω := fun _ ↦ α → R)
     (X := fun i u ↦ u) (fun i ↦ by fun_prop)
 
 lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a : α) :
@@ -129,9 +132,8 @@ lemma iIndepFun_eval_streamMeasure'' (ν : Kernel α R) [IsMarkovKernel ν] (a :
   (iIndepFun_eval_streamMeasure' ν).comp (g := fun i ω ↦ ω a) (by fun_prop)
 
 lemma iIndepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] :
-    iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) := by
-  have h_ind := iIndepFun_eval_streamMeasure' ν
-  sorry -- essentially done by Etienne in Mathlib PRs
+    iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) (Bandit.streamMeasure ν) :=
+  iIndepFun_uncurry_infinitePi' (X := fun _ _ ↦ id) (fun _ ↦ ν) (by fun_prop)
 
 lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : ℕ} {a b : α}
     (h : n ≠ m ∨ a ≠ b) :
@@ -249,18 +251,16 @@ lemma HasLaw_arm_zero_detAlgorithm : HasLaw (arm 0) (Measure.dirac arm0) 𝔓t w
   map_eq := (hasLaw_arm_zero _ _).map_eq
 
 lemma arm_zero_detAlgorithm [MeasurableSingletonClass α] :
-    arm 0 =ᵐ[𝔓t] fun _ ↦ arm0 := by
-  have h_eq : ∀ᵐ x ∂(((𝔓t).map (arm 0))), x = arm0 := by
-    rw [(hasLaw_arm_zero _ _).map_eq]
-    simp [detAlgorithm]
-  exact ae_of_ae_map (by fun_prop) h_eq
+    arm 0 =ᵐ[𝔓t] fun _ ↦ arm0 :=
+  Learning.action_zero_detAlgorithm
 
-lemma arm_detAlgorithm_ae_eq (n : ℕ) :
-    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) := by
-  -- rhs equals nextArm n ∘ hist n
-  sorry
+lemma arm_detAlgorithm_ae_eq [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
+    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm n (fun i ↦ h i) :=
+  Learning.action_detAlgorithm_ae_eq n
 
-example [MeasurableSingletonClass α] :
+example [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R] :
     ∀ᵐ h ∂(𝔓t), arm 0 h = arm0 ∧ ∀ n, arm (n + 1) h = nextArm n (fun i ↦ h i) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero_detAlgorithm, arm_detAlgorithm_ae_eq⟩

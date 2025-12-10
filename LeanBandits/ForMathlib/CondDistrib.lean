@@ -347,6 +347,28 @@ lemma indepFun_snd_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_ind
       AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+-- cf. measurableSet_graph (Mathlib/MeasureTheory/Measure/Lebesgue/Basic.lean)
+lemma measurableSet_graph' {β Ω : Type*} [MeasurableSpace β] [MeasurableSpace Ω]
+    [StandardBorelSpace Ω] {f : β → Ω} (hf : Measurable f) :
+    MeasurableSet {p : β × Ω | p.2 = f p.1} := by
+  letI := upgradeStandardBorel Ω
+  exact (measurable_snd.prodMk (by fun_prop)) isClosed_diagonal.measurableSet
+
+omit [Nonempty Ω] [IsFiniteMeasure μ] in
+lemma ae_eq_of_map_prodMk_eq {f : β → Ω} (hf : Measurable f) (hX : AEMeasurable X μ)
+    (hY : AEMeasurable Y μ) (h : μ.map (fun ω ↦ (X ω, Y ω)) = μ.map (fun ω ↦ (X ω, f (X ω)))) :
+    Y =ᵐ[μ] f ∘ X := by
+  have hp : ∀ᵐ p ∂μ.map (fun ω ↦ (X ω, f (X ω))), p.2 = f p.1 :=
+    (ae_map_iff (by fun_prop) (measurableSet_graph' hf)).2 (by simp)
+  exact ae_of_ae_map (by fun_prop) (h ▸ hp)
+
+lemma ae_eq_of_condDistrib_eq_deterministic {f : β → Ω} (hf : Measurable f) (hX : AEMeasurable X μ)
+    (hY : AEMeasurable Y μ) (h : condDistrib Y X μ =ᵐ[μ.map X] Kernel.deterministic f hf) :
+    Y =ᵐ[μ] f ∘ X := by
+  have hfX := condDistrib_comp_self (μ := μ) X hf
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h hfX
+  exact ae_eq_of_map_prodMk_eq hf hX hY (hfX ▸ h)
+
 end CondDistrib
 
 section Cond

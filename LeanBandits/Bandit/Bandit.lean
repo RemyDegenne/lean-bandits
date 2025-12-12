@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.SequentialLearning.Deterministic
+import LeanBandits.ForMathlib.IndepInfinitePi
 import Mathlib.Probability.IdentDistrib
-import Mathlib.Probability.Independence.InfinitePi
 
 /-!
 # Bandit
@@ -143,8 +143,8 @@ lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : 
   exact (iIndepFun_eval_streamMeasure ν).indepFun (by grind)
 
 lemma indepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] {a b : α} (h : a ≠ b) :
-    IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (Bandit.streamMeasure ν) := by
-  sorry
+    IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (Bandit.streamMeasure ν) :=
+  indepFun_proj_infinitePi_infinitePi h
 
 lemma indepFun_eval_snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     {a b : α} (h : a ≠ b) :

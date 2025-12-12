@@ -144,7 +144,7 @@ lemma indepFun_eval_streamMeasure (ν : Kernel α R) [IsMarkovKernel ν] {n m : 
 
 lemma indepFun_eval_streamMeasure' (ν : Kernel α R) [IsMarkovKernel ν] {a b : α} (h : a ≠ b) :
     IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (Bandit.streamMeasure ν) :=
-  indepFun_proj_infinitePi_infinitePi h
+  indepFun_proj_infinitePi_infinitePi (μ := fun _ ↦ ν) h
 
 lemma indepFun_eval_snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     {a b : α} (h : a ≠ b) :

@@ -7,6 +7,7 @@ import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.IndepFun
+import LeanBandits.ForMathlib.IndepInfinitePi
 import LeanBandits.ForMathlib.KernelSub
 import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.MeasurableArgMax

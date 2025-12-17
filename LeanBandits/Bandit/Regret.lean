@@ -304,36 +304,35 @@ section RewardByCount
 
 /-- Reward obtained when pulling arm `a` for the `m`-th time. -/
 noncomputable
-def rewardByCount (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) : ℝ :=
-  match (stepsUntil a m h) with
-  | ⊤ => z m a
-  | (n : ℕ) => reward n h
+def rewardByCount (a : α) (m : ℕ) (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) : ℝ :=
+  match (stepsUntil a m ω.1) with
+  | ⊤ => ω.2 m a
+  | (n : ℕ) => reward n ω.1
 
-lemma rewardByCount_eq_ite (a : α) (m : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    rewardByCount a m h z =
-      if (stepsUntil a m h) = ⊤ then z m a else reward (stepsUntil a m h).toNat h := by
+lemma rewardByCount_eq_ite (a : α) (m : ℕ) (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) :
+    rewardByCount a m ω =
+      if (stepsUntil a m ω.1) = ⊤ then ω.2 m a else reward (stepsUntil a m ω.1).toNat ω.1 := by
   unfold rewardByCount
-  cases stepsUntil a m h <;> simp
+  cases stepsUntil a m ω.1 <;> simp
 
 lemma rewardByCount_of_stepsUntil_eq_top {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
     (h : stepsUntil a m ω.1 = ⊤) :
-    rewardByCount a m ω.1 ω.2 = ω.2 m a := by simp [rewardByCount_eq_ite, h]
+    rewardByCount a m ω = ω.2 m a := by simp [rewardByCount_eq_ite, h]
 
 lemma rewardByCount_of_stepsUntil_eq_coe {ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)}
     (h : stepsUntil a m ω.1 = n) :
-    rewardByCount a m ω.1 ω.2 = reward n ω.1 := by simp [rewardByCount_eq_ite, h]
+    rewardByCount a m ω = reward n ω.1 := by simp [rewardByCount_eq_ite, h]
 
-lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    rewardByCount (arm t h) (pullCount (arm t h) t h + 1) h z = reward t h := by
+lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) :
+    rewardByCount (arm t ω.1) (pullCount (arm t ω.1) t ω.1 + 1) ω = reward t ω.1 := by
   rw [rewardByCount, ← pullCount_eq_pullCount_add_one, stepsUntil_pullCount_eq]
 
-lemma sum_rewardByCount_eq_sumRewards
-    (a : α) (t : ℕ) (h : ℕ → α × ℝ) (z : ℕ → α → ℝ) :
-    ∑ m ∈ Icc 1 (pullCount a t h), rewardByCount a m h z = sumRewards a t h := by
+lemma sum_rewardByCount_eq_sumRewards (a : α) (t : ℕ) (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) :
+    ∑ m ∈ Icc 1 (pullCount a t ω.1), rewardByCount a m ω = sumRewards a t ω.1 := by
   induction t with
   | zero => simp [pullCount, sumRewards]
   | succ t ht =>
-    by_cases hta : arm t h = a
+    by_cases hta : arm t ω.1 = a
     · rw [← hta] at ht ⊢
       rw [pullCount_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
       unfold sumRewards

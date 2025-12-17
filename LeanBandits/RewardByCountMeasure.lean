@@ -68,7 +68,7 @@ lemma measurable_stepsUntil' (a : α) (m : ℕ) :
 
 @[fun_prop]
 lemma measurable_rewardByCount (a : α) (m : ℕ) :
-    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ rewardByCount a m ω.1 ω.2) := by
+    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ rewardByCount a m ω) := by
   simp_rw [rewardByCount_eq_ite]
   refine Measurable.ite ?_ ?_ ?_
   · exact (measurableSet_singleton _).preimage <| measurable_stepsUntil' a m
@@ -269,7 +269,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
 
 lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) (m : ℕ) (hm : m ≠ 0) :
-    condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil a m ω.1)
+    condDistrib (rewardByCount a m) (fun ω ↦ stepsUntil a m ω.1)
         (Bandit.measure alg ν)
       =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil a m ω.1)] Kernel.const _ (ν a) := by
   let μ := Bandit.measure alg ν
@@ -302,15 +302,15 @@ lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α
 /-- The reward received at the `m`-th pull of arm `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) (m : ℕ) (hm : m ≠ 0) :
-    HasLaw (fun ω ↦ rewardByCount a m ω.1 ω.2) (ν a) (Bandit.measure alg ν) where
+    HasLaw (rewardByCount a m) (ν a) (Bandit.measure alg ν) where
   map_eq := by
     have h_condDistrib :
-        condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil a m ω.1)
+        condDistrib (rewardByCount a m) (fun ω ↦ stepsUntil a m ω.1)
           (Bandit.measure alg ν)
         =ᵐ[(Bandit.measure alg ν).map (fun ω ↦ stepsUntil a m ω.1)]
           Kernel.const _ (ν a) := condDistrib_rewardByCount_stepsUntil a m hm
-    calc (Bandit.measure alg ν).map (fun ω ↦ rewardByCount a m ω.1 ω.2)
-    _ = (condDistrib (fun ω ↦ rewardByCount a m ω.1 ω.2) (fun ω ↦ stepsUntil a m ω.1)
+    calc (Bandit.measure alg ν).map (rewardByCount a m)
+    _ = (condDistrib (rewardByCount a m) (fun ω ↦ stepsUntil a m ω.1)
           (Bandit.measure alg ν))
         ∘ₘ ((Bandit.measure alg ν).map (fun ω ↦ stepsUntil a m ω.1)) := by
       rw [condDistrib_comp_map (by fun_prop) (by fun_prop)]
@@ -325,7 +325,7 @@ lemma hasLaw_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α]
 
 lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempty α] (a : α) (n m : ℕ)
     (hn : n ≠ 0) (hm : m ≠ 0) :
-    IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ rewardByCount a m ω.1 ω.2)
+    IdentDistrib (rewardByCount a n) (rewardByCount a m)
       (Bandit.measure alg ν) (Bandit.measure alg ν) where
   aemeasurable_fst := by fun_prop
   aemeasurable_snd := by fun_prop
@@ -333,35 +333,34 @@ lemma identDistrib_rewardByCount [Countable α] [StandardBorelSpace α] [Nonempt
 
 lemma identDistrib_rewardByCount_id [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) (n : ℕ) (hn : n ≠ 0) :
-    IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) id (Bandit.measure alg ν) (ν a) where
+    IdentDistrib (rewardByCount a n) id (Bandit.measure alg ν) (ν a) where
   aemeasurable_fst := by fun_prop
   aemeasurable_snd := Measurable.aemeasurable <| by fun_prop
   map_eq := by rw [(hasLaw_rewardByCount a n hn).map_eq, Measure.map_id]
 
 lemma identDistrib_rewardByCount_eval [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) (n m : ℕ) (hn : n ≠ 0) :
-    IdentDistrib (fun ω ↦ rewardByCount a n ω.1 ω.2) (fun ω ↦ ω m a)
+    IdentDistrib (rewardByCount a n) (fun ω ↦ ω m a)
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) :=
   (identDistrib_rewardByCount_id a n hn).trans (identDistrib_eval_eval_id_streamMeasure ν m a).symm
 
 lemma indepFun_rewardByCount_Iic (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α)
     (n : ℕ) :
-    (fun ω ↦ rewardByCount a (n + 1) ω.1 ω.2) ⟂ᵢ[Bandit.measure alg ν]
-      fun ω (i : Iic n) ↦ rewardByCount a i ω.1 ω.2 := by
+    (rewardByCount a (n + 1)) ⟂ᵢ[Bandit.measure alg ν] fun ω (i : Iic n) ↦ rewardByCount a i ω := by
   sorry
 
 lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) :
-    iIndepFun (fun n ω ↦ rewardByCount a n ω.1 ω.2) (Bandit.measure alg ν) := by
+    iIndepFun (rewardByCount a) (Bandit.measure alg ν) := by
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   exact indepFun_rewardByCount_Iic alg ν a
 
 lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
-    iIndepFun (fun (p : α × ℕ) ω ↦ rewardByCount p.1 p.2 ω.1 ω.2) (Bandit.measure alg ν) := by
+    iIndepFun (fun (p : α × ℕ) ↦ rewardByCount p.1 p.2) (Bandit.measure alg ν) := by
   sorry
 
 lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) :
-    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω n a)
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω) (fun ω n ↦ ω n a)
       (Bandit.measure alg ν) (Bandit.streamMeasure ν) := by
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
   · refine identDistrib_rewardByCount_eval a (n + 1) n (by simp) (ν := ν)
@@ -387,12 +386,12 @@ lemma identDistrib_eval_streamMeasure_measure [Countable α] [StandardBorelSpace
 
 lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) :
-    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω.2 n a)
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω) (fun ω n ↦ ω.2 n a)
       (Bandit.measure alg ν) (Bandit.measure alg ν) :=
   (identDistrib_rewardByCount_stream' a).trans (identDistrib_eval_streamMeasure_measure a)
 
 lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
-    IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+    IndepFun (fun ω s ↦ rewardByCount a s ω) (fun ω s ↦ rewardByCount b s ω)
       (Bandit.measure alg ν) := by
   sorry
 

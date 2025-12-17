@@ -81,7 +81,12 @@ namespace Bandits
 
 variable {K : ℕ}
 
-/-- Arm pulled by the ETC algorithm at time `n + 1`. -/
+section AlgorithmDefinition
+
+/-- Arm pulled by the ETC algorithm at time `n + 1`.
+For `n < K * m - 1`, this is arm `n % K`.
+For `n = K * m - 1`, this is the arm with the highest empirical mean after the exploration phase.
+For `n ≥ K * m`, this is the same arm as at time `n`. -/
 noncomputable
 def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
@@ -91,6 +96,7 @@ def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
     if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
     else (h ⟨n, by simp⟩).1
 
+/-- The next arm pulled by ETC is chosen in a measurable way. -/
 @[fun_prop]
 lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
@@ -100,10 +106,13 @@ lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m
   refine Measurable.ite (by simp) ?_ (by fun_prop)
   exact measurable_measurableArgmax fun a ↦ by fun_prop
 
-/-- The Explore-Then-Commit algorithm. -/
+/-- The Explore-Then-Commit algorithm: deterministic algorithm that chooses the next arm according
+to `ETC.nextArm`. -/
 noncomputable
 def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
+
+end AlgorithmDefinition
 
 namespace ETC
 
@@ -221,16 +230,16 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
 
 lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
-      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2, ∑ s ∈ Icc 1 m, rewardByCount b s ω.1 ω.2))
+      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω, ∑ s ∈ Icc 1 m, rewardByCount b s ω))
       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have h1 (a : Fin K) :
-      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω.1 ω.2) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
+      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
     identDistrib_rewardByCount_stream a
-  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2)
+  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω)
       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
-    have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
-        = ∑ s ∈ range m, rewardByCount a (s + 1) ω.1 ω.2 := by
+    have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω
+        = ∑ s ∈ range m, rewardByCount a (s + 1) ω := by
       let e : Icc 1 m ≃ range m :=
       { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
         invFun x := ⟨x + 1, by
@@ -251,7 +260,7 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
   · simp only [hab]
     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
   refine (h2 a).prod (h2 b) ?_ ?_
-  · suffices IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+  · suffices IndepFun (fun ω s ↦ rewardByCount a s ω) (fun ω s ↦ rewardByCount b s ω)
         𝔓 by
       exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
         (by fun_prop) (by fun_prop)
@@ -288,13 +297,12 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       · rfl
       · exact measurableSet_le (by fun_prop) (by fun_prop)
   calc (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1}
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1),
-        rewardByCount (bestArm ν) s ω.1 ω.2
-      ≤ ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2} := by
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω
+      ≤ ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω} := by
     congr with ω
     congr! 1 <;> rw [sum_rewardByCount_eq_sumRewards]
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
-      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω
+      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω} := by
     simp_rw [measureReal_def]
     congr 1
     refine measure_congr ?_
@@ -308,24 +316,24 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       rw [ha, h_best]
     · simp only [Set.mem_setOf_eq]
       let f₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω.1 ω.2
+        ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω
       let g₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2
+        ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω
       let f₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
-      let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+        ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω
+      let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω
       change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
       have hf₁ : Measurable f₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount (bestArm ν) (K * m) ω.1)
-          (f := fun s ω ↦ rewardByCount (bestArm ν) s ω.1 ω.2) (fun ω ↦ ?_)
+          (f := rewardByCount (bestArm ν)) (fun ω ↦ ?_)
           (by fun_prop) (by fun_prop)
         have h_le := pullCount_le (bestArm ν) (K * m) ω.1
         grind
       have hg₁ : Measurable g₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount a (K * m) ω.1)
-          (f := fun s ω ↦ rewardByCount a s ω.1 ω.2) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
+          (f := rewardByCount a) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
         have h_le := pullCount_le a (K * m) ω.1
         grind
       refine MeasurableSet.iff ?_ ?_
@@ -334,8 +342,8 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]
     congr 1
-    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2,
-          ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2))
+    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω,
+          ∑ s ∈ Icc 1 m, rewardByCount a s ω))
         = (𝔓).map (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) :=
       (identDistrib_aux m (bestArm ν) a).map_eq
     rw [Measure.ext_iff] at this

@@ -259,7 +259,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     rw [cond_of_condIndepFun (by fun_prop)]
     · exact condIndepFun_reward_stepsUntil_arm a m n hm
     · refine measurable_one.indicator ?_
-      exact measurableSet_eq_fun' (by fun_prop) (by fun_prop)
+      exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
     · fun_prop
     · convert hμna using 2
       rw [Set.inter_comm]

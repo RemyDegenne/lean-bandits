@@ -9,22 +9,45 @@ variable {α Ω Ω' E ι : Type*} [Countable ι] {mα : MeasurableSpace α}
   {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {mE : MeasurableSpace E} {μ ν : Measure Ω}
 
-lemma iIndepFun_nat_iff_forall_indepFun {X : ℕ → Ω → E} (hX : ∀ n, AEMeasurable (X n) μ) :
+lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → Ω → E}
+    (hX : ∀ n, AEMeasurable (X n) μ) :
     iIndepFun X μ ↔ ∀ n, X (n + 1) ⟂ᵢ[μ] fun ω (i : Iic n) ↦ X i ω := by
   constructor
   · intro h n
-    have h' := h.indepFun_finset₀ {n + 1} (Iic n) (by simp) hX
-    let f : (({n + 1} : Finset ℕ) → E) → E := fun x ↦ x ⟨n + 1, by simp⟩
-    have hf : Measurable f := by unfold f; fun_prop
-    have h_eq : X (n + 1) = f ∘ (fun ω (i : ({n + 1} : Finset ℕ)) ↦ X i ω) := rfl
-    exact h'.comp (ψ := id) hf measurable_id
+    exact (h.indepFun_finset₀ {n + 1} (Iic n) (by simp) hX).comp
+      (measurable_pi_apply ⟨n + 1, by simp⟩) measurable_id
   · intro h
-    suffices ∀ n, iIndepFun ((Iic n).restrict X) μ by
-      rw [iIndepFun_iff_finset]
-      intro s
-      sorry
-    intro n
-    sorry
+    rw [iIndepFun_iff_measure_inter_preimage_eq_mul]
+    intro s sets hsets
+    induction s using Finset.strongInductionOn with
+    | _ s ih =>
+    obtain rfl | hs := s.eq_empty_or_nonempty
+    · simp
+    · obtain hn_zero | hn_pos := (s.max' hs).eq_zero_or_pos
+      · simp [eq_singleton_iff_unique_mem.mpr ⟨hn_zero ▸ max'_mem _ hs,
+          fun j hj => Nat.le_zero.mp (hn_zero ▸ le_max' _ j hj)⟩]
+      · have hs'_le : ∀ i ∈ s.erase (s.max' hs), i ∈ Iic (s.max' hs - 1) := fun i hi =>
+          mem_Iic.mpr (Nat.lt_succ_iff.mp (Nat.succ_pred_eq_of_pos hn_pos ▸
+            lt_max'_of_mem_erase_max' _ hs hi))
+        let t : Set (Iic (s.max' hs - 1) → E) :=
+          {f | ∀ i : s.erase (s.max' hs), f ⟨i.1, hs'_le i.1 i.2⟩ ∈ sets i.1}
+        have ht : MeasurableSet t := by
+          have : t = ⋂ i : s.erase (s.max' hs), (· ⟨i.1, hs'_le i.1 i.2⟩) ⁻¹' sets i.1 := by
+            ext
+            simp [t]
+          exact this ▸ .iInter fun ⟨i, hi⟩ =>
+            (hsets i (erase_subset _ _ hi)).preimage (measurable_pi_apply _)
+        have heq : ⋂ i ∈ s.erase (s.max' hs), X i ⁻¹' sets i =
+            (fun ω (j : Iic (s.max' hs - 1)) => X j ω) ⁻¹' t := by
+          ext ω
+          simp only [Set.mem_iInter, Set.mem_preimage, t]
+          exact ⟨fun hω ⟨i, hi⟩ => hω i hi, fun hω i hi => hω ⟨i, hi⟩⟩
+        have hind := h (s.max' hs - 1)
+        rw [Nat.sub_add_cancel hn_pos] at hind
+        rw [(insert_erase (max'_mem _ hs)).symm, set_biInter_insert, heq,
+          hind.measure_inter_preimage_eq_mul _ _ (hsets _ (max'_mem _ hs)) ht, ← heq,
+          ih _ (erase_ssubset (max'_mem _ hs)) fun i hi => hsets i (erase_subset _ _ hi),
+          prod_insert (notMem_erase _ _)]
 
 -- todo: kernel version?
 lemma IndepFun_map_iff [IsFiniteMeasure μ] {X : Ω' → E} {Y : Ω' → E} {f : Ω → Ω'}

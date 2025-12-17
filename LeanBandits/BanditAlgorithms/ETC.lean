@@ -375,8 +375,7 @@ lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (�
     rw [integrable_indicator_iff]
     · exact integrableOn_const
     · exact (measurableSet_singleton _).preimage (by fun_prop)
-  simp only [integral_const, measureReal_univ_eq_one, smul_eq_mul, one_mul, neg_mul,
-    add_le_add_iff_left, ge_iff_le]
+  simp only [integral_const, probReal_univ, smul_eq_mul, one_mul, neg_mul, add_le_add_iff_left]
   gcongr
   · norm_cast
     simp

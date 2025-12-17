@@ -2,7 +2,7 @@ Learning.Algorithm
 Learning.Environment
 ProbabilityTheory.Kernel.traj
 ProbabilityTheory.Kernel.trajMeasure
-ProbabilityTheory.Kernel.condDistrib_trajMeasure_ae_eq_kernel
+ProbabilityTheory.Kernel.condDistrib_trajMeasure
 Learning.condDistrib_action
 Learning.condDistrib_reward
 Learning.hasLaw_action_zero

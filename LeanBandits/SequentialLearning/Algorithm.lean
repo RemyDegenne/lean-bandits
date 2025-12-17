@@ -186,7 +186,7 @@ lemma condDistrib_step [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace
     (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
     condDistrib (step (n + 1)) (hist n) (trajMeasure alg env)
       =ᵐ[(trajMeasure alg env).map (hist n)] stepKernel alg env n :=
-  Kernel.condDistrib_trajMeasure_ae_eq_kernel
+  Kernel.condDistrib_trajMeasure
 
 lemma condDistrib_action [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (alg : Algorithm α R) (env : Environment α R) (n : ℕ) :
@@ -214,11 +214,12 @@ lemma hasLaw_step_zero (alg : Algorithm α R) (env : Environment α R) :
   aemeasurable := Measurable.aemeasurable (by fun_prop)
   map_eq := by
     unfold step
+    rw [← coe_default_Iic_zero]
     simp only [trajMeasure, Kernel.trajMeasure]
     rw [← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
       Kernel.deterministic_comp_eq_map, Kernel.traj_zero_map_eval_zero,
       Measure.deterministic_comp_eq_map, Measure.map_map (by fun_prop) (by fun_prop)]
-    simp
+    exact Measure.map_id
 
 lemma hasLaw_action_zero (alg : Algorithm α R) (env : Environment α R) :
     HasLaw (action 0) alg.p0 (trajMeasure alg env) where

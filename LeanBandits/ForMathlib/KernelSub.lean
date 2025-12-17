@@ -250,9 +250,9 @@ lemma measurableSet_eq_zero (κ : Kernel α β) [IsFiniteKernel κ] :
   rw [h_sing]
   exact measurableSet_mutuallySingular κ κ
 
-lemma measurableSet_eq [∀ η : Kernel α β, Decidable (IsSFiniteKernel η)]
-    (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
+lemma measurableSet_eq (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
     MeasurableSet {a | κ a = η a} := by
+  classical
   have h_sub : {a | κ a = η a} = {a | (κ - η) a = 0} ∩ {a | (η - κ) a = 0} := by
     ext1 a
     simp only [Set.mem_setOf_eq, Set.mem_inter_iff, sub_apply_eq_zero_iff_le]

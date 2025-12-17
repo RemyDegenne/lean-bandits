@@ -5,7 +5,8 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Analysis.Normed.Ring.Basic
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Basic
-import Mathlib.Topology.Compactness.PseudometrizableLindelof
+import Mathlib.Topology.Compactness.Lindelof
+import Mathlib.Topology.Metrizable.Basic
 
 /-! # Tools to build bandit algorithms
 

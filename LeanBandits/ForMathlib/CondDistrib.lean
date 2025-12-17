@@ -202,7 +202,7 @@ theorem FiniteMeasure.toMeasure_sub (μ ν : FiniteMeasure α) : ↑(μ - ν) = 
   rfl
 
 instance : CanonicallyOrderedAdd (FiniteMeasure α) where
-  le_add_self := sorry -- was not needed before?
+  le_add_self μ ν := fun s ↦ by simp
   exists_add_of_le {μ ν} hμν := by
     refine ⟨ν - μ, ?_⟩
     rw [FiniteMeasure.ext_iff_coe]
@@ -264,6 +264,7 @@ lemma condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
     (h : condDistrib Y (fun ω ↦ (X ω, Z ω)) μ =ᵐ[μ.map (fun ω ↦ (X ω, Z ω))] η.prodMkLeft _) :
     Y ⟂ᵢ[Z, hZ; μ] X := by
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkRight hX hY hZ ?_ (η := η)
+  rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop)] at h ⊢
   sorry
 
 /-- Law of `Y` conditioned on `X`. -/

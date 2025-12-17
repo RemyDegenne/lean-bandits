@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.Bandit.Bandit
 import Mathlib.Data.ENat.Lattice
 import Mathlib.Order.CompletePartialOrder
+import Mathlib.Probability.Martingale.BorelCantelli
 
 /-!
 # Regret
@@ -83,6 +84,7 @@ lemma pullCount_congr {h' : ℕ → α × ℝ} (h_eq : ∀ i ≤ n, arm i h = ar
   rw [Nat.lt_add_one_iff] at hs
   rw [h_eq s hs]
 
+-- TODO: replace this by leastGE?
 /-- Number of steps until arm `a` was pulled exactly `m` times. -/
 noncomputable
 def stepsUntil (a : α) (m : ℕ) (h : ℕ → α × ℝ) : ℕ∞ := sInf ((↑) '' {s | pullCount a (s + 1) h = m})
@@ -92,6 +94,10 @@ lemma stepsUntil_eq_top_iff : stepsUntil a m h = ⊤ ↔ ∀ s, pullCount a (s +
 
 lemma stepsUntil_ne_top (h_exists : ∃ s, pullCount a (s + 1) h = m) : stepsUntil a m h ≠ ⊤ := by
   simpa [stepsUntil_eq_top_iff]
+
+lemma stepsUntil_eq_leastGE (a : α) (m : ℕ) :
+    stepsUntil a m = leastGE (fun n h ↦ pullCount a (n + 1) h) m := by
+  sorry
 
 lemma exists_pullCount_eq (h' : stepsUntil a m h ≠ ⊤) :
     ∃ s, pullCount a (s + 1) h = m := by

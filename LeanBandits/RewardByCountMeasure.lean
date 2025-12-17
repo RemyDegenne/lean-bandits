@@ -369,11 +369,11 @@ lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] 
     exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
   · exact iIndepFun_eval_streamMeasure'' ν a
 
-lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
+omit [DecidableEq α] [MeasurableSingletonClass α] in
+lemma identDistrib_eval_streamMeasure_measure [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) :
-    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω.2 n a)
-      (Bandit.measure alg ν) (Bandit.measure alg ν) := by
-  refine (identDistrib_rewardByCount_stream' a).trans ?_
+    IdentDistrib (fun ω n ↦ ω n a) (fun ω n ↦ ω.2 n a)
+      (Bandit.streamMeasure ν) (Bandit.measure alg ν) := by
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
   · rw [← Bandit.snd_measure alg ν, Measure.snd,
       identDistrib_map_left_iff (by fun_prop) (by fun_prop)
@@ -384,6 +384,12 @@ lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [
     rw [← iIndepFun_map_iff (by fun_prop) (fun _ ↦ Measurable.aemeasurable (by fun_prop))]
     rw [← Measure.snd, Bandit.snd_measure]
     exact iIndepFun_eval_streamMeasure'' ν a
+
+lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [Nonempty α]
+    (a : α) :
+    IdentDistrib (fun ω n ↦ rewardByCount a (n + 1) ω.1 ω.2) (fun ω n ↦ ω.2 n a)
+      (Bandit.measure alg ν) (Bandit.measure alg ν) :=
+  (identDistrib_rewardByCount_stream' a).trans (identDistrib_eval_streamMeasure_measure a)
 
 lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
     IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)

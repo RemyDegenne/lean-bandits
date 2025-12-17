@@ -15,6 +15,8 @@ import LeanBandits.RewardByCountMeasure
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
+section Aux
+
 lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
     s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
   rw [Filter.EventuallyEq]
@@ -35,6 +37,45 @@ lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
   refine measurable_sum _ fun n hn ↦ ?_
   refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
   exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :
+    (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = 1 := by
+  have h_iff (s : ℕ) (hs : s < K) : ⟨s % K, Nat.mod_lt _ hK⟩ = a ↔ s = a := by
+    simp only [Nat.mod_eq_of_lt hs, Fin.ext_iff]
+  calc (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+  _ = ∑ s ∈ range K, if s = a then 1 else 0 := sum_congr rfl fun s hs ↦ by grind
+  _ = _ := by
+    rw [sum_ite_eq']
+    simp
+
+lemma sum_mod_range_mul {K : ℕ} (hK : 0 < K) (m : ℕ) (a : Fin K) :
+    (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = m := by
+  induction m with
+  | zero => simp
+  | succ n hn =>
+    calc (∑ s ∈ range (K * (n + 1)), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+    _ = (∑ s ∈ range (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by ring_nf
+    _ = (∑ s ∈ range (K * n), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
+        + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      rw [sum_range_add_sum_Ico]
+      grind
+    _ = n + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      rw [hn]
+    _ = n + (∑ s ∈ range K, if ⟨(s + K * n) % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
+      congr 1
+      let e : ℕ ↪ ℕ := ⟨fun i : ℕ ↦ i + K * n, fun i j hij ↦ by grind⟩
+      have : Finset.map e (range K) = Ico (K * n) (K * n + K) := by
+        ext x
+        simp only [mem_map, mem_range, Function.Embedding.coeFn_mk, mem_Ico, e]
+        refine ⟨fun h ↦ by grind, fun h ↦ ?_⟩
+        use x - K * n
+        grind
+      rw [← this, Finset.sum_map]
+      congr
+    _ = n + (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by simp
+    _ = n + 1 := by rw [sum_mod_range hK]
+
+end Aux
 
 namespace Bandits
 
@@ -80,6 +121,7 @@ lemma arm_ae_eq_etcNextArm (n : ℕ) :
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact arm_detAlgorithm_ae_eq n
 
+/-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
 lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
     arm n =ᵐ[𝔓t] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
   cases n with
@@ -89,6 +131,8 @@ lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
     rw [hn_eq, nextArm, dif_pos]
     grind
 
+/-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
+phase. -/
 lemma arm_mul (hm : m ≠ 0) :
     have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
     arm (K * m) =ᵐ[𝔓t] fun h ↦ measurableArgmax (empMean' (K * m - 1)) (fun i ↦ h i) := by
@@ -100,6 +144,7 @@ lemma arm_mul (hm : m ≠ 0) :
   rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
   exact this ▸ rfl
 
+/-- For `n ≥ K * m`, the arm pulled at time `n + 1` is the same as the arm pulled at time `n`. -/
 lemma arm_add_one_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
     arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := by
   filter_upwards [arm_ae_eq_etcNextArm n] with ω hn_eq
@@ -108,7 +153,9 @@ lemma arm_add_one_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
   · have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
     grind
 
-lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓t] arm (K * m) := by
+/-- For `n ≥ K * m`, the arm pulled at time `n` is the same as the arm pulled at time `K * m`. -/
+lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
+    arm n =ᵐ[𝔓t] arm (K * m) := by
   have h_ae n : K * m ≤ n → arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := arm_add_one_of_ge hm
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
   filter_upwards [h_ae] with ω h_ae
@@ -116,43 +163,7 @@ lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓t] 
   | base => rfl
   | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
-lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :
-    (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = 1 := by
-  have h_iff (s : ℕ) (hs : s < K) : ⟨s % K, Nat.mod_lt _ hK⟩ = a ↔ s = a := by
-    simp only [Nat.mod_eq_of_lt hs, Fin.ext_iff]
-  calc (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
-  _ = ∑ s ∈ range K, if s = a then 1 else 0 := sum_congr rfl fun s hs ↦ by grind
-  _ = _ := by
-    rw [sum_ite_eq']
-    simp
-
-lemma sum_mod_range_mul {K : ℕ} (hK : 0 < K) (m : ℕ) (a : Fin K) :
-    (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = m := by
-  induction m with
-  | zero => simp
-  | succ n hn =>
-    calc (∑ s ∈ range (K * (n + 1)), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
-    _ = (∑ s ∈ range (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by ring_nf
-    _ = (∑ s ∈ range (K * n), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0)
-        + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
-      rw [sum_range_add_sum_Ico]
-      grind
-    _ = n + (∑ s ∈ Ico (K * n) (K * n + K), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
-      rw [hn]
-    _ = n + (∑ s ∈ range K, if ⟨(s + K * n) % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by
-      congr 1
-      let e : ℕ ↪ ℕ := ⟨fun i : ℕ ↦ i + K * n, fun i j hij ↦ by grind⟩
-      have : Finset.map e (range K) = Ico (K * n) (K * n + K) := by
-        ext x
-        simp only [mem_map, mem_range, Function.Embedding.coeFn_mk, mem_Ico, e]
-        refine ⟨fun h ↦ by grind, fun h ↦ ?_⟩
-        use x - K * n
-        grind
-      rw [← this, Finset.sum_map]
-      congr
-    _ = n + (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by simp
-    _ = n + 1 := by rw [sum_mod_range hK]
-
+/-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
 lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓t] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
@@ -173,6 +184,8 @@ lemma pullCount_add_one_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m �
   filter_upwards [arm_of_ge hm hn] with ω h_arm
   congr
 
+/-- For `n ≥ K * m`, the number of pulls of each arm `a` at time `n` is equal to `m` plus
+`n - K * m` if arm `a` is the best arm after the exploration phase. -/
 lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a n
       =ᵐ[𝔓t] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
@@ -189,6 +202,8 @@ lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     congr
     grind
 
+/-- If at time `K * m` the algorithm chooses arm `a`, then the total reward obtained by pulling
+arm `a` is at least the total reward obtained by pulling the best arm. -/
 lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
     have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
     ∀ᵐ h ∂𝔓t, arm (K * m) h = a → sumRewards (bestArm ν) (K * m) h ≤ sumRewards a (K * m) h := by
@@ -246,6 +261,8 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
         (by fun_prop) (by fun_prop)
     exact indepFun_eval_snd_measure _ ν hab
 
+/-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
+`exp(- m * Δ_a^2 / 4)`. -/
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -336,6 +353,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
     by_cases ha : a = bestArm ν
     · simp [ha]
+    -- Apply a sub-Gaussian concentration inequality
     refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ 1) (cY := fun _ ↦ 1)
       ?_ ?_ ?_ ?_ ?_ ?_).trans_eq ?_
     · exact iIndepFun_eval_streamMeasure'' ν (bestArm ν)
@@ -359,6 +377,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       field_simp
       ring
 
+/-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     𝔓t[fun ω ↦ (pullCount a n ω : ℝ)]
@@ -390,6 +409,7 @@ lemma integrable_pullCount (a : Fin K) (n : ℕ) : Integrable (fun ω ↦ (pullC
   simp only [Nat.cast_le]
   exact pullCount_le a n ω
 
+/-- Regret bound for the ETC algorithm. -/
 lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     𝔓t[regret ν n] ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by

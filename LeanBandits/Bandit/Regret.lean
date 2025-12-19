@@ -289,7 +289,7 @@ section SumRewards
 
 /-- Sum of rewards obtained when pulling arm `a` up to time `t` (exclusive). -/
 def sumRewards (a : α) (t : ℕ) (h : ℕ → α × ℝ) : ℝ :=
-  ∑ s ∈ range t, if (arm s h) = a then (reward s h) else 0
+  ∑ s ∈ range t, if arm s h = a then reward s h else 0
 
 /-- Empirical mean reward obtained when pulling arm `a` up to time `t` (exclusive). -/
 noncomputable
@@ -302,7 +302,9 @@ end SumRewards
 
 section RewardByCount
 
-/-- Reward obtained when pulling arm `a` for the `m`-th time. -/
+/-- Reward obtained when pulling arm `a` for the `m`-th time.
+If it is never pulled `m` times, the reward is given by the second component of `ω`, which in
+applications will be indepedent with same law. -/
 noncomputable
 def rewardByCount (a : α) (m : ℕ) (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) : ℝ :=
   match (stepsUntil a m ω.1) with

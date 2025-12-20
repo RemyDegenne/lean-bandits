@@ -411,12 +411,6 @@ lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (�
     exact prob_arm_mul_eq_le hν a hm
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma integrable_pullCount (a : Fin K) (n : ℕ) : Integrable (fun ω ↦ (pullCount a n ω : ℝ)) 𝔓t := by
-  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
-    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
-  simp only [Nat.cast_le]
-  exact pullCount_le a n ω
-
 /-- Regret bound for the ETC algorithm. -/
 lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :

@@ -128,15 +128,80 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
+lemma prob_ucbIndex_lt [Nonempty (Fin K)] (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+    𝔓t {h | empMean a n h + ucbWidth c a n h < (ν a)[id]} ≤
+      sorry := by
+  sorry
+
+lemma prob_ucbIndex_gt [Nonempty (Fin K)] (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+    𝔓t {h | (ν a)[id] < empMean a n h - ucbWidth c a n h} ≤
+      sorry := by
+  sorry
+
 lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
     pullCount a n ω ≤ C + ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
-  sorry
+  rw [pullCount_eq_sum]
+  calc ∑ s ∈ range n, if arm s ω = a then 1 else 0
+  _ ≤ ∑ s ∈ range n, ({s | arm s ω = a ∧ pullCount a s ω ≤ C}.indicator 1 s +
+      {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s) := by
+    gcongr with s hs
+    simp [Set.indicator_apply]
+    grind
+  _ = ∑ s ∈ range n, {s | arm s ω = a ∧ pullCount a s ω ≤ C}.indicator 1 s +
+      ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
+    rw [Finset.sum_add_distrib]
+  _ ≤ C + ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
+    gcongr
+    sorry
+
+omit [IsMarkovKernel ν] in
+lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
+    pullCount a n ω ≤ C +
+      ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω ∧
+        (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
+        empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}.indicator 1 s +
+      ∑ s ∈ range n,
+        {s | empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
+          (ν (bestArm ν))[id]}.indicator 1 s +
+      ∑ s ∈ range n,
+        {s | (ν (arm s ω))[id] <
+          empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω}.indicator 1 s := by
+  refine (pullCount_le_add a n C ω).trans ?_
+  simp_rw [add_assoc]
+  gcongr
+  simp_rw [← add_assoc]
+  let A := {s | arm s ω = a ∧ C < pullCount a s ω}
+  let B := {s | arm s ω = a ∧ C < pullCount a s ω ∧
+        (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
+        empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}
+  let C' := {s | empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
+          (ν (bestArm ν))[id]}
+  let D := {s | (ν (arm s ω))[id] <
+          empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω}
+  change ∑ s ∈ range n, A.indicator 1 s ≤
+    ∑ s ∈ range n, B.indicator 1 s + ∑ s ∈ range n, C'.indicator 1 s +
+      ∑ s ∈ range n, D.indicator 1 s
+  have h_union : A ⊆ B ∪ C' ∪ D := by simp [A, B, C', D]; grind
+  calc
+    (∑ s ∈ range n, A.indicator 1 s)
+    _ ≤ (∑ s ∈ range n, (B ∪ C' ∪ D).indicator (fun _ ↦ (1 : ℕ)) s) := by
+      gcongr with n hn
+      by_cases h : n ∈ A
+      · have : n ∈ B ∪ C' ∪ D := h_union h
+        simp [h, this]
+      · simp [h]
+    _ ≤ ∑ s ∈ range n, (B.indicator 1 s + C'.indicator 1 s + D.indicator 1 s) := by
+      gcongr with s
+      simp [Set.indicator_apply]
+      grind
+    _ = ∑ s ∈ range n, B.indicator 1 s + ∑ s ∈ range n, C'.indicator 1 s +
+          ∑ s ∈ range n, D.indicator 1 s := by
+      rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (a : Fin K) (n : ℕ) :
     𝔓t[fun ω ↦ (pullCount a n ω : ℝ)] ≤ log n / gap ν a ^ 2 + 1 := by
-  simp_rw [pullCount_eq_sum]
   sorry
 
 /-- Regret bound for the UCB algorithm. -/
@@ -144,7 +209,7 @@ lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν
     𝔓t[regret ν n] ≤ ∑ a, (log n / gap ν a + gap ν a) := by -- todo: fix that bound
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]
-  swap; · sorry -- exact fun i _ ↦ (integrable_pullCount i n).mul_const _
+  swap; · exact fun i _ ↦ (integrable_pullCount i n).mul_const _
   gcongr with a
   rw [integral_mul_const]
   sorry

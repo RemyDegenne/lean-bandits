@@ -26,6 +26,14 @@ lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun h ↦ pullCount 
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
+lemma integrable_pullCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
+    (a : α) (n : ℕ) :
+    Integrable (fun ω ↦ (pullCount a n ω : ℝ)) (Bandit.trajMeasure alg ν) := by
+  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
+    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
+  simp only [Nat.cast_le]
+  exact pullCount_le a n ω
+
 @[fun_prop]
 lemma measurable_sumRewards (a : α) (t : ℕ) : Measurable (sumRewards a t) := by
   unfold sumRewards

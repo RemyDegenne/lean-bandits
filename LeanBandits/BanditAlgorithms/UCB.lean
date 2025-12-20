@@ -126,6 +126,10 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
+lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
+    pullCount a n ω ≤ C + ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
+  sorry
+
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (a : Fin K) (n : ℕ) :

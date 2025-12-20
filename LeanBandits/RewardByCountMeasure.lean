@@ -369,8 +369,7 @@ lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] 
   · exact iIndepFun_eval_streamMeasure'' ν a
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
-lemma identDistrib_eval_streamMeasure_measure [Countable α] [StandardBorelSpace α] [Nonempty α]
-    (a : α) :
+lemma identDistrib_eval_streamMeasure_measure (a : α) :
     IdentDistrib (fun ω n ↦ ω n a) (fun ω n ↦ ω.2 n a)
       (Bandit.streamMeasure ν) (Bandit.measure alg ν) := by
   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_

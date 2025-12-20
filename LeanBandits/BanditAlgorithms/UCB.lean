@@ -55,6 +55,8 @@ namespace UCB
 
 variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν] {n : ℕ} {h : ℕ → Fin K × ℝ}
 
+/-- The exploration bonus of the UCB algorithm, which corresponds to the width of
+a confidence interval. -/
 noncomputable def ucbWidth (c : ℝ) (a : Fin K) (n : ℕ) (h : ℕ → Fin K × ℝ) : ℝ :=
   √(c * log (n + 1) / pullCount a n h)
 

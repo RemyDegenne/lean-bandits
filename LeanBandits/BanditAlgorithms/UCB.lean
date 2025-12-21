@@ -151,10 +151,20 @@ lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) < (ν a)[id]} ≤
       1 / (n + 1) ^ (c / 2) := by
+  have h_meas : MeasurableSet {ω | ω / k + √(c * log (n + 1) / k) < (ν a)[id]} :=
+    measurableSet_lt (by fun_prop) measurable_const
   calc
   𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) < (ν a)[id]}
+  _ = ((𝔓).map (fun ω ↦ ∑ m ∈ Icc 1 k, rewardByCount a m ω))
+      {ω | ω / k + √(c * log (n + 1) / k) < (ν a)[id]} := by
+    rw [Measure.map_apply (by fun_prop) h_meas]
+    rfl
+  _ = ((𝔓).map (fun ω ↦ ∑ s ∈ range k, ω.2 s a))
+      {ω | ω / k + √(c * log (n + 1) / k) < (ν a)[id]} := by
+    rw [IdentDistrib.map_eq (identDistrib_sum_Icc_rewardByCount k a)]
   _ = 𝔓 {ω | (∑ s ∈ range k, ω.2 s a) / k + √(c * log (n + 1) / k) < (ν a)[id]} := by
-    sorry
+    rw [Measure.map_apply (by fun_prop) h_meas]
+    rfl
   _ = 𝔓 {ω | (∑ s ∈ range k, (ω.2 s a - (ν a)[id])) / k < - √(c * log (n + 1) / k)} := by
     congr with ω
     field_simp
@@ -162,6 +172,9 @@ lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν
     simp
     grind
   _ = 𝔓 {ω | (∑ s ∈ range k, (ω.2 s a - (ν a)[id])) < - √(c * k * log (n + 1))} := by
+    congr with ω
+    field_simp
+    congr! 2
     sorry
   _ ≤ ENNReal.ofReal (exp (-(√(c * k * log (n + 1))) ^ 2 / (2 * k * 1))) := by
     rw [← ofReal_measureReal]

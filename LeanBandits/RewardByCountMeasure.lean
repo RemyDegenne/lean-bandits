@@ -402,4 +402,30 @@ lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
       (Bandit.measure alg ν) := by
   sorry
 
+lemma identDistrib_sum_Icc_rewardByCount [Nonempty α] [Countable α] (m : ℕ) (a : α) :
+    IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω)
+      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) (Bandit.measure alg ν) (Bandit.measure alg ν) := by
+  have h1 (a : α) :
+      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω) (fun ω s ↦ ω.2 s a)
+        (Bandit.measure alg ν) (Bandit.measure alg ν) :=
+    identDistrib_rewardByCount_stream a
+  have h_eq (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω
+      = ∑ s ∈ range m, rewardByCount a (s + 1) ω := by
+    let e : Icc 1 m ≃ range m :=
+    { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
+      invFun x := ⟨x + 1, by
+        have h := x.2
+        simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
+        simp only [mem_range] at h
+        grind⟩
+      left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
+      right_inv x := by have h := x.2; grind }
+    rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
+    · simp
+    · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
+        forall_and_index]
+      grind
+  simp_rw [h_eq]
+  exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
+
 end Bandits

@@ -228,34 +228,39 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
   · simp [ha, hm]
   · simp [h_best, hm]
 
+lemma identDistrib_sum_Icc_rewardByCount (m : ℕ) (a : Fin K) :
+    IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω)
+      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  have h1 (a : Fin K) :
+      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
+    identDistrib_rewardByCount_stream a
+  have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω
+      = ∑ s ∈ range m, rewardByCount a (s + 1) ω := by
+    let e : Icc 1 m ≃ range m :=
+    { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
+      invFun x := ⟨x + 1, by
+        have h := x.2
+        simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
+        simp only [mem_range] at h
+        grind⟩
+      left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
+      right_inv x := by have h := x.2; grind }
+    rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
+    · simp
+    · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
+        forall_and_index]
+      grind
+  simp_rw [h_eq]
+  exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
+
 lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
       (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω, ∑ s ∈ Icc 1 m, rewardByCount b s ω))
       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  have h1 (a : Fin K) :
-      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
-    identDistrib_rewardByCount_stream a
   have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω)
-      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
-    have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω
-        = ∑ s ∈ range m, rewardByCount a (s + 1) ω := by
-      let e : Icc 1 m ≃ range m :=
-      { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
-        invFun x := ⟨x + 1, by
-          have h := x.2
-          simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
-          simp only [mem_range] at h
-          grind⟩
-        left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
-        right_inv x := by have h := x.2; grind }
-      rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
-      · simp
-      · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
-          forall_and_index]
-        grind
-    simp_rw [h_eq]
-    exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
+      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := identDistrib_sum_Icc_rewardByCount m a
   by_cases hab : a = b
   · simp only [hab]
     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)

@@ -147,19 +147,44 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
-lemma todo [Nonempty (Fin K)] (hc : 0 ≤ c)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) ⟨c, hc⟩ (ν a))
-    (a : Fin K) (n k : ℕ) :
+lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) < (ν a)[id]} ≤
-      1 / (n + 1) ^ 2 := by
-  sorry
+      1 / (n + 1) ^ (c / 2) := by
+  calc
+  𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) < (ν a)[id]}
+  _ = 𝔓 {ω | (∑ s ∈ range k, ω.2 s a) / k + √(c * log (n + 1) / k) < (ν a)[id]} := by
+    sorry
+  _ = 𝔓 {ω | (∑ s ∈ range k, (ω.2 s a - (ν a)[id])) / k < - √(c * log (n + 1) / k)} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = 𝔓 {ω | (∑ s ∈ range k, (ω.2 s a - (ν a)[id])) < - √(c * k * log (n + 1))} := by
+    sorry
+  _ ≤ ENNReal.ofReal (exp (-(√(c * k * log (n + 1))) ^ 2 / (2 * k * 1))) := by
+    rw [← ofReal_measureReal]
+    gcongr
+    sorry
+  _ = 1 / (n + 1) ^ (c / 2) := by
+    rw [sq_sqrt]
+    swap; · exact mul_nonneg (by positivity) (log_nonneg (by simp))
+    field_simp
+    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+      Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
+      ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
+    congr 2
+    · norm_cast
+    · field
 
-lemma prob_ucbIndex_lt [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma prob_ucbIndex_lt [Nonempty (Fin K)]
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    𝔓t {h | empMean a n h + ucbWidth c a n h < (ν a)[id]} ≤
-      12345 := by
+    𝔓t {h | empMean a n h + ucbWidth c a n h < (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
   -- extend the probability space
-  suffices 𝔓 {ω | empMean a n ω.1 + ucbWidth c a n ω.1 < (ν a)[id]} ≤ 12345 by sorry
+  suffices 𝔓 {ω | empMean a n ω.1 + ucbWidth c a n ω.1 < (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) by
+    sorry
   -- express with `rewardByCount` and `pullCount`
   unfold empMean ucbWidth
   simp_rw [← sum_rewardByCount_eq_sumRewards]
@@ -181,10 +206,18 @@ lemma prob_ucbIndex_lt [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x
   _ ≤ ∑ k ∈ range (n + 1),
       𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (↑n + 1) / k) < (ν a)[id]} :=
     measure_biUnion_finset_le _ _
-  _ ≤ 12345 := by
+  _ ≤ ∑ k ∈ range (n + 1), (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    gcongr with k
+    by_cases hk : k = 0
+    · sorry -- todo: false for now. Need to fix this.
+    exact todo hν hc a n k hk
+  _ = 1 / (n + 1) ^ (c / 2 - 1) := by
+    simp only [one_div, sum_const, card_range, nsmul_eq_mul, Nat.cast_add, Nat.cast_one]
+    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one]
     sorry
 
-lemma prob_ucbIndex_gt [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma prob_ucbIndex_gt [Nonempty (Fin K)]
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     𝔓t {h | (ν a)[id] < empMean a n h - ucbWidth c a n h} ≤
       sorry := by

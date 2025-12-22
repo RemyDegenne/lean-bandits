@@ -153,6 +153,7 @@ lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν
       1 / (n + 1) ^ (c / 2) := by
   have h_meas : MeasurableSet {ω | ω / k + √(c * log (n + 1) / k) < (ν a)[id]} :=
     measurableSet_lt (by fun_prop) measurable_const
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
   calc
   𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) < (ν a)[id]}
   _ = ((𝔓).map (fun ω ↦ ∑ m ∈ Icc 1 k, rewardByCount a m ω))
@@ -175,7 +176,8 @@ lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν
     congr with ω
     field_simp
     congr! 2
-    sorry
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_assoc (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
   _ ≤ ENNReal.ofReal (exp (-(√(c * k * log (n + 1))) ^ 2 / (2 * k * 1))) := by
     rw [← ofReal_measureReal]
     gcongr

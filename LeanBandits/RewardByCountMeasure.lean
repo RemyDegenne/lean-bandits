@@ -43,6 +43,11 @@ lemma measurable_sumRewards (a : α) (t : ℕ) : Measurable (sumRewards a t) := 
   fun_prop
 
 @[fun_prop]
+lemma measurable_empMean (a : α) (n : ℕ) : Measurable (empMean a n) := by
+  unfold empMean
+  fun_prop
+
+@[fun_prop]
 lemma measurable_stepsUntil (a : α) (m : ℕ) : Measurable (fun h ↦ stepsUntil a m h) := by
   classical
   have h_union : {h' | ∃ s, pullCount a (s + 1) h' = m}

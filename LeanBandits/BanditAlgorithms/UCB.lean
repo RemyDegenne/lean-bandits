@@ -79,6 +79,11 @@ a confidence interval. -/
 noncomputable def ucbWidth (c : ℝ) (a : Fin K) (n : ℕ) (h : ℕ → Fin K × ℝ) : ℝ :=
   √(c * log (n + 1) / pullCount a n h)
 
+@[fun_prop]
+lemma measurable_ucbWidth (c : ℝ) (a : Fin K) : Measurable (ucbWidth c a n) := by
+  unfold ucbWidth
+  fun_prop
+
 lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (h : ℕ → Fin K × ℝ) (hn : n ≠ 0) :
     ucbWidth c a n h = ucbWidth' c (n - 1) (fun i ↦ h i) a := by
   simp only [ucbWidth, pullCount_eq_pullCount' hn, Nat.cast_nonneg, sqrt_div', ucbWidth']
@@ -147,10 +152,11 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
-lemma todo [Nonempty (Fin K)] (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} ≤
       1 / (n + 1) ^ (c / 2) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have h_meas : MeasurableSet {ω | ω / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} :=
     measurableSet_le (by fun_prop) measurable_const
   have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
@@ -209,7 +215,8 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
     𝔓t {h | empMean a n h + ucbWidth c a n h ≤ (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
   -- extend the probability space
   suffices 𝔓 {ω | empMean a n ω.1 + ucbWidth c a n ω.1 ≤ (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) by
-    sorry
+    rwa [← Bandit.fst_measure (ucbAlgorithm hK c) ν, Measure.fst_apply]
+    exact measurableSet_le (by fun_prop) (by fun_prop)
   -- express with `rewardByCount` and `pullCount`
   unfold empMean ucbWidth
   simp_rw [← sum_rewardByCount_eq_sumRewards]
@@ -238,14 +245,13 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
     exact todo hν hc a n k hk
   _ = 1 / (n + 1) ^ (c / 2 - 1) := by
     simp only [one_div, sum_const, card_range, nsmul_eq_mul, Nat.cast_add, Nat.cast_one]
-    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one]
-    sorry
+    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, ENNReal.div_eq_inv_mul,
+      ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma prob_ucbIndex_gt [Nonempty (Fin K)]
+lemma prob_ucbIndex_ge [Nonempty (Fin K)]
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    𝔓t {h | (ν a)[id] ≤ empMean a n h - ucbWidth c a n h} ≤
-      sorry := by
+    𝔓t {h | (ν a)[id] ≤ empMean a n h - ucbWidth c a n h} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
   sorry
 
 lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
@@ -322,7 +328,12 @@ lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν
   swap; · exact fun i _ ↦ (integrable_pullCount i n).mul_const _
   gcongr with a
   rw [integral_mul_const]
-  sorry
+  grw [expectation_pullCount_le hν a n]
+  swap; · exact gap_nonneg
+  refine le_of_eq ?_
+  by_cases h_gap : gap ν a = 0
+  · simp [h_gap]
+  · field_simp
 
 end UCB
 

@@ -402,7 +402,6 @@ lemma identDistrib_rewardByCount_stream [Countable α] [StandardBorelSpace α] [
       (Bandit.measure alg ν) (Bandit.measure alg ν) :=
   (identDistrib_rewardByCount_stream' a).trans (identDistrib_eval_streamMeasure_measure a)
 
--- todo: this should NOT be required. Independence in time is all we need. Fix downstream lemmas.
 lemma indepFun_rewardByCount_of_ne {a b : α} (hab : a ≠ b) :
     IndepFun (fun ω s ↦ rewardByCount a s ω) (fun ω s ↦ rewardByCount b s ω)
       (Bandit.measure alg ν) := by

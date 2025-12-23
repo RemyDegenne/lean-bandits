@@ -209,50 +209,160 @@ lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     · norm_cast
     · field
 
-lemma prob_ucbIndex_le [Nonempty (Fin K)]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
+    𝔓 {ω | (ν a)[id] ≤ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k - √(c * log (n + 1) / k)} ≤
+      1 / (n + 1) ^ (c / 2) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  have h_meas : MeasurableSet {ω |(ν a)[id] ≤ ω / k - √(c * log (n + 1) / k)} :=
+    measurableSet_le (by fun_prop) (by fun_prop)
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
+  calc
+  𝔓 {ω | (ν a)[id] ≤ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k - √(c * log (n + 1) / k)}
+  _ = ((𝔓).map (fun ω ↦ ∑ m ∈ Icc 1 k, rewardByCount a m ω))
+      {ω | (ν a)[id] ≤ ω / k - √(c * log (n + 1) / k)} := by
+    rw [Measure.map_apply (by fun_prop) h_meas]
+    rfl
+  _ = ((𝔓).map (fun ω ↦ ∑ s ∈ range k, ω.2 s a))
+      {ω | (ν a)[id] ≤ ω / k - √(c * log (n + 1) / k)} := by
+    rw [IdentDistrib.map_eq (identDistrib_sum_Icc_rewardByCount k a)]
+  _ = 𝔓 {ω | (ν a)[id] ≤ (∑ s ∈ range k, ω.2 s a) / k - √(c * log (n + 1) / k)} := by
+    rw [Measure.map_apply (by fun_prop) h_meas]
+    rfl
+  _ = 𝔓 {ω | √(c * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω.2 s a - (ν a)[id])) / k} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = 𝔓 {ω | √(c * k * log (n + 1)) ≤ (∑ s ∈ range k, (ω.2 s a - (ν a)[id]))} := by
+    congr with ω
+    field_simp
+    congr! 1
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ = Bandit.streamMeasure ν
+      {ω | √(c * k * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
+    rw [← Bandit.snd_measure (ucbAlgorithm hK c), Measure.snd_apply]
+    · rfl
+    · exact measurableSet_le (by fun_prop) (by fun_prop)
+  _ ≤ ENNReal.ofReal (exp (-(√(c * k * log (n + 1))) ^ 2 / (2 * k * 1))) := by
+    rw [← ofReal_measureReal]
+    gcongr
+    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 1) ?_ ?_ (by positivity))
+    · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
+        (fun _ ↦ by fun_prop)
+    · intro i him
+      refine (hν a).congr_identDistrib ?_
+      exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
+  _ = 1 / (n + 1) ^ (c / 2) := by
+    rw [sq_sqrt]
+    swap; · exact mul_nonneg (by positivity) (log_nonneg (by simp))
+    field_simp
+    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+      Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
+      ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
+    congr 2
+    · norm_cast
+    · field
+
+lemma prob_ucbIndex_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    𝔓t {h | empMean a n h + ucbWidth c a n h ≤ (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
+    𝔓t {h | 0 < pullCount a n h ∧ empMean a n h + ucbWidth c a n h ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ (c / 2 - 1) := by
   -- extend the probability space
-  suffices 𝔓 {ω | empMean a n ω.1 + ucbWidth c a n ω.1 ≤ (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) by
+  suffices 𝔓 {ω | 0 < pullCount a n ω.1 ∧
+      empMean a n ω.1 + ucbWidth c a n ω.1 ≤ (ν a)[id]} ≤ 1 / (n + 1) ^ (c / 2 - 1) by
     rwa [← Bandit.fst_measure (ucbAlgorithm hK c) ν, Measure.fst_apply]
-    exact measurableSet_le (by fun_prop) (by fun_prop)
+    change MeasurableSet ({h | 0 < pullCount a n h}
+      ∩ {h | empMean a n h + ucbWidth c a n h ≤ ∫ (x : ℝ), id x ∂ν a})
+    refine MeasurableSet.inter ?_ ?_
+    · exact measurableSet_lt (by fun_prop) (by fun_prop)
+    · exact measurableSet_le (by fun_prop) (by fun_prop)
   -- express with `rewardByCount` and `pullCount`
   unfold empMean ucbWidth
   simp_rw [← sum_rewardByCount_eq_sumRewards]
   calc
-  𝔓 {ω | (∑ m ∈ Icc 1 (pullCount a n ω.1), rewardByCount a m ω) / pullCount a n ω.1 +
+  𝔓 {ω | 0 < pullCount a n ω.1 ∧
+    (∑ m ∈ Icc 1 (pullCount a n ω.1), rewardByCount a m ω) / pullCount a n ω.1 +
           √(c * log (↑n + 1) / pullCount a n ω.1) ≤ (ν a)[id]}
   -- list the possible values of `pullCount a n ω.1`
-  _ ≤ 𝔓 {ω | ∃ k ≤ n, (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k +
+  _ ≤ 𝔓 {ω | ∃ k ≤ n, 0 < k ∧ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k +
         √(c * log (↑n + 1) / k) ≤ (ν a)[id]} := by
     refine measure_mono fun ω hω ↦ ?_
     simp only [Nat.cast_nonneg, sqrt_div', id_eq, Set.mem_setOf_eq] at hω ⊢
     exact ⟨pullCount a n ω.1, pullCount_le _ _ _, hω⟩
-  _ = 𝔓 (⋃ k ∈ range (n + 1), {ω |(∑ m ∈ Icc 1 k, rewardByCount a m ω) / k +
+  _ = 𝔓 (⋃ k ∈ Icc 1 n, {ω |(∑ m ∈ Icc 1 k, rewardByCount a m ω) / k +
         √(c * log (↑n + 1) / k) ≤ (ν a)[id]}) := by
     congr 1
     ext ω
-    simp [Nat.lt_add_one_iff]
+    simp
+    grind
   -- Union bound over the possible values of `pullCount a n ω.1`
-  _ ≤ ∑ k ∈ range (n + 1),
+  _ ≤ ∑ k ∈ Icc 1 n,
       𝔓 {ω | (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k + √(c * log (↑n + 1) / k) ≤ (ν a)[id]} :=
     measure_biUnion_finset_le _ _
-  _ ≤ ∑ k ∈ range (n + 1), (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
-    gcongr with k
-    by_cases hk : k = 0
-    · sorry -- todo: false for now. Need to fix this.
-    exact todo hν hc a n k hk
+  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    gcongr with k hk
+    exact todo hν hc a n k (by grind)
+  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
+    rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
+    gcongr
+    exact le_self_add
   _ = 1 / (n + 1) ^ (c / 2 - 1) := by
-    simp only [one_div, sum_const, card_range, nsmul_eq_mul, Nat.cast_add, Nat.cast_one]
-    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, ENNReal.div_eq_inv_mul,
-      ENNReal.mul_inv (by simp) (by simp), inv_inv]
+    simp only [mul_one, one_div]
+    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
+      ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma prob_ucbIndex_ge [Nonempty (Fin K)]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma prob_ucbIndex_ge (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    𝔓t {h | (ν a)[id] ≤ empMean a n h - ucbWidth c a n h} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
-  sorry
+    𝔓t {h | 0 < pullCount a n h ∧
+      (ν a)[id] ≤ empMean a n h - ucbWidth c a n h} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
+  -- extend the probability space
+  suffices 𝔓 {ω | 0 < pullCount a n ω.1 ∧
+      (ν a)[id] ≤ empMean a n ω.1 - ucbWidth c a n ω.1} ≤ 1 / (n + 1) ^ (c / 2 - 1) by
+    rwa [← Bandit.fst_measure (ucbAlgorithm hK c) ν, Measure.fst_apply]
+    change MeasurableSet ({h | 0 < pullCount a n h}
+      ∩ {h | (ν a)[id] ≤ empMean a n h - ucbWidth c a n h})
+    refine MeasurableSet.inter ?_ ?_
+    · exact measurableSet_lt (by fun_prop) (by fun_prop)
+    · exact measurableSet_le (by fun_prop) (by fun_prop)
+  -- express with `rewardByCount` and `pullCount`
+  unfold empMean ucbWidth
+  simp_rw [← sum_rewardByCount_eq_sumRewards]
+  calc
+  𝔓 {ω | 0 < pullCount a n ω.1 ∧
+    (ν a)[id] ≤ (∑ m ∈ Icc 1 (pullCount a n ω.1), rewardByCount a m ω) / pullCount a n ω.1 -
+          √(c * log (↑n + 1) / pullCount a n ω.1)}
+  -- list the possible values of `pullCount a n ω.1`
+  _ ≤ 𝔓 {ω | ∃ k ≤ n, 0 < k ∧ (ν a)[id] ≤ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k -
+        √(c * log (↑n + 1) / k)} := by
+    refine measure_mono fun ω hω ↦ ?_
+    simp only [Nat.cast_nonneg, sqrt_div', id_eq, Set.mem_setOf_eq] at hω ⊢
+    exact ⟨pullCount a n ω.1, pullCount_le _ _ _, hω⟩
+  _ = 𝔓 (⋃ k ∈ Icc 1 n, {ω | (ν a)[id] ≤ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k -
+        √(c * log (↑n + 1) / k)}) := by
+    congr 1
+    ext ω
+    simp
+    grind
+  -- Union bound over the possible values of `pullCount a n ω.1`
+  _ ≤ ∑ k ∈ Icc 1 n,
+      𝔓 {ω | (ν a)[id] ≤ (∑ m ∈ Icc 1 k, rewardByCount a m ω) / k - √(c * log (↑n + 1) / k)} :=
+    measure_biUnion_finset_le _ _
+  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    gcongr with k hk
+    exact todo' hν hc a n k (by grind)
+  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
+    rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
+    gcongr
+    exact le_self_add
+  _ = 1 / (n + 1) ^ (c / 2 - 1) := by
+    simp only [mul_one, one_div]
+    rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
+      ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
 lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
     pullCount a n ω ≤ C + ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
@@ -277,10 +387,10 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : �
         (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
         empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}.indicator 1 s +
       ∑ s ∈ range n,
-        {s | empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
+        {s | 0 < pullCount a s ω ∧ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
           (ν (bestArm ν))[id]}.indicator 1 s +
       ∑ s ∈ range n,
-        {s | (ν (arm s ω))[id] <
+        {s | 0 < pullCount a s ω ∧ (ν (arm s ω))[id] <
           empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω}.indicator 1 s := by
   refine (pullCount_le_add a n C ω).trans ?_
   simp_rw [add_assoc]
@@ -290,14 +400,17 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : �
   let B := {s | arm s ω = a ∧ C < pullCount a s ω ∧
         (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
         empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}
-  let C' := {s | empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
+  let C' := {s | 0 < pullCount a s ω ∧ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
           (ν (bestArm ν))[id]}
-  let D := {s | (ν (arm s ω))[id] <
+  let D := {s | 0 < pullCount a s ω ∧ (ν (arm s ω))[id] <
           empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω}
   change ∑ s ∈ range n, A.indicator 1 s ≤
     ∑ s ∈ range n, B.indicator 1 s + ∑ s ∈ range n, C'.indicator 1 s +
       ∑ s ∈ range n, D.indicator 1 s
-  have h_union : A ⊆ B ∪ C' ∪ D := by simp [A, B, C', D]; grind
+  have h_union : A ⊆ B ∪ C' ∪ D := by
+    have h_imp s ω : C < pullCount a s ω → 0 < pullCount a s ω := fun h ↦ zero_le'.trans_lt h
+    simp [A, B, C', D]
+    grind
   calc
     (∑ s ∈ range n, A.indicator 1 s)
     _ ≤ (∑ s ∈ range n, (B ∪ C' ∪ D).indicator (fun _ ↦ (1 : ℕ)) s) := by
@@ -314,11 +427,51 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : �
           ∑ s ∈ range n, D.indicator 1 s := by
       rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
 
+-- todo: probably not true. Need ≤ 1 instead of = 0 because of the first rounds.
+lemma some_sum_eq_zero [Nonempty (Fin K)] (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a) (n C : ℕ)
+    (hn : K ≤ n) :
+    ∀ᵐ ω ∂𝔓t,
+    ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω ∧
+      (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
+      empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}.indicator 1 s = 0 := by
+  have h_ae := ucbIndex_le_ucbIndex_arm a hn (ν := ν) (c := c) (hK := hK)
+  refine ae_of_all _ fun ω ↦ ?_ -- todo: change this
+  simp only [id_eq, tsub_le_iff_right, sum_eq_zero_iff, mem_range, Set.indicator_apply_eq_zero,
+    Set.mem_setOf_eq, Pi.one_apply, one_ne_zero, imp_false, not_and, not_le]
+  intro k hn h_arm hC_lt h_le_best
+  by_contra! h_le_arm
+  have h := pullCount_arm_le hc h_le_best (by simpa) ?_ ?_ ?_
+  rotate_left
+  · sorry -- ucbIndex_le_ucbIndex_arm, but only a.e.
+  · rwa [h_arm]
+  · rw [h_arm]
+    exact zero_le'.trans_lt hC_lt
+  sorry
+
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (a : Fin K) (n : ℕ) :
     𝔓t[fun ω ↦ (pullCount a n ω : ℝ)] ≤ log n / gap ν a ^ 2 + 1 := by
-  sorry
+  let C a : ℕ := ⌈4 * c * log (n + 1) / gap ν a ^ 2⌉₊
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  calc 𝔓t[fun ω ↦ (pullCount a n ω : ℝ)]
+  _ ≤ 𝔓t[fun ω ↦ C a +
+      ∑ s ∈ range n, {s | arm s ω = a ∧ C a < pullCount a s ω ∧
+        (ν (bestArm ν))[id] ≤ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω ∧
+        empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω ≤ (ν (arm s ω))[id]}.indicator 1 s +
+      ∑ s ∈ range n,
+        {s | 0 < pullCount a s ω ∧ empMean (bestArm ν) s ω + ucbWidth c (bestArm ν) s ω <
+          (ν (bestArm ν))[id]}.indicator 1 s +
+      ∑ s ∈ range n,
+        {s | 0 < pullCount a s ω ∧ (ν (arm s ω))[id] <
+          empMean (arm s ω) s ω - ucbWidth c (arm s ω) s ω}.indicator 1 s] := by
+    refine integral_mono_of_nonneg ?_ ?_ (ae_of_all _ fun ω ↦ ?_)
+    · sorry
+    · sorry
+    · simp only
+      norm_cast
+      exact pullCount_le_add_three a n (C a) ω
+  _ ≤ log n / gap ν a ^ 2 + 1 := by sorry
 
 /-- Regret bound for the UCB algorithm. -/
 lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (n : ℕ) :

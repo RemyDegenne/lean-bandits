@@ -56,6 +56,11 @@ open Classical in
 lemma monotone_pullCount (a : α) (h : ℕ → α × ℝ) : Monotone (pullCount a · h) :=
   fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
 
+@[mono, gcongr]
+lemma pullCount_mono (a : α) {n m : ℕ} (hnm : n ≤ m) (h : ℕ → α × ℝ) :
+    pullCount a n h ≤ pullCount a m h :=
+  monotone_pullCount a h hnm
+
 lemma pullCount_eq_pullCount_add_one (t : ℕ) (h : ℕ → α × ℝ) :
     pullCount (arm t h) (t + 1) h = pullCount (arm t h) t h + 1 := by
   simp [pullCount, range_add_one, filter_insert]

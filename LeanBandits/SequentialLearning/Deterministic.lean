@@ -45,7 +45,8 @@ lemma action_detAlgorithm_ae_eq [StandardBorelSpace α] [Nonempty α] [StandardB
   ae_eq_of_condDistrib_eq_deterministic (by fun_prop) (by fun_prop) (by fun_prop)
     (condDistrib_action (detAlgorithm nextaction h_next action0) env n)
 
-example [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R] :
+lemma action_detAlgorithm_ae_all_eq
+    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R] :
     ∀ᵐ h ∂𝔓, action 0 h = action0 ∧ ∀ n, action (n + 1) h = nextaction n (hist n h) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨action_zero_detAlgorithm, action_detAlgorithm_ae_eq⟩

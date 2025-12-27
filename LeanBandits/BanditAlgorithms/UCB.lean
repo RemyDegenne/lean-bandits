@@ -578,6 +578,7 @@ lemma pullCount_ae_le_add_two [Nonempty (Fin K)] (hc : 0 ≤ c) (a : Fin K) (h_g
   refine (hω_le).trans_eq ?_
   rw [hω_zero]
 
+/-- A sum that appears in the UCB regret upper bound. -/
 noncomputable
 def constSum (c : ℝ) (n : ℕ) : ℝ≥0∞ := ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c / 2 - 1)
 

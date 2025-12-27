@@ -265,7 +265,25 @@ lemma condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
     Y ⟂ᵢ[Z, hZ; μ] X := by
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkRight hX hY hZ ?_ (η := η)
   rw [← Kernel.compProd_eq_iff, compProd_map_condDistrib (by fun_prop)] at h ⊢
-  sorry
+  have : μ.map (fun a ↦ ((Z a, X a), Y a))
+      = (μ.map (fun a ↦ ((X a, Z a), Y a))).map (fun p ↦ ((p.1.2, p.1.1), p.2)) := by
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
+    rfl
+  rw [this, h]
+  ext s hs
+  rw [Measure.map_apply, Measure.compProd_apply, Measure.compProd_apply, lintegral_map,
+    lintegral_map]
+  · simp only [Kernel.prodMkLeft_apply, Kernel.prodMkRight_apply]
+    congr
+  · exact Kernel.measurable_kernel_prodMk_left hs
+  · fun_prop
+  · refine Kernel.measurable_kernel_prodMk_left ?_
+    exact hs.preimage (by fun_prop)
+  · fun_prop
+  · exact hs
+  · exact hs.preimage (by fun_prop)
+  · fun_prop
+  · exact hs
 
 /-- Law of `Y` conditioned on `X`. -/
 notation "𝓛[" Y " | " X "; " μ "]" => condDistrib Y X μ

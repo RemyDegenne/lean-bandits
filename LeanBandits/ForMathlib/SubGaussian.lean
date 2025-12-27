@@ -5,7 +5,7 @@ Authors: Rémy Degenne
 -/
 import Mathlib.Probability.Moments.SubGaussian
 
-open MeasureTheory
+open MeasureTheory Real
 open scoped ENNReal NNReal
 
 namespace ProbabilityTheory
@@ -13,6 +13,33 @@ namespace ProbabilityTheory
 namespace HasSubgaussianMGF
 
 variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X Y : Ω → ℝ} {c cX cY : ℝ≥0}
+
+/-- Chernoff bound on the left tail of a sub-Gaussian random variable. -/
+lemma measure_le_le (h : HasSubgaussianMGF X c μ) {ε : ℝ} (hε : 0 ≤ ε) :
+    μ.real {ω | X ω ≤ -ε} ≤ exp (-ε ^ 2 / (2 * c)) := by
+  simp_rw [le_neg (b := ε), ← Pi.neg_apply]
+  exact h.neg.measure_ge_le hε
+
+/-- **Hoeffding inequality** for sub-Gaussian random variables. -/
+lemma measure_sum_le_le_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)
+    {c : ι → ℝ≥0}
+    {s : Finset ι} (h_subG : ∀ i ∈ s, HasSubgaussianMGF (X i) (c i) μ) {ε : ℝ} (hε : 0 ≤ ε) :
+    μ.real {ω | ∑ i ∈ s, X i ω ≤ -ε} ≤ exp (-ε ^ 2 / (2 * ∑ i ∈ s, c i)) := by
+  simp_rw [le_neg (b := ε), ← Finset.sum_neg_distrib, ← Pi.neg_apply (f := X _),
+    ← Pi.neg_apply (f := X)]
+  refine measure_sum_ge_le_of_iIndepFun (X := -X) (μ := μ) ?_ ?_ hε
+  · exact h_indep.comp _ (fun _ ↦ measurable_neg)
+  · exact fun i hi ↦ (h_subG i hi).neg
+
+/-- **Hoeffding inequality** for sub-Gaussian random variables. -/
+lemma measure_sum_range_le_le_of_iIndepFun {X : ℕ → Ω → ℝ} (h_indep : iIndepFun X μ) {c : ℝ≥0}
+    {n : ℕ} (h_subG : ∀ i < n, HasSubgaussianMGF (X i) c μ) {ε : ℝ} (hε : 0 ≤ ε) :
+    μ.real {ω | ∑ i ∈ Finset.range n, X i ω ≤ -ε} ≤ exp (-ε ^ 2 / (2 * n * c)) := by
+  simp_rw [le_neg (b := ε), ← Finset.sum_neg_distrib, ← Pi.neg_apply (f := X _),
+    ← Pi.neg_apply (f := X)]
+  refine measure_sum_range_ge_le_of_iIndepFun (X := -X) (μ := μ) ?_ ?_ hε
+  · exact h_indep.comp _ (fun _ ↦ measurable_neg)
+  · exact fun i hi ↦ (h_subG i hi).neg
 
 section Sum
 
@@ -26,7 +53,7 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     (h_indep_sum : IndepFun (fun ω ↦ ∑ i ∈ s, X i ω) (fun ω ↦ ∑ j ∈ t, Y j ω) μ)
     (h_le : ∑ j ∈ t, μ[Y j] ≤ ∑ i ∈ s, μ[X i]) :
     μ.real {ω | ∑ i ∈ s, X i ω ≤ ∑ j ∈ t, Y j ω}
-      ≤ Real.exp (- (∑ j ∈ t, μ[Y j] - ∑ i ∈ s, μ[X i]) ^ 2
+      ≤ exp (- (∑ j ∈ t, μ[Y j] - ∑ i ∈ s, μ[X i]) ^ 2
         / (2 * (∑ i ∈ s, cX i + ∑ j ∈ t, cY j))) := by
   have hX_int i (his : i ∈ s) : Integrable (X i) μ := by
     have h_int := (hX_subG i his).integrable

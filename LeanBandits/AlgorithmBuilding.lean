@@ -19,7 +19,8 @@ namespace Bandits
 
 variable {α : Type*} [DecidableEq α] [MeasurableSpace α]
 
-/-- Number of pulls of arm `a` up to (and including) time `n`. -/
+/-- Number of pulls of arm `a` up to (and including) time `n`.
+This is the number of entries in `h` in which the arm is `a`. -/
 noncomputable
 def pullCount' (n : ℕ) (h : Iic n → α × ℝ) (a : α) := #{s | (h s).1 = a}
 

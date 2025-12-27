@@ -15,6 +15,8 @@ import LeanBandits.RewardByCountMeasure
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
+section Aux
+
 lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
     s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
   rw [Filter.EventuallyEq]
@@ -35,86 +37,6 @@ lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
   refine measurable_sum _ fun n hn ↦ ?_
   refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
   exact (measurableSet_singleton _).preimage (by fun_prop)
-
-namespace Bandits
-
-variable {K : ℕ}
-
-/-- Arm pulled by the ETC algorithm at time `n + 1`. -/
-noncomputable
-def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  if hn : n < K * m - 1 then
-    ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
-  else
-    if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
-    else (h ⟨n, by simp⟩).1
-
-@[fun_prop]
-lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  unfold nextArm
-  simp only [dite_eq_ite]
-  refine Measurable.ite (by simp) (by fun_prop) ?_
-  refine Measurable.ite (by simp) ?_ (by fun_prop)
-  exact measurable_measurableArgmax fun a ↦ by fun_prop
-
-/-- The Explore-Then-Commit algorithm. -/
-noncomputable
-def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
-
-namespace ETC
-
-variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
-
-local notation "𝔓t" => Bandit.trajMeasure (etcAlgorithm hK m) ν
-local notation "𝔓" => Bandit.measure (etcAlgorithm hK m) ν
-
-lemma arm_zero : arm 0 =ᵐ[𝔓t] fun _ ↦ ⟨0, hK⟩ := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact arm_zero_detAlgorithm
-
-lemma arm_ae_eq_etcNextArm (n : ℕ) :
-    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm hK m n (fun i ↦ h i) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact arm_detAlgorithm_ae_eq n
-
-lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
-    arm n =ᵐ[𝔓t] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
-  cases n with
-  | zero => exact arm_zero
-  | succ n =>
-    filter_upwards [arm_ae_eq_etcNextArm n] with h hn_eq
-    rw [hn_eq, nextArm, dif_pos]
-    grind
-
-lemma arm_mul (hm : m ≠ 0) :
-    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-    arm (K * m) =ᵐ[𝔓t] fun h ↦ measurableArgmax (empMean' (K * m - 1)) (fun i ↦ h i) := by
-  have : K * m = (K * m - 1) + 1 := by
-    have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
-    grind
-  rw [this]
-  filter_upwards [arm_ae_eq_etcNextArm (K * m - 1)] with h hn_eq
-  rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
-  exact this ▸ rfl
-
-lemma arm_add_one_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
-    arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := by
-  filter_upwards [arm_ae_eq_etcNextArm n] with ω hn_eq
-  rw [hn_eq, nextArm, dif_neg (by grind), dif_neg]
-  · rfl
-  · have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
-    grind
-
-lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) : arm n =ᵐ[𝔓t] arm (K * m) := by
-  have h_ae n : K * m ≤ n → arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := arm_add_one_of_ge hm
-  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
-  filter_upwards [h_ae] with ω h_ae
-  induction n, hn using Nat.le_induction with
-  | base => rfl
-  | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
 lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :
     (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = 1 := by
@@ -153,6 +75,104 @@ lemma sum_mod_range_mul {K : ℕ} (hK : 0 < K) (m : ℕ) (a : Fin K) :
     _ = n + (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) := by simp
     _ = n + 1 := by rw [sum_mod_range hK]
 
+end Aux
+
+namespace Bandits
+
+variable {K : ℕ}
+
+section AlgorithmDefinition
+
+/-- Arm pulled by the ETC algorithm at time `n + 1`.
+For `n < K * m - 1`, this is arm `n % K`.
+For `n = K * m - 1`, this is the arm with the highest empirical mean after the exploration phase.
+For `n ≥ K * m`, this is the same arm as at time `n`. -/
+noncomputable
+def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  if hn : n < K * m - 1 then
+    ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
+  else
+    if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
+    else (h ⟨n, by simp⟩).1
+
+/-- The next arm pulled by ETC is chosen in a measurable way. -/
+@[fun_prop]
+lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m n) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  unfold nextArm
+  simp only [dite_eq_ite]
+  refine Measurable.ite (by simp) (by fun_prop) ?_
+  refine Measurable.ite (by simp) ?_ (by fun_prop)
+  exact measurable_measurableArgmax fun a ↦ by fun_prop
+
+/-- The Explore-Then-Commit algorithm: deterministic algorithm that chooses the next arm according
+to `ETC.nextArm`. -/
+noncomputable
+def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
+  detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
+
+end AlgorithmDefinition
+
+namespace ETC
+
+variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
+
+local notation "𝔓t" => Bandit.trajMeasure (etcAlgorithm hK m) ν
+local notation "𝔓" => Bandit.measure (etcAlgorithm hK m) ν
+
+lemma arm_zero : arm 0 =ᵐ[𝔓t] fun _ ↦ ⟨0, hK⟩ := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  exact arm_zero_detAlgorithm
+
+lemma arm_ae_eq_etcNextArm (n : ℕ) :
+    arm (n + 1) =ᵐ[𝔓t] fun h ↦ nextArm hK m n (fun i ↦ h i) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  exact arm_detAlgorithm_ae_eq n
+
+/-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
+lemma arm_of_lt {n : ℕ} (hn : n < K * m) :
+    arm n =ᵐ[𝔓t] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
+  cases n with
+  | zero => exact arm_zero
+  | succ n =>
+    filter_upwards [arm_ae_eq_etcNextArm n] with h hn_eq
+    rw [hn_eq, nextArm, dif_pos]
+    grind
+
+/-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
+phase. -/
+lemma arm_mul (hm : m ≠ 0) :
+    have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+    arm (K * m) =ᵐ[𝔓t] fun h ↦ measurableArgmax (empMean' (K * m - 1)) (fun i ↦ h i) := by
+  have : K * m = (K * m - 1) + 1 := by
+    have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+    grind
+  rw [this]
+  filter_upwards [arm_ae_eq_etcNextArm (K * m - 1)] with h hn_eq
+  rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
+  exact this ▸ rfl
+
+/-- For `n ≥ K * m`, the arm pulled at time `n + 1` is the same as the arm pulled at time `n`. -/
+lemma arm_add_one_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
+    arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := by
+  filter_upwards [arm_ae_eq_etcNextArm n] with ω hn_eq
+  rw [hn_eq, nextArm, dif_neg (by grind), dif_neg]
+  · rfl
+  · have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
+    grind
+
+/-- For `n ≥ K * m`, the arm pulled at time `n` is the same as the arm pulled at time `K * m`. -/
+lemma arm_of_ge {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
+    arm n =ᵐ[𝔓t] arm (K * m) := by
+  have h_ae n : K * m ≤ n → arm (n + 1) =ᵐ[𝔓t] fun ω ↦ arm n ω := arm_add_one_of_ge hm
+  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
+  filter_upwards [h_ae] with ω h_ae
+  induction n, hn using Nat.le_induction with
+  | base => rfl
+  | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
+
+/-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
 lemma pullCount_mul (a : Fin K) : pullCount a (K * m) =ᵐ[𝔓t] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
@@ -173,6 +193,8 @@ lemma pullCount_add_one_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m �
   filter_upwards [arm_of_ge hm hn] with ω h_arm
   congr
 
+/-- For `n ≥ K * m`, the number of pulls of each arm `a` at time `n` is equal to `m` plus
+`n - K * m` if arm `a` is the best arm after the exploration phase. -/
 lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     pullCount a n
       =ᵐ[𝔓t] fun ω ↦ m + (n - K * m) * {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
@@ -189,6 +211,8 @@ lemma pullCount_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     congr
     grind
 
+/-- If at time `K * m` the algorithm chooses arm `a`, then the total reward obtained by pulling
+arm `a` is at least the total reward obtained by pulling the best arm. -/
 lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
     have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
     ∀ᵐ h ∂𝔓t, arm (K * m) h = a → sumRewards (bestArm ν) (K * m) h ≤ sumRewards a (K * m) h := by
@@ -206,37 +230,16 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq (a : Fin K) (hm : m ≠ 0) :
 
 lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
     IdentDistrib
-      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2, ∑ s ∈ Icc 1 m, rewardByCount b s ω.1 ω.2))
+      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount a s ω, ∑ s ∈ Icc 1 m, rewardByCount b s ω))
       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b)) 𝔓 𝔓 := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  have h1 (a : Fin K) :
-      IdentDistrib (fun ω s ↦ rewardByCount a (s + 1) ω.1 ω.2) (fun ω s ↦ ω.2 s a) 𝔓 𝔓 :=
-    identDistrib_rewardByCount_stream a
-  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2)
-      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := by
-    have h_eq (ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
-        = ∑ s ∈ range m, rewardByCount a (s + 1) ω.1 ω.2 := by
-      let e : Icc 1 m ≃ range m :=
-      { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
-        invFun x := ⟨x + 1, by
-          have h := x.2
-          simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
-          simp only [mem_range] at h
-          grind⟩
-        left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
-        right_inv x := by have h := x.2; grind }
-      rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
-      · simp
-      · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
-          forall_and_index]
-        grind
-    simp_rw [h_eq]
-    exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
+  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω)
+      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 𝔓 := identDistrib_sum_Icc_rewardByCount m a
   by_cases hab : a = b
   · simp only [hab]
     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
   refine (h2 a).prod (h2 b) ?_ ?_
-  · suffices IndepFun (fun ω s ↦ rewardByCount a s ω.1 ω.2) (fun ω s ↦ rewardByCount b s ω.1 ω.2)
+  · suffices IndepFun (fun ω s ↦ rewardByCount a s ω) (fun ω s ↦ rewardByCount b s ω)
         𝔓 by
       exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
         (by fun_prop) (by fun_prop)
@@ -246,6 +249,8 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
         (by fun_prop) (by fun_prop)
     exact indepFun_eval_snd_measure _ ν hab
 
+/-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
+`exp(- m * Δ_a^2 / 4)`. -/
 lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     (𝔓t).real {ω | arm (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
@@ -271,13 +276,12 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       · rfl
       · exact measurableSet_le (by fun_prop) (by fun_prop)
   calc (𝔓).real {ω | sumRewards (bestArm ν) (K * m) ω.1 ≤ sumRewards a (K * m) ω.1}
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1),
-        rewardByCount (bestArm ν) s ω.1 ω.2
-      ≤ ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2} := by
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω
+      ≤ ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω} := by
     congr with ω
     congr! 1 <;> rw [sum_rewardByCount_eq_sumRewards]
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
-      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2} := by
+  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω
+      ≤ ∑ s ∈ Icc 1 m, rewardByCount a s ω} := by
     simp_rw [measureReal_def]
     congr 1
     refine measure_congr ?_
@@ -291,24 +295,24 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       rw [ha, h_best]
     · simp only [Set.mem_setOf_eq]
       let f₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω.1 ω.2
+        ∑ s ∈ Icc 1 (pullCount (bestArm ν) (K * m) ω.1), rewardByCount (bestArm ν) s ω
       let g₁ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω.1 ω.2
+        ∑ s ∈ Icc 1 (pullCount a (K * m) ω.1), rewardByCount a s ω
       let f₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2
-      let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2
+        ∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω
+      let g₂ := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount a s ω
       change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
       have hf₁ : Measurable f₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount (bestArm ν) (K * m) ω.1)
-          (f := fun s ω ↦ rewardByCount (bestArm ν) s ω.1 ω.2) (fun ω ↦ ?_)
+          (f := rewardByCount (bestArm ν)) (fun ω ↦ ?_)
           (by fun_prop) (by fun_prop)
         have h_le := pullCount_le (bestArm ν) (K * m) ω.1
         grind
       have hg₁ : Measurable g₁ := by
         refine measurable_sum_of_le (n := K * m + 1)
           (g := fun ω : (ℕ → Fin K × ℝ) × (ℕ → Fin K → ℝ) ↦ pullCount a (K * m) ω.1)
-          (f := fun s ω ↦ rewardByCount a s ω.1 ω.2) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
+          (f := rewardByCount a) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
         have h_le := pullCount_le a (K * m) ω.1
         grind
       refine MeasurableSet.iff ?_ ?_
@@ -317,8 +321,8 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ = (𝔓).real {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
     simp_rw [measureReal_def]
     congr 1
-    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω.1 ω.2,
-          ∑ s ∈ Icc 1 m, rewardByCount a s ω.1 ω.2))
+    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount (bestArm ν) s ω,
+          ∑ s ∈ Icc 1 m, rewardByCount a s ω))
         = (𝔓).map (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) :=
       (identDistrib_aux m (bestArm ν) a).map_eq
     rw [Measure.ext_iff] at this
@@ -336,6 +340,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
   _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
     by_cases ha : a = bestArm ν
     · simp [ha]
+    -- Apply a sub-Gaussian concentration inequality
     refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ 1) (cY := fun _ ↦ 1)
       ?_ ?_ ?_ ?_ ?_ ?_).trans_eq ?_
     · exact iIndepFun_eval_streamMeasure'' ν (bestArm ν)
@@ -359,6 +364,7 @@ lemma prob_arm_mul_eq_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[i
       field_simp
       ring
 
+/-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     𝔓t[fun ω ↦ (pullCount a n ω : ℝ)]
@@ -384,12 +390,7 @@ lemma expectation_pullCount_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (�
     exact prob_arm_mul_eq_le hν a hm
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma integrable_pullCount (a : Fin K) (n : ℕ) : Integrable (fun ω ↦ (pullCount a n ω : ℝ)) 𝔓t := by
-  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
-    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
-  simp only [Nat.cast_le]
-  exact pullCount_le a n ω
-
+/-- Regret bound for the ETC algorithm. -/
 lemma regret_le (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     𝔓t[regret ν n] ≤ ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by

@@ -50,7 +50,7 @@ Formally, $H_t(\omega) = (\omega_{1,0}, \ldots, \omega_{1,t})$.
 \begin{definition}[Pull counts]\label{def:pullCount}
   \uses{def:armAndReward}
   \leanok
-  \lean{Bandits.pullCount}
+  \lean{Learning.pullCount}
 For an arm $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that arm $a$ has been pulled before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
 \end{definition}
 
@@ -145,7 +145,7 @@ We introduce definitions to talk about the $n^{th}$ reward of an arm, and the ti
 \begin{definition}\label{def:stepsUntil}
   \uses{def:pullCount}
   \leanok
-  \lean{Bandits.stepsUntil}
+  \lean{Learning.stepsUntil}
 For an arm $a \in \mathcal{A}$ and a time $n \in \mathbb{N}$, we denote by $T_{n,a}$ the time at which arm $a$ was pulled for the $n$-th time, that is $T_{n,a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = n\}$.
 Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
 \end{definition}
@@ -154,7 +154,7 @@ Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
 \begin{definition}\label{def:rewardByCount}
   \uses{def:stepsUntil}
   \leanok
-  \lean{Bandits.rewardByCount}
+  \lean{Learning.rewardByCount}
 For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of the bandit interaction and other $Z_{m,b}$.
 In our probability space $\Omega$, we can take for $Z_{n,a}$ the function $\omega \mapsto \omega_{2,n,a}$.
 We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when pulling arm $a$ for the $n$-th time if that time is finite, and equal to $Z_{n,a}$ otherwise.
@@ -229,7 +229,7 @@ For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb
 \begin{lemma}\label{lem:stepsUntil_pullCount_le}
   \uses{def:stepsUntil,def:pullCount}
   \leanok
-  \lean{Bandits.stepsUntil_pullCount_le}
+  \lean{Learning.stepsUntil_pullCount_le}
 $T_{N_{t+1, a}, a} \le t < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
 \end{lemma}
 
@@ -241,7 +241,7 @@ By definition, $T_{N_{t+1,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t+
 \begin{lemma}\label{lem:stepsUntil_pullCount_eq}
   \uses{def:stepsUntil,def:pullCount}
   \leanok
-  \lean{Bandits.stepsUntil_pullCount_eq}
+  \lean{Learning.stepsUntil_pullCount_eq}
 $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
 \end{lemma}
 
@@ -253,7 +253,7 @@ $T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
 \begin{lemma}\label{lem:rewardByCount_pullCount}
   \uses{def:rewardByCount,def:pullCount}
   \leanok
-  \lean{Bandits.rewardByCount_pullCount_add_one_eq_reward}
+  \lean{Learning.rewardByCount_pullCount_add_one_eq_reward}
 $Y_{N_{t+1, A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
 \end{lemma}
 
@@ -267,7 +267,7 @@ By Lemma~\ref{lem:stepsUntil_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < 
 \begin{lemma}\label{lem:sum_rewardByCount}
   \uses{def:rewardByCount,def:pullCount}
   \leanok
-  \lean{Bandits.sum_rewardByCount_eq_sumRewards}
+  \lean{Learning.sum_rewardByCount_eq_sumRewards}
 \begin{align*}
   \sum_{n=1}^{N_{t, a}} Y_{n, a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} X_s
   \: .

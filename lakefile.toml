@@ -1,5 +1,6 @@
 name = "LeanBandits"
 defaultTargets = ["LeanBandits"]
+lintDriver = "batteries/runLinter"
 
 [leanOptions]
 pp.unicode.fun = true

@@ -87,7 +87,8 @@ lemma CondIndepFun.of_prod_left {ε : Type*} {mε : MeasurableSpace ε}
     X ⟂ᵢ[Z, hZ; μ] Y :=
   Kernel.IndepFun.of_prod_left h
 
-lemma CondIndepFun.prod_right [StandardBorelSpace α] [IsFiniteMeasure μ]
+lemma CondIndepFun.prod_right [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
+    [StandardBorelSpace γ] [Nonempty γ] [StandardBorelSpace δ] [Nonempty δ] [IsFiniteMeasure μ]
     {X : α → β} {Y : α → γ} {Z : α → δ}
     (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
     (h : X ⟂ᵢ[Z, hZ; μ] Y) :

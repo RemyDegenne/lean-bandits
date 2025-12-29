@@ -31,12 +31,11 @@ omit [DecidableEq α] [MeasurableSingletonClass α] in
 lemma hasLaw_Z (a : α) (m : ℕ) :
   HasLaw (fun ω ↦ ω.2 m a) (ν a) (Bandit.measure alg ν) where
   map_eq := by
-    calc ((Bandit.trajMeasure alg ν).prod (Bandit.streamMeasure ν)).map (fun ω ↦ ω.2 m a)
-    _ = (((Bandit.trajMeasure alg ν).prod (Bandit.streamMeasure ν)).map (fun ω ↦ ω.2)).map
-        (fun ω ↦ ω m a) := by
-      rw [Measure.map_map (by fun_prop) (by fun_prop)]
+    calc (Bandit.measure alg ν).map (fun ω ↦ ω.2 m a)
+    _ = ((Bandit.measure alg ν).snd).map (fun ω ↦ ω m a) := by
+      rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
       rfl
-    _ = (Bandit.streamMeasure ν).map (fun ω ↦ ω m a) := by simp [Measure.map_snd_prod]
+    _ = (Bandit.streamMeasure ν).map (fun ω ↦ ω m a) := by simp
     _ = ((Measure.infinitePi fun _ ↦ Measure.infinitePi ν).map (fun ω ↦ ω m)).map
         (fun ω ↦ ω a) := by
       rw [Bandit.streamMeasure, Measure.map_map (by fun_prop) (by fun_prop)]
@@ -59,11 +58,8 @@ lemma condDistrib_reward'' [StandardBorelSpace α] [Nonempty α] (n : ℕ) :
       =ᵐ[(𝔓).map (fun ω ↦ arm n ω.1)] ν := by
   have h_ra' : 𝓛[reward n | arm n; 𝔓t] =ᵐ[(𝔓t).map (arm n)] ν := condDistrib_reward alg ν n
   have h_law : (𝔓).map (fun ω ↦ arm n ω.1) = (𝔓t).map (arm n) := by
-    calc (𝔓).map (fun ω ↦ arm n ω.1)
-    _ = ((𝔓).map (fun ω ↦ ω.1)).map (fun ω ↦ arm n ω) := by
-      rw [Measure.map_map (by fun_prop) (by fun_prop)]
-      rfl
-    _ = _ := by unfold Bandit.measure; simp [Measure.map_fst_prod]
+    rw [← Bandit.fst_measure, Measure.fst, Measure.map_map (by fun_prop) (by fun_prop)]
+    rfl
   rw [h_law]
   have h_prod : 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1; 𝔓]
       =ᵐ[(𝔓t).map (arm n)] 𝓛[reward n | arm n; 𝔓t] :=

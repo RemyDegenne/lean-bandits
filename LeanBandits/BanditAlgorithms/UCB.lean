@@ -468,8 +468,25 @@ lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
     rw [Finset.sum_add_distrib]
   _ ≤ C + 1 + ∑ s ∈ range n, {s | arm s ω = a ∧ C < pullCount a s ω}.indicator 1 s := by
     gcongr
-    simp_rw [pullCount_eq_sum]
-    sorry
+    have h_le n : ∑ s ∈ range n, {s | arm s ω = a ∧ pullCount a s ω ≤ C}.indicator 1 s ≤
+        pullCount a n ω := by
+      rw [pullCount_eq_sum]
+      gcongr with s hs
+      simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+      grind
+    induction n with
+    | zero => simp
+    | succ n hn =>
+      rw [Finset.sum_range_succ]
+      rcases le_or_gt (pullCount a n ω) C with h_pc | h_pc
+      · have hn' : ∑ s ∈ range n, {s | arm s ω = a ∧ pullCount a s ω ≤ C}.indicator 1 s ≤ C :=
+          (h_le n).trans h_pc
+        grw [hn']
+        gcongr
+        simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+        grind
+      · refine le_trans ?_ hn
+        simp [h_pc]
 
 omit [IsMarkovKernel ν] in
 lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :

@@ -3,7 +3,6 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
 import LeanBandits.ForMathlib.IndepFun
 import Mathlib.Probability.IdentDistribIndep
@@ -25,65 +24,6 @@ lemma integrable_pullCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMark
     (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
   simp only [Nat.cast_le]
   exact pullCount_le a n ω
-
-@[fun_prop]
-lemma measurable_sumRewards (a : α) (t : ℕ) : Measurable (sumRewards a t) := by
-  unfold sumRewards
-  have h_meas s : Measurable (fun h : ℕ → α × ℝ ↦ if arm s h = a then reward s h else 0) := by
-    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact (measurableSet_singleton _).preimage (by fun_prop)
-  fun_prop
-
-@[fun_prop]
-lemma measurable_empMean (a : α) (n : ℕ) : Measurable (empMean a n) := by
-  unfold empMean
-  fun_prop
-
-@[fun_prop]
-lemma measurable_stepsUntil (a : α) (m : ℕ) :
-    Measurable (fun h : ℕ → α × ℝ ↦ stepsUntil a m h) := by
-  classical
-  have h_union : {h' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) h' = m}
-      = ⋃ s : ℕ, {h' | pullCount a (s + 1) h' = m} := by ext; simp
-  have h_meas_set : MeasurableSet {h' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) h' = m} := by
-    rw [h_union]
-    exact MeasurableSet.iUnion fun s ↦ (measurableSet_singleton _).preimage (by fun_prop)
-  simp_rw [stepsUntil_eq_dite]
-  suffices Measurable fun k ↦ if h : k ∈ {k' | ∃ s, pullCount a (s + 1) k' = m}
-      then (Nat.find h : ℕ∞) else ⊤ by convert this
-  refine Measurable.dite (s := {k' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) k' = m})
-    (f := fun x ↦ (Nat.find x.2 : ℕ∞)) (g := fun _ ↦ ⊤) ?_ (by fun_prop) h_meas_set
-  refine Measurable.coe_nat_enat ?_
-  refine measurable_find _ fun k ↦ ?_
-  suffices MeasurableSet {x : ℕ → α × ℝ | pullCount a (k + 1) x = m} by
-    have : Subtype.val '' {x : {k' : ℕ → α × ℝ |
-          ∃ s, pullCount a (s + 1) k' = m} | pullCount a (k + 1) (x : ℕ → α × ℝ) = m}
-        = {x : ℕ → α × ℝ | pullCount a (k + 1) x = m} := by
-      ext x
-      simp only [Set.mem_setOf_eq, Set.coe_setOf, Set.mem_image, Subtype.exists, exists_and_left,
-        exists_prop, exists_eq_right_right, and_iff_left_iff_imp]
-      exact fun h ↦ ⟨_, h⟩
-    refine (MeasurableEmbedding.subtype_coe h_meas_set).measurableSet_image.mp ?_
-    rw [this]
-    exact (measurableSet_singleton _).preimage (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
-
-lemma measurable_stepsUntil' (a : α) (m : ℕ) :
-    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ stepsUntil a m ω.1) :=
-  (measurable_stepsUntil a m).comp measurable_fst
-
-@[fun_prop]
-lemma measurable_rewardByCount (a : α) (m : ℕ) :
-    Measurable (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ rewardByCount a m ω) := by
-  simp_rw [rewardByCount_eq_ite]
-  refine Measurable.ite ?_ ?_ ?_
-  · exact (measurableSet_singleton _).preimage <| measurable_stepsUntil' a m
-  · fun_prop
-  · change Measurable ((fun p : ℕ × (ℕ → α × ℝ) ↦ reward p.1 p.2)
-      ∘ (fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ ((stepsUntil a m ω.1).toNat, ω.1)))
-    have : Measurable fun ω : (ℕ → α × ℝ) × (ℕ → α → ℝ) ↦ ((stepsUntil a m ω.1).toNat, ω.1) :=
-      (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
-    exact Measurable.comp (by fun_prop) this
 
 variable {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
 

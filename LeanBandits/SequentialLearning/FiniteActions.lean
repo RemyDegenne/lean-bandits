@@ -38,7 +38,9 @@ noncomputable
 def pullCount' (n : ℕ) (h : Iic n → α × R) (a : α) := #{s | (h s).1 = a}
 
 @[simp]
-lemma pullCount_zero (a : α) (h : ℕ → α × R) : pullCount a 0 h = 0 := by simp [pullCount]
+lemma pullCount_zero (a : α) : pullCount a 0 (R := R) = 0 := by ext; simp [pullCount]
+
+lemma pullCount_zero_apply (a : α) (h : ℕ → α × R) : pullCount a 0 h = 0 := by simp
 
 lemma pullCount_one : pullCount a 1 h = if action 0 h = a then 1 else 0 := by
   simp only [pullCount, range_one]
@@ -121,6 +123,23 @@ lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
   have h_meas s : Measurable (fun (h : Iic n → α × R) ↦ if (h s).1 = a then 1 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+lemma adapted_pullCount_add_one [MeasurableSingletonClass α] (a : α) :
+    Adapted (Learning.filtration α R) (fun n ↦ pullCount a (n + 1)) := by
+  refine fun n ↦ Measurable.stronglyMeasurable ?_
+  simp only
+  have : pullCount a (n + 1) = (fun h : Iic n → α × R ↦ pullCount' n h a) ∘ (hist n) := by
+    ext
+    exact pullCount_add_one_eq_pullCount'
+  rw [Learning.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe, this]
+  exact measurable_comp_comap (hist n) (measurable_pullCount' n a)
+
+lemma isPredictable_pullCount [MeasurableSingletonClass α] (a : α) :
+    IsPredictable (Learning.filtration α R) (pullCount a) := by
+  rw [isPredictable_iff_measurable_add_one]
+  refine ⟨?_, fun n ↦ (adapted_pullCount_add_one a n).measurable⟩
+  simp only [pullCount_zero]
   fun_prop
 
 -- TODO: replace this by leastGE
@@ -327,6 +346,47 @@ lemma stepsUntil_eq_congr {h' : ℕ → α × R} (h_eq : ∀ i ≤ n, action i h
     rw [pullCount_congr]
     grind
 
+lemma isStoppingTime_stepsUntil [MeasurableSingletonClass α] (a : α) (m : ℕ) :
+    IsStoppingTime (Learning.filtration α ℝ) (stepsUntil a m) := by
+  rw [stepsUntil_eq_leastGE]
+  refine Adapted.isStoppingTime_leastGE _ fun n ↦ ?_
+  suffices StronglyMeasurable[Learning.filtration α ℝ n] (pullCount a (n + 1)) by fun_prop
+  exact adapted_pullCount_add_one a n
+
+-- todo: get this from the stopping time property?
+@[fun_prop]
+lemma measurable_stepsUntil [MeasurableSingletonClass α] (a : α) (m : ℕ) :
+    Measurable (fun h : ℕ → α × R ↦ stepsUntil a m h) := by
+  classical
+  have h_union : {h' : ℕ → α × R | ∃ s, pullCount a (s + 1) h' = m}
+      = ⋃ s : ℕ, {h' | pullCount a (s + 1) h' = m} := by ext; simp
+  have h_meas_set : MeasurableSet {h' : ℕ → α × R | ∃ s, pullCount a (s + 1) h' = m} := by
+    rw [h_union]
+    exact MeasurableSet.iUnion fun s ↦ (measurableSet_singleton _).preimage (by fun_prop)
+  simp_rw [stepsUntil_eq_dite]
+  suffices Measurable fun k ↦ if h : k ∈ {k' | ∃ s, pullCount a (s + 1) k' = m}
+      then (Nat.find h : ℕ∞) else ⊤ by convert this
+  refine Measurable.dite (s := {k' : ℕ → α × R | ∃ s, pullCount a (s + 1) k' = m})
+    (f := fun x ↦ (Nat.find x.2 : ℕ∞)) (g := fun _ ↦ ⊤) ?_ (by fun_prop) h_meas_set
+  refine Measurable.coe_nat_enat ?_
+  refine measurable_find _ fun k ↦ ?_
+  suffices MeasurableSet {x : ℕ → α × R | pullCount a (k + 1) x = m} by
+    have : Subtype.val '' {x : {k' : ℕ → α × R |
+          ∃ s, pullCount a (s + 1) k' = m} | pullCount a (k + 1) (x : ℕ → α × R) = m}
+        = {x : ℕ → α × R | pullCount a (k + 1) x = m} := by
+      ext x
+      simp only [Set.mem_setOf_eq, Set.coe_setOf, Set.mem_image, Subtype.exists, exists_and_left,
+        exists_prop, exists_eq_right_right, and_iff_left_iff_imp]
+      exact fun h ↦ ⟨_, h⟩
+    refine (MeasurableEmbedding.subtype_coe h_meas_set).measurableSet_image.mp ?_
+    rw [this]
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma measurable_stepsUntil' [MeasurableSingletonClass α] (a : α) (m : ℕ) :
+    Measurable (fun ω : (ℕ → α × R) × (ℕ → α → R) ↦ stepsUntil a m ω.1) :=
+  (measurable_stepsUntil a m).comp measurable_fst
+
 section RewardByCount
 
 /-- Reward obtained when pulling action `a` for the `m`-th time.
@@ -355,6 +415,19 @@ lemma rewardByCount_of_stepsUntil_eq_coe {ω : (ℕ → α × R) × (ℕ → α 
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (ω : (ℕ → α × R) × (ℕ → α → R)) :
     rewardByCount (action t ω.1) (pullCount (action t ω.1) t ω.1 + 1) ω = reward t ω.1 := by
   rw [rewardByCount, ← pullCount_action_eq_pullCount_add_one, stepsUntil_pullCount_eq]
+
+@[fun_prop]
+lemma measurable_rewardByCount [MeasurableSingletonClass α] (a : α) (m : ℕ) :
+    Measurable (fun ω : (ℕ → α × R) × (ℕ → α → R) ↦ rewardByCount a m ω) := by
+  simp_rw [rewardByCount_eq_ite]
+  refine Measurable.ite ?_ ?_ ?_
+  · exact (measurableSet_singleton _).preimage <| measurable_stepsUntil' a m
+  · fun_prop
+  · change Measurable ((fun p : ℕ × (ℕ → α × R) ↦ reward p.1 p.2)
+      ∘ (fun ω : (ℕ → α × R) × (ℕ → α → R) ↦ ((stepsUntil a m ω.1).toNat, ω.1)))
+    have : Measurable fun ω : (ℕ → α × R) × (ℕ → α → R) ↦ ((stepsUntil a m ω.1).toNat, ω.1) :=
+      (measurable_stepsUntil' a m).toNat.prodMk (by fun_prop)
+    exact Measurable.comp (by fun_prop) this
 
 end RewardByCount
 
@@ -435,6 +508,21 @@ lemma empMean_eq_empMean' {n : ℕ} {h : ℕ → α × ℝ} (hn : n ≠ 0) :
     empMean a n h = empMean' (n - 1) (fun i ↦ h i) a := by
   unfold empMean empMean'
   rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
+
+@[fun_prop]
+lemma measurable_sumRewards [MeasurableSingletonClass α] (a : α) (t : ℕ) :
+    Measurable (sumRewards a t) := by
+  unfold sumRewards
+  have h_meas s : Measurable (fun h : ℕ → α × ℝ ↦ if action s h = a then reward s h else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+@[fun_prop]
+lemma measurable_empMean [MeasurableSingletonClass α] (a : α) (n : ℕ) :
+    Measurable (empMean a n) := by
+  unfold empMean
+  fun_prop
 
 @[fun_prop]
 lemma measurable_sumRewards' [MeasurableSingletonClass α] (n : ℕ) (a : α) :

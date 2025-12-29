@@ -4,9 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.Bandit.Bandit
-import Mathlib.Data.ENat.Lattice
-import Mathlib.Order.CompletePartialOrder
-import Mathlib.Probability.Martingale.BorelCantelli
 import LeanBandits.SequentialLearning.FiniteActions
 
 /-!

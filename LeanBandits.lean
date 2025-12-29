@@ -1,4 +1,3 @@
-import LeanBandits.AlgorithmBuilding
 import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
 import LeanBandits.BanditAlgorithms.ETC

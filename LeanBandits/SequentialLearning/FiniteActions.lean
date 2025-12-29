@@ -114,6 +114,15 @@ lemma measurable_pullCount [MeasurableSingletonClass α] (a : α) (t : ℕ) :
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
+@[fun_prop]
+lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
+    Measurable (fun h : Iic n → α × R ↦ pullCount' n h a) := by
+  simp_rw [pullCount'_eq_sum]
+  have h_meas s : Measurable (fun (h : Iic n → α × R) ↦ if (h s).1 = a then 1 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
 -- TODO: replace this by leastGE
 /-- Number of steps until action `a` was pulled exactly `m` times. -/
 noncomputable
@@ -426,6 +435,21 @@ lemma empMean_eq_empMean' {n : ℕ} {h : ℕ → α × ℝ} (hn : n ≠ 0) :
     empMean a n h = empMean' (n - 1) (fun i ↦ h i) a := by
   unfold empMean empMean'
   rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
+
+@[fun_prop]
+lemma measurable_sumRewards' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
+    Measurable (fun h ↦ sumRewards' n h a) := by
+  simp_rw [sumRewards']
+  have h_meas s : Measurable (fun (h : Iic n → α × ℝ) ↦ if (h s).1 = a then (h s).2 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+@[fun_prop]
+lemma measurable_empMean' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
+    Measurable (fun h ↦ empMean' n h a) := by
+  unfold empMean'
+  fun_prop
 
 end SumRewards
 

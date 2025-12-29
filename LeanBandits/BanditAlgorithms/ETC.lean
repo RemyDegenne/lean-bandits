@@ -3,7 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.AlgorithmAndRandomVariables
+import LeanBandits.AlgorithmBuilding
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.RewardByCountMeasure
@@ -191,7 +191,7 @@ lemma pullCount_add_one_of_ge (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m �
       =ᵐ[𝔓t] fun ω ↦ pullCount a n ω + {ω' | arm (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
   simp_rw [Filter.EventuallyEq, pullCount_add_one]
   filter_upwards [arm_of_ge hm hn] with ω h_arm
-  congr
+  congr 3
 
 /-- For `n ≥ K * m`, the number of pulls of each arm `a` at time `n` is equal to `m` plus
 `n - K * m` if arm `a` is the best arm after the exploration phase. -/
@@ -238,7 +238,7 @@ lemma identDistrib_aux (m : ℕ) (a b : Fin K) :
   by_cases hab : a = b
   · simp only [hab]
     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
-  refine (h2 a).prod (h2 b) ?_ ?_
+  refine (h2 a).prodMk (h2 b) ?_ ?_
   · suffices IndepFun (fun ω s ↦ rewardByCount a s ω) (fun ω s ↦ rewardByCount b s ω)
         𝔓 by
       exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)

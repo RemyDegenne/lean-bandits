@@ -5,8 +5,8 @@ Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
-import LeanBandits.ForMathlib.IdentDistrib
 import LeanBandits.ForMathlib.IndepFun
+import Mathlib.Probability.IdentDistribIndep
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/
@@ -17,14 +17,6 @@ open scoped ENNReal NNReal
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
-
-@[fun_prop]
-lemma measurable_pullCount (a : α) (t : ℕ) : Measurable (fun h ↦ pullCount a t h) := by
-  simp_rw [pullCount_eq_sum]
-  have h_meas s : Measurable (fun h : ℕ → α × ℝ ↦ if arm s h = a then 1 else 0) := by
-    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact (measurableSet_singleton _).preimage (by fun_prop)
-  fun_prop
 
 lemma integrable_pullCount {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
     (a : α) (n : ℕ) :
@@ -48,11 +40,12 @@ lemma measurable_empMean (a : α) (n : ℕ) : Measurable (empMean a n) := by
   fun_prop
 
 @[fun_prop]
-lemma measurable_stepsUntil (a : α) (m : ℕ) : Measurable (fun h ↦ stepsUntil a m h) := by
+lemma measurable_stepsUntil (a : α) (m : ℕ) :
+    Measurable (fun h : ℕ → α × ℝ ↦ stepsUntil a m h) := by
   classical
-  have h_union : {h' | ∃ s, pullCount a (s + 1) h' = m}
+  have h_union : {h' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) h' = m}
       = ⋃ s : ℕ, {h' | pullCount a (s + 1) h' = m} := by ext; simp
-  have h_meas_set : MeasurableSet {h' | ∃ s, pullCount a (s + 1) h' = m} := by
+  have h_meas_set : MeasurableSet {h' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) h' = m} := by
     rw [h_union]
     exact MeasurableSet.iUnion fun s ↦ (measurableSet_singleton _).preimage (by fun_prop)
   simp_rw [stepsUntil_eq_dite]
@@ -63,8 +56,8 @@ lemma measurable_stepsUntil (a : α) (m : ℕ) : Measurable (fun h ↦ stepsUnti
   refine Measurable.coe_nat_enat ?_
   refine measurable_find _ fun k ↦ ?_
   suffices MeasurableSet {x : ℕ → α × ℝ | pullCount a (k + 1) x = m} by
-    have : Subtype.val ''
-          {x : {k' : ℕ → α × ℝ | ∃ s, pullCount a (s + 1) k' = m} | pullCount a (k + 1) x = m}
+    have : Subtype.val '' {x : {k' : ℕ → α × ℝ |
+          ∃ s, pullCount a (s + 1) k' = m} | pullCount a (k + 1) (x : ℕ → α × ℝ) = m}
         = {x : ℕ → α × ℝ | pullCount a (k + 1) x = m} := by
       ext x
       simp only [Set.mem_setOf_eq, Set.coe_setOf, Set.mem_image, Subtype.exists, exists_and_left,
@@ -175,11 +168,11 @@ lemma measurable_comap_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
   congr 1
   rw [stepsUntil_eq_congr]
   intro i hin
-  simp only [arm, mem_Iic, hist, dite_eq_ite, k]
+  simp only [arm, mem_Iic, hist, dite_eq_ite, k, action]
   grind
 
 lemma measurable_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
-    Measurable ({ω | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
+    Measurable ({ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
   refine (measurable_comap_indicator_stepsUntil_eq a m n).mono ?_ le_rfl
   refine Measurable.comap_le ?_
   fun_prop
@@ -207,8 +200,8 @@ lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α]
       have h_indep := condIndepFun_self_right (X := reward 0) (Z := arm 0)
         (mβ := inferInstance) (mβ' := inferInstance) (μ := 𝔓t)
         (by fun_prop) (by fun_prop)
-      have : {ω : ℕ → α × ℝ | arm 0 ω = a}.indicator (fun x ↦ 1)
-          = {b | b = a}.indicator (fun _ ↦ 1) ∘ arm 0 := by ext; simp [Set.indicator]
+      have : {ω : ℕ → α × ℝ | action 0 ω = a}.indicator (fun x ↦ 1)
+          = {b | b = a}.indicator (fun _ ↦ 1) ∘ action 0 := by ext; simp [Set.indicator]
       rw [this]
       exact h_indep.comp measurable_id (by fun_prop)
     · simp only [hm1, false_and, Set.setOf_false, Set.indicator_empty]

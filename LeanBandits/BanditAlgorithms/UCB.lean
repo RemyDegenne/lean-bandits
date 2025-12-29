@@ -3,7 +3,6 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.AlgorithmAndRandomVariables
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.RewardByCountMeasure
@@ -23,11 +22,11 @@ namespace Bandits
 variable {K : ℕ}
 
 -- not used
-lemma predictatble_pullCount (a : Fin K) :
+lemma predictable_pullCount (a : Fin K) :
     Adapted (Bandits.filtration (Fin K) ℝ) (fun n ↦ pullCount a (n + 1)) := by
   refine fun n ↦ Measurable.stronglyMeasurable ?_
   simp only
-  have : pullCount a (n + 1) = (fun h ↦ pullCount' n h a) ∘ (hist n) := by
+  have : pullCount a (n + 1) = (fun h : Iic n → Fin K × ℝ ↦ pullCount' n h a) ∘ (hist n) := by
     ext
     exact pullCount_add_one_eq_pullCount'
   rw [Bandits.filtration, Filtration.piLE_eq_comap_frestrictLe, ← hist_eq_frestrictLe, this]
@@ -39,7 +38,7 @@ lemma isStoppingTime_stepsUntil (a : Fin K) (m : ℕ) :
   rw [stepsUntil_eq_leastGE]
   refine Adapted.isStoppingTime_leastGE _ fun n ↦ ?_
   suffices StronglyMeasurable[Bandits.filtration (Fin K) ℝ n] (pullCount a (n + 1)) by fun_prop
-  exact predictatble_pullCount a n
+  exact predictable_pullCount a n
 
 section Algorithm
 
@@ -472,7 +471,7 @@ lemma pullCount_le_add (a : Fin K) (n C : ℕ) (ω : ℕ → Fin K × ℝ) :
         pullCount a n ω := by
       rw [pullCount_eq_sum]
       gcongr with s hs
-      simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+      simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply, arm, action]
       grind
     induction n with
     | zero => simp

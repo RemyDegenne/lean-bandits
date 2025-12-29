@@ -27,6 +27,8 @@ namespace Learning
 variable {α R : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R} [DecidableEq α]
   {a : α} {m n t : ℕ} {h : ℕ → α × R}
 
+section PullCount
+
 /-- Number of times action `a` was chosen up to time `t` (excluding `t`). -/
 noncomputable
 def pullCount (a : α) (t : ℕ) (h : ℕ → α × R) : ℕ :=
@@ -107,6 +109,24 @@ lemma pullCount_congr {h' : ℕ → α × R} (h_eq : ∀ i ≤ n, action i h = a
   rw [Nat.lt_add_one_iff] at hs
   rw [h_eq s hs]
 
+lemma pullCount_lt_of_forall_ne (h_lt : ∀ s, pullCount a (s + 1) h ≠ t) (ht : t ≠ 0) :
+    pullCount a n h < t := by
+  induction n with
+  | zero => simpa using ht.bot_lt
+  | succ n hn =>
+    specialize h_lt n
+    rw [pullCount_add_one] at h_lt ⊢
+    grind
+
+lemma exists_pullCount_eq_of_le (hnm : t ≤ pullCount a (n + 1) h) (ht : t ≠ 0) :
+    ∃ s, pullCount a (s + 1) h = t := by
+  by_contra! h_contra
+  refine lt_irrefl (pullCount a (n + 1) h) ?_
+  refine lt_of_lt_of_le ?_ hnm
+  exact pullCount_lt_of_forall_ne h_contra ht
+
+section Measurability
+
 @[fun_prop]
 lemma measurable_pullCount [MeasurableSingletonClass α] (a : α) (t : ℕ) :
     Measurable (fun h : ℕ → α × R ↦ pullCount a t h) := by
@@ -142,7 +162,13 @@ lemma isPredictable_pullCount [MeasurableSingletonClass α] (a : α) :
   simp only [pullCount_zero]
   fun_prop
 
--- TODO: replace this by leastGE
+end Measurability
+
+end PullCount
+
+section StepsUntil
+
+-- TODO: replace this by leastGE, once leastGE is generalized
 /-- Number of steps until action `a` was pulled exactly `m` times. -/
 noncomputable
 def stepsUntil (a : α) (m : ℕ) (h : ℕ → α × R) : ℕ∞ := sInf ((↑) '' {s | pullCount a (s + 1) h = m})
@@ -152,11 +178,6 @@ lemma stepsUntil_eq_top_iff : stepsUntil a m h = ⊤ ↔ ∀ s, pullCount a (s +
 
 lemma stepsUntil_ne_top (h_exists : ∃ s, pullCount a (s + 1) h = m) : stepsUntil a m h ≠ ⊤ := by
   simpa [stepsUntil_eq_top_iff]
-
--- todo: this is in ℝ because of the limited def of leastGE
-lemma stepsUntil_eq_leastGE (a : α) (m : ℕ) :
-    stepsUntil a m = leastGE (fun n (h : ℕ → α × ℝ) ↦ pullCount a (n + 1) h) m := by
-  sorry
 
 lemma exists_pullCount_eq (h' : stepsUntil a m h ≠ ⊤) :
     ∃ s, pullCount a (s + 1) h = m := by
@@ -198,6 +219,36 @@ lemma stepsUntil_eq_dite (a : α) (m : ℕ) (h : ℕ → α × R)
     suffices {s | pullCount a (s + 1) h = m} = ∅ by simp [this]
     ext s
     simpa using (h' s)
+
+-- todo: this is in ℝ because of the limited def of leastGE
+lemma stepsUntil_eq_leastGE (a : α) (hm : m ≠ 0) :
+    stepsUntil a m = leastGE (fun n (h : ℕ → α × ℝ) ↦ pullCount a (n + 1) h) m := by
+  classical
+  ext h
+  rw [stepsUntil_eq_dite]
+  unfold leastGE hittingAfter
+  simp only [zero_le, Set.mem_Ici, Nat.cast_le, true_and, ENat.some_eq_coe]
+  have h_iff : (∃ s, pullCount a (s + 1) h = m) ↔ (∃ s, m ≤ pullCount a (s + 1) h) := by
+    refine ⟨fun ⟨s, hs⟩ ↦ ⟨s, hs.ge⟩, fun ⟨s, hs⟩ ↦ ?_⟩
+    exact exists_pullCount_eq_of_le hs hm
+  by_cases h_exists : ∃ s, m ≤ pullCount a (s + 1) h
+  swap; · simp_rw [h_iff]; simp [h_exists]
+  rw [if_pos h_exists, dif_pos]
+  swap; · rwa [h_iff]
+  norm_cast
+  rw [Nat.find_eq_iff]
+  constructor
+  · apply le_antisymm
+    · by_contra! h_contra
+      obtain ⟨s, hs⟩ : ∃ s, pullCount a (s + 1) h = m := exists_pullCount_eq_of_le h_contra.le hm
+      rw [← hs] at h_contra
+      refine h_contra.not_ge ?_
+      gcongr
+      exact csInf_le (by simp) (by simp)
+    · exact Nat.sInf_mem (s := {j | m ≤ pullCount a (j + 1) h}) h_exists
+  · intro n hn h_contra
+    refine hn.not_ge ?_
+    exact csInf_le (by simp) (by simp [h_contra])
 
 lemma stepsUntil_pullCount_le (h : ℕ → α × R) (a : α) (t : ℕ) :
     stepsUntil a (pullCount a (t + 1) h) h ≤ t := by
@@ -346,9 +397,9 @@ lemma stepsUntil_eq_congr {h' : ℕ → α × R} (h_eq : ∀ i ≤ n, action i h
     rw [pullCount_congr]
     grind
 
-lemma isStoppingTime_stepsUntil [MeasurableSingletonClass α] (a : α) (m : ℕ) :
+lemma isStoppingTime_stepsUntil [MeasurableSingletonClass α] (a : α) (hm : m ≠ 0) :
     IsStoppingTime (Learning.filtration α ℝ) (stepsUntil a m) := by
-  rw [stepsUntil_eq_leastGE]
+  rw [stepsUntil_eq_leastGE _ hm]
   refine Adapted.isStoppingTime_leastGE _ fun n ↦ ?_
   suffices StronglyMeasurable[Learning.filtration α ℝ n] (pullCount a (n + 1)) by fun_prop
   exact adapted_pullCount_add_one a n
@@ -386,6 +437,8 @@ lemma measurable_stepsUntil [MeasurableSingletonClass α] (a : α) (m : ℕ) :
 lemma measurable_stepsUntil' [MeasurableSingletonClass α] (a : α) (m : ℕ) :
     Measurable (fun ω : (ℕ → α × R) × (ℕ → α → R) ↦ stepsUntil a m ω.1) :=
   (measurable_stepsUntil a m).comp measurable_fst
+
+end StepsUntil
 
 section RewardByCount
 

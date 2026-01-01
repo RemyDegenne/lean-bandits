@@ -283,7 +283,7 @@ In a stationary environment, for any $t \in \mathbb{N}$, the conditional distrib
   \uses{def:actionReward, def:trajMeasure, def:algorithm, def:stationaryEnv}
   \leanok
   \lean{Learning.condIndepFun_reward_hist_action}
-In a stationary environment, for any $t \in \mathbb{N}$, the reward $R_{t+1}$ is conditionally independent of the history $H_t$ given the action $A_{t+1}$.
+In a stationary environment, for any $t \in \mathbb{N}$, the reward $R_{t+1}$ is conditionally independent of the history $H_t$ given the action $A_{t+1}$ (more succinctly, $R_{t+1} \ind H_t \mid A_{t+1}$).
 \end{lemma}
 
 \begin{proof}\leanok
@@ -420,6 +420,16 @@ $Y_{N_{t, A_t} + 1, A_t} = R_t$.
 This is perhaps hard to parse at first sight, but it follows directly from the definitions.
 At time $t$, the action chosen is $A_t$ and we see a reward $R_t$.
 That action had already been chosen $N_{t, A_t}$ times before time $t$, so the reward $R_t$ is the reward received when choosing action $A_t$ for the $(N_{t, A_t} + 1)$-th time, which is $Y_{N_{t, A_t} + 1, A_t}$ by definition.
+\end{proof}
+
+
+\begin{lemma}\label{lem:measurable_rewardByCount_mul_indicator}
+  \uses{def:rewardByCount, def:stepsUntil}
+$Y_{n, a} \mathbb{I}\{T_{n, a} < \infty\}$ is $\mathcal{F}_{T_{n, a}}$-measurable.
+\end{lemma}
+
+\begin{proof}
+It is the stopped value of the adapted process $(R_t)_{t \in \mathbb{N}}$ at the stopping time $T_{n, a}$.
 \end{proof}
 
 

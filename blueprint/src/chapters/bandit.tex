@@ -45,6 +45,7 @@ The probability space $\Omega_{\mathcal{T}}$ has been augmented with $\Omega' = 
 With that measure, the law of $Z_{n,a}$ is $\nu(a)$.
 
 Our main goal in this section is to prove that $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ and $(Z_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ are identically distributed.
+This can be done by proving that for each $n$ and $a$, $Y_{n,a}$ and $Z_{n,a}$ are identically distributed (with law $\nu(a)$), and that the family $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ is independent.
 
 
 \begin{lemma}\label{lem:measurable_comap_indicator_stepsUntil_eq}
@@ -55,17 +56,6 @@ The function $\mathbb{I}\{T_{n,a} = t\} : \Omega \to \{0, 1\}$ is measurable wit
 \end{lemma}
 
 \begin{proof}\leanok
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:CondIndepFun.prod_right}
-  \leanok
-  \lean{ProbabilityTheory.CondIndepFun.prod_right}
-If $X \ind Y \mid Z$, then $X \ind (Y, Z) \mid Z$.
-\end{lemma}
-
-\begin{proof}
 
 \end{proof}
 
@@ -165,25 +155,51 @@ By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \m
 \end{proof}
 
 
-\begin{lemma}\label{lem:indepFun_contraction}
-Let $X, Y, Z$ be random variables. If $X \ind Y \mid Z$ and $X \ind Z$, then $X \ind (Y, Z)$.
+\begin{lemma}\label{lem:condIndepFun_rewardByCount_hist}
+  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+For $n > 0$, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$, in which $H_{\infty}$ is interpreted as the whole history.
 \end{lemma}
 
 \begin{proof}
-It suffices to show that $\mathcal{L}(X \mid Y, Z) = \mathcal{L}(X)$.
-By conditional independence, $\mathcal{L}(X \mid Y, Z) = \mathcal{L}(X \mid Z)$.
-By independence, $\mathcal{L}(X \mid Z) = \mathcal{L}(X)$.
+  \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:condIndepFun_reward_hist_action}
+By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
+We need to prove that $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a}) = \nu(a)$.
+By Lemma~\ref{lem:stepsUntil_basic}, if $T_{n,a} = t \in \mathbb{N}$, then $A_t = a$.
+We get
+\begin{align*}
+  \mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = t)
+  &= \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
+  \: .
+\end{align*}
+Then, $\mathbb{I}\{T_{n,a} = t\}$ is a function of $(H_{t-1}, A_t)$ by Lemma~\ref{lem:measurable_comap_indicator_stepsUntil_eq}, such that
+
+\begin{align*}
+  \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
+  &= \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+  \: .
+\end{align*}
+Thus, using Lemma~\ref{lem:condIndepFun_reward_hist_action}, we have
+\begin{align*}
+  \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+  = \nu(a)
+  \: .
+\end{align*}
+
+If $T_{n,a} = \infty$, then $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = \infty) = \mathcal{L}(Z_{n,a} \mid H_{\infty}, T_{n,a} = \infty) = \nu(a)$ by independence of $Z_{n,a}$ from the history and $T_{n,a}$.
+
 \end{proof}
 
 
-\begin{lemma}\label{lem:iIndepFun_nat_iff_forall_indepFun}
-  \leanok
-  \lean{ProbabilityTheory.iIndepFun_nat_iff_forall_indepFun}
-A family of random variables $(X_i)_{i \in \mathbb{N}}$ is independent if and only if for all $n \in \mathbb{N}$, $X_{n+1}$ is independent of $(X_0, \ldots, X_n)$.
+\begin{lemma}\label{lem:indepFun_rewardByCount_hist_stepsUntil}
+  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+For $n > 0$, $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
 \end{lemma}
 
-\begin{proof}\leanok
-
+\begin{proof}
+  \uses{lem:condIndepFun_rewardByCount_hist}
+By Lemma~\ref{lem:condIndepFun_rewardByCount_hist}, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$.
+By Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}, $Y_{n, a} \ind T_{n,a}$.
+By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), we have $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
 \end{proof}
 
 

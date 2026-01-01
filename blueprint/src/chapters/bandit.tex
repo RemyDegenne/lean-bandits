@@ -9,165 +9,120 @@ The first arm pulled by the algorithm is sampled from $P_0$, the arm pulled at t
 
 
 \begin{definition}[Bandit]\label{def:bandit}
-  \uses{def:environment}
+  \uses{def:stationaryEnv}
   \leanok
 A stochastic bandit is simply a reward distribution for each arm: a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathbb{R}$, conditional distribution of the rewards given the arm pulled.
+It is a stationary environment in which the observation space is $\mathcal{R} = \mathbb{R}$.
 \end{definition}
 
 An algorithm can interact with a bandit to produce a sequence of arms and rewards: after a time $t$, the history $H_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$ contains the arms pulled and rewards received up to that time,
 \begin{itemize}
   \item the algorithm chooses an arm $A_{t+1}$ sampled according to its policy $\pi_t(H_t)$,
-  \item the bandit generates a reward $X_{t+1}$ according to the distribution $\nu(A_{t+1})$,
-  \item the history is updated to $H_{t+1} = ((A_0, X_0), \ldots, (A_{t+1}, X_{t+1}))$.
+  \item the bandit generates a reward $R_{t+1}$ according to the distribution $\nu(A_{t+1})$,
+  \item the history is updated to $H_{t+1} = ((A_0, R_0), \ldots, (A_{t+1}, R_{t+1}))$.
 \end{itemize}
 
 We now want to define a probability space on which we can study the sequences of arms and rewards, and formulate probabilistic statements about the interaction between the algorithm and the bandit.
 
 
 \begin{definition}[Bandit probability space]\label{def:Bandit.measure}
-  \uses{def:algorithm, def:bandit}
+  \uses{def:algorithm, def:bandit, def:trajMeasure}
   \leanok
-  \lean{Bandits.Bandit.measure}
-By an application of the Ionescu-Tulcea theorem, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution $\mathbb{P}_B$ on the space $\Omega_B := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
-We augment that probability space with a stream of rewards from each arm, independent of the bandit interaction, to get the probability space $(\Omega, \mathbb{P})$, where $\Omega = \Omega_B \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$ and $\mathbb{P} = \mathbb{P}_B \otimes (\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a))$.
-
-TODO: explain how the probability distribution $\mathbb{P}_B$ is constructed.
-\end{definition}
-
-The reason for adding the extra stream of rewards is explained in Section~\ref{sec:alt_model}.
-
-\begin{definition}[Arms, rewards and history]\label{def:armAndReward}
-  \uses{def:history}
-  \leanok
-  \lean{Bandits.arm, Bandits.reward, Bandits.hist}
-For $t \in \mathbb{N}$, we denote by $A_t$ the arm pulled at time $t$ and by $X_t$ the reward received at time $t$.
-Formally, these are measurable functions on $\Omega = (\mathcal{A} \times \mathbb{R})^{\mathbb{N}} \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$, defined by $A_t(\omega) = \omega_{1,t,1}$ and $X_t(\omega) = \omega_{1,t,2}$.
-We denote by $H_t \in (\mathcal{A} \times \mathbb{R})^{t+1}$ the history of pulls and rewards up to and including time $t$, that is $H_t = ((A_0, X_0), \ldots, (A_t, X_t))$.
-Formally, $H_t(\omega) = (\omega_{1,0}, \ldots, \omega_{1,t})$.
+  \lean{Bandits.Bandit.trajMeasure, Bandits.Bandit.measure}
+As in Definition~\ref{def:trajMeasure}, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution $\mathbb{P}_{\mathcal{T}}$ on the space $\Omega_{\mathcal{T}} := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
+We augment that probability space with a stream of rewards from each arm, independent of the bandit interaction, to get the probability space $(\Omega, \mathbb{P})$, where $\Omega = \Omega_{\mathcal{T}} \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$ and $\mathbb{P} = \mathbb{P}_{\mathcal{T}} \otimes (\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a))$.
 \end{definition}
 
 
-\begin{definition}[Pull counts]\label{def:pullCount}
-  \uses{def:armAndReward}
-  \leanok
-  \lean{Learning.pullCount}
-For an arm $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that arm $a$ has been pulled before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
-\end{definition}
+\section{Alternative models: rewards indexed by time or pull count}\label{sec:alt_model}
 
-
-\begin{remark}[Building vs analyzing algorithms]
-When we describe an algorithm, we give the data of the policies $\pi_t$, which are functions of the partial history up to time $t$, in $(\mathcal{A} \times \mathcal{R})^{t+1}$.
-That means that any tool used to define a policy must be a function defined on $(\mathcal{A} \times \mathcal{R})^{t+1}$.
-For example a definition of the empirical mean of an arm must be a function $t : \mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{t+1} \to \mathbb{R}$.
-
-When we analyze an algorithm, we work on the other hand on the bandit probability space $(\Omega, \mathbb{P})$, in which $\Omega = (\mathcal{A} \times \mathcal{R})^{\mathbb{N}}$ is the full history, which describes the whole sequence of arms and rewards.
-As a stochastic process, the empirical mean of an arm is a function $\mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{\mathbb{N}} \to \mathbb{R}$.
-
-Thus there are two very distinct types of objects: those defined on the partial history, which are used to build algorithms, and those defined on the full history, which are used to analyze algorithms.
-\end{remark}
-
-
-\begin{definition}[Filtration]\label{def:banditFiltration}
-  \uses{def:armAndReward}
-  \leanok
-  \lean{Bandits.filtration}
-The filtration $\mathcal{F}_B$ on $\Omega_B$ generated by the history of pulls and rewards is the increasing family of $\sigma$-algebras
-$\mathcal{F}_{B,t} = \sigma(H_0, \ldots, H_t)$, for $t \in \mathbb{N}$.
-\end{definition}
-
-
-\begin{lemma}\label{lem:adapted_hist}
-  \uses{def:banditFiltration,def:armAndReward}
-Seen as processes defined on $\Omega_B$, the processes $(H_t)_{t \in \mathbb{N}}$, $(A_t)_{t \in \mathbb{N}}$, and $(X_t)_{t \in \mathbb{N}}$ are adapted to the filtration $\mathcal{F}_B$.
-\end{lemma}
-
-\begin{proof}
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:predictable_pullCount}
-  \uses{def:banditFiltration,def:pullCount}
-Let $a \in \mathcal{A}$. Seen as a process defined on $\Omega_B$, $(N_{t,a})_{t \in \mathbb{N}}$ is predictable with respect to the filtration $\mathcal{F}_B$ (that is, $(N_{t,a})_{t \in \mathbb{N}}$ is adapted to $(\mathcal{F}_{B, t-1})_{t \in \mathbb{N}}$).
-\end{lemma}
-
-\begin{proof}
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:condDistrib_reward}
-  \uses{def:Bandit.measure,def:armAndReward}
-  \leanok
-  \lean{Bandits.condDistrib_reward}
-The conditional distribution of the reward $X_t$ given the arm $A_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\nu(A_t)$.
-\end{lemma}
-
-\begin{proof}\leanok
-  \uses{lem:condDistrib_R_add_one, lem:condDistrib_R_zero}
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:law_arm_zero}
-  \uses{def:Bandit.measure,def:armAndReward}
-  \leanok
-  \lean{Bandits.hasLaw_arm_zero}
-The law of the arm $A_0$ in the bandit probability space $(\Omega, \mathbb{P})$ is $P_0$.
-\end{lemma}
-
-\begin{proof}\leanok
-  \uses{lem:law_A_zero}
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:condDistrib_arm}
-  \uses{def:Bandit.measure,def:armAndReward}
-  \leanok
-  \lean{Bandits.condDistrib_arm}
-The conditional distribution of the arm $A_{t+1}$ given the history $H_t$ in the bandit probability space $(\Omega, \mathbb{P})$ is $\pi_t(H_t)$.
-\end{lemma}
-
-\begin{proof}\leanok
-  \uses{lem:condDistrib_A_add_one}
-
-\end{proof}
-
-
-
-\section{Alternative model}\label{sec:alt_model}
-
-The description of the bandit model above considers that at time $t$, a reward $X_t$ is generated, depending on the arm $A_t$ pulled at that time.
+The description of the bandit model above considers that at time $t$, a reward $R_t$ is generated, depending on the arm $A_t$ pulled at that time.
 An alternative way to talk about that process is to imagine that there is a stream of rewards from each arm, and that the algorithm sees the first, then second, etc. reward from the arms at it pulls them.
-We introduce definitions to talk about the $n^{th}$ reward of an arm, and the time at which that reward is pulled.
+This uses the random variables $Y_{n, a}$ defined in Definition~\ref{def:rewardByCount}, which represent the $n^{th}$ reward obtained from arm $a$.
+We now describe the distribution of those rewards.
 
-\begin{definition}\label{def:stepsUntil}
-  \uses{def:pullCount}
-  \leanok
-  \lean{Learning.stepsUntil}
-For an arm $a \in \mathcal{A}$ and a time $n \in \mathbb{N}$, we denote by $T_{n,a}$ the time at which arm $a$ was pulled for the $n$-th time, that is $T_{n,a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = n\}$.
-Note that $T_{n, a}$ can be infinite if the arm is not pulled $n$ times.
-\end{definition}
+The probability space $\Omega_{\mathcal{T}}$ has been augmented with $\Omega' = \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$, on which we put the product measure $\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a)$.
+With that measure, the law of $Z_{n,a}$ is $\nu(a)$.
+
+Our main goal in this section is to prove that $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ and $(Z_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ are identically distributed.
+This can be done by proving that for each $n$ and $a$, $Y_{n,a}$ and $Z_{n,a}$ are identically distributed (with law $\nu(a)$), and that the family $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ is independent.
 
 
-\begin{definition}\label{def:rewardByCount}
+\begin{lemma}\label{lem:measurable_comap_indicator_stepsUntil_eq}
   \uses{def:stepsUntil}
   \leanok
-  \lean{Learning.rewardByCount}
-For $a \in \mathcal{A}$ and $n \in \mathbb{N}$, let $Z_{n,a} \sim \nu(a)$, independent of the bandit interaction and other $Z_{m,b}$.
-In our probability space $\Omega$, we can take for $Z_{n,a}$ the function $\omega \mapsto \omega_{2,n,a}$.
-We define $Y_{n, a} = X_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a} \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when pulling arm $a$ for the $n$-th time if that time is finite, and equal to $Z_{n,a}$ otherwise.
-\end{definition}
-
-
-\begin{lemma}\label{lem:isStoppingTime_stepsUntil}
-  \uses{def:stepsUntil}
-$T_{n,a}$ is a stopping time for the filtration generated by the history of pulls and rewards.
+  \lean{Bandits.measurable_comap_indicator_stepsUntil_eq}
+The function $\mathbb{I}\{T_{n,a} = t\} : \Omega \to \{0, 1\}$ is measurable with respect to the sigma-algebra generated by $(H_{t-1}, A_t)$.
 \end{lemma}
 
-\begin{proof}
-It is the hitting time of a measurable set by the adapted process $(N_{n+1, a})_{n \in \mathbb{N}}$, hence a stopping time.
+\begin{proof}\leanok
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:condIndepFun_reward_stepsUntil_arm}
+  \uses{def:stepsUntil, def:actionReward, def:Bandit.measure}
+  \leanok
+  \lean{Bandits.condIndepFun_reward_stepsUntil_arm}
+For $t > 0$, $R_t \ind \mathbb{I}\{T_{n, a} = t\} \mid A_t$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:measurable_comap_indicator_stepsUntil_eq, lem:condIndepFun_reward_hist_action, lem:CondIndepFun.prod_right}
+$\mathbb{I}\{T_{n, a} = t\}$ is measurable with respect to the sigma-algebra generated by $(H_{t-1}, A_t)$ by Lemma~\ref{lem:measurable_comap_indicator_stepsUntil_eq}.
+
+It thus suffices to show that $R_t \ind (H_{t-1}, A_t) \mid A_t$, which is implied by $R_t \ind H_{t-1} \mid A_t$ (Lemma~\ref{lem:CondIndepFun.prod_right}), which is Lemma~\ref{lem:condIndepFun_reward_hist_action}.
+\end{proof}
+
+
+\begin{lemma}\label{lem:reward_cond_stepsUntil}
+  \uses{def:stepsUntil, def:rewardByCount, def:Bandit.measure}
+  \leanok
+  \lean{Bandits.reward_cond_stepsUntil}
+Let $n > 0$, $t \in \mathbb{N}$ and suppose that $P(T_{n, a} = t) > 0$.
+Then $\mathcal{L}(R_t \mid T_{n, a} = t) = \nu(a)$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:stepsUntil_basic, lem:condIndepFun_reward_stepsUntil_arm, lem:condDistrib_reward_stationaryEnv}
+First, if $T_{n, a} = t$, then $A_t = a$ (Lemma~\ref{lem:stepsUntil_basic}), such that $\mathcal{L}(R_t \mid T_{n, a} = t) = \mathcal{L}(R_t \mid T_{n, a} = t, A_t = a)$.
+
+Then, using first the independence from Lemma~\ref{lem:condIndepFun_reward_stepsUntil_arm} and then the conditional distribution from Lemma~\ref{lem:condDistrib_reward_stationaryEnv}, we have
+\begin{align*}
+  \mathcal{L}(R_t \mid T_{n, a} = t, A_t = a)
+  &= \mathcal{L}(R_t \mid A_t = a)
+  = \nu(a)
+  \: .
+\end{align*}
+\end{proof}
+
+
+\begin{lemma}\label{lem:condDistrib_ae_eq_cond}
+  \leanok
+  \lean{ProbabilityTheory.condDistrib_ae_eq_cond}
+For a random variable $X$ on a countable space with the discrete sigma algebra, $\mathcal{L}(Y \mid X) = (x \mapsto \mathcal{L}(Y \mid X = x))$, $(X_*P)$-almost surely.
+Furthermore, that almost sure equality means that for all $x$ such that $P(X = x) > 0$, we have $\mathcal{L}(Y \mid X = x) = \mathcal{L}(Y \mid X)(x)$.
+\end{lemma}
+
+\begin{proof}\leanok
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:condDistrib_rewardByCount_stepsUntil}
+  \uses{def:stepsUntil, def:rewardByCount, def:Bandit.measure}
+  \leanok
+  \lean{Bandits.condDistrib_rewardByCount_stepsUntil}
+For $n > 0$ and $t \in \mathbb{N}$, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$ (in which the measure on the r.h.s. is seen as a constant kernel).
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:condDistrib_ae_eq_cond, lem:reward_cond_stepsUntil}
+It suffices to show that for all $t \in \mathbb{N} \cup \{\infty\}$ such that $\mathbb{P}(T_{n, a} = t) > 0$, the law of $Y_{n,a}$ conditioned on $T_{n,a} = t$ is $\nu(a)$.
+
+If $t < \infty$, then $\mathcal{L}(Y_{n, a} \mid T_{n, a} = t) = \mathcal{L}(R_t \mid T_{n, a} = t) = \nu(a)$ by Lemma~\ref{lem:reward_cond_stepsUntil}.
+
+If $t = \infty$, then $\mathcal{L}(Y_{n, a} \mid T_{n, a} = \infty) = \mathcal{L}(Z_{n, a} \mid T_{n, a} = \infty)$. By independence of $Z_{n,a}$ and $T_{n, a}$, this is just $\nu(a)$, the law of $Z_{n,a}$.
 \end{proof}
 
 
@@ -175,43 +130,95 @@ It is the hitting time of a measurable set by the adapted process $(N_{n+1, a})_
   \uses{def:rewardByCount}
   \leanok
   \lean{Bandits.hasLaw_rewardByCount}
-For $n > 0$ and $a \in \mathcal{A}$, the law of $Y_{n,a}$ is $\nu(a)$.
+For $n > 0$ and $a \in \mathcal{A}$, $\mathcal{L}(Y_{n,a}) = \nu(a)$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:condDistrib_rewardByCount_stepsUntil}
+The law of $Y_{n,a}$ is given by $\mathcal{L}(Y_{n, a}) = \mathcal{L}(Y_{n, a} \mid T_{n, a}) \circ \mathcal{L}(T_{n, a})$.
+By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n, a} \mid T_{n, a}) = \nu(a)$, a constant kernel.
+Thus the composition is just $\nu(a)$.
+\end{proof}
+
+
+\begin{lemma}\label{lem:indepFun_rewardByCount_stepsUntil}
+  \uses{def:stepsUntil, def:rewardByCount, def:Bandit.measure}
+For $n > 0$, $Y_{n, a} \ind T_{n,a}$.
 \end{lemma}
 
 \begin{proof}
-  \uses{lem:condDistrib_reward}
-It suffices to show that for all $t \in \mathbb{N} \cup \{\infty\}$, the law of $Y_{n,a}$ conditioned on $T_{n,a} = t$ is $\nu(a)$.
-If $t = \infty$, then
+  \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:hasLaw_rewardByCount}
+It suffices to prove that $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \mathcal{L}(Y_{n,a})$.
+
+By Lemma~\ref{lem:hasLaw_rewardByCount}, $\mathcal{L}(Y_{n,a}) = \nu(a)$.
+By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
+\end{proof}
+
+
+\begin{lemma}\label{lem:condIndepFun_rewardByCount_hist}
+  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+For $n > 0$, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$, in which $H_{\infty}$ is interpreted as the whole history.
+\end{lemma}
+
+\begin{proof}
+  \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:condIndepFun_reward_hist_action}
+By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
+We need to prove that $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a}) = \nu(a)$.
+By Lemma~\ref{lem:stepsUntil_basic}, if $T_{n,a} = t \in \mathbb{N}$, then $A_t = a$.
+We get
 \begin{align*}
-  \mathcal{L}(Y_{n,a} \mid T_{n,a} = t)
-  = \mathcal{L}(Z_{n,a} \mid T_{n,a} = t)
-  = \mathcal{L}(Z_{n,a})
-  = \nu(a)
-\end{align*}
-If $t < \infty$, then
-\begin{align*}
-  \mathcal{L}(Y_{n,a} \mid T_{n,a} = t)
-  &= \mathcal{L}(X_t \mid T_{n,a} = t)
-  \\
-  &= \mathcal{L}(X_t \mid T_{n,a} = t, A_t = a)
-  \\
-  &= \mathcal{L}(X_t \mid A_t = a)
-  \\
-  &= \nu(a)
+  \mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = t)
+  &= \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
   \: .
 \end{align*}
-TODO: explain that chain of equalities. There is independence involved.
+Then, $\mathbb{I}\{T_{n,a} = t\}$ is a function of $(H_{t-1}, A_t)$ by Lemma~\ref{lem:measurable_comap_indicator_stepsUntil_eq}, such that
+
+\begin{align*}
+  \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
+  &= \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+  \: .
+\end{align*}
+Thus, using Lemma~\ref{lem:condIndepFun_reward_hist_action}, we have
+\begin{align*}
+  \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+  = \nu(a)
+  \: .
+\end{align*}
+
+If $T_{n,a} = \infty$, then $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = \infty) = \mathcal{L}(Z_{n,a} \mid H_{\infty}, T_{n,a} = \infty) = \nu(a)$ by independence of $Z_{n,a}$ from the history and $T_{n,a}$.
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:indepFun_rewardByCount_hist_stepsUntil}
+  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+For $n > 0$, $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
+\end{lemma}
+
+\begin{proof}
+  \uses{lem:condIndepFun_rewardByCount_hist}
+By Lemma~\ref{lem:condIndepFun_rewardByCount_hist}, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$.
+By Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}, $Y_{n, a} \ind T_{n,a}$.
+By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), we have $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
 \end{proof}
 
 
 \begin{lemma}\label{lem:iIndepFun_rewardByCount}
   \uses{def:rewardByCount}
   \leanok
-  \lean{Bandits.iIndepFun_rewardByCount}
+  \lean{Bandits.iIndepFun_rewardByCount'}
 The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent.
 \end{lemma}
 
 \begin{proof}
+  \uses{lem:iIndepFun_nat_iff_forall_indepFun, lem:indepFun_contraction, lem:indepFun_rewardByCount_stepsUntil}
+By Lemma~\ref{lem:iIndepFun_nat_iff_forall_indepFun}, it suffices to show that for all $n \in \mathbb{N}$, $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$.
+
+By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), it suffices to show that $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$ conditionally on $T_{n+1, a}$ and that $Y_{n+1, a}$ is independent of $T_{n+1, a}$.
+
+The fact that $Y_{n+1, a}$ is independent of $T_{n+1, a}$ is Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}.
+
+TODO
 
 \end{proof}
 
@@ -226,72 +233,44 @@ For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb
 \end{proof}
 
 
-\begin{lemma}\label{lem:stepsUntil_pullCount_le}
-  \uses{def:stepsUntil,def:pullCount}
+\begin{lemma}\label{lem:identDistrib_rewardByCount_stream}
+  \uses{def:rewardByCount}
   \leanok
-  \lean{Learning.stepsUntil_pullCount_le}
-$T_{N_{t+1, a}, a} \le t < \infty$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+  \lean{Bandits.identDistrib_rewardByCount_stream}
+The random sequences $(Y_{n+1,a})_{n \in \mathbb{N}}$ and $(Z_{n,a})_{n \in \mathbb{N}}$ are identically distributed.
 \end{lemma}
 
 \begin{proof}\leanok
-By definition, $T_{N_{t+1,a}, a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = N_{t+1,a}\} \le t < \infty$.
-\end{proof}
-
-
-\begin{lemma}\label{lem:stepsUntil_pullCount_eq}
-  \uses{def:stepsUntil,def:pullCount}
-  \leanok
-  \lean{Learning.stepsUntil_pullCount_eq}
-$T_{N_{t+1, A_t}, A_t} = t$ for all $t \in \mathbb{N}$.
-\end{lemma}
-
-\begin{proof}\leanok
+  \uses{lem:hasLaw_rewardByCount, lem:iIndepFun_rewardByCount}
 
 \end{proof}
 
 
-\begin{lemma}\label{lem:rewardByCount_pullCount}
-  \uses{def:rewardByCount,def:pullCount}
+\begin{lemma}\label{lem:identDistrib_sum_Icc_rewardByCount}
+  \uses{def:rewardByCount}
   \leanok
-  \lean{Learning.rewardByCount_pullCount_add_one_eq_reward}
-$Y_{N_{t+1, A_t}, A_t} = X_t$ for all $t \in \mathbb{N}$ and $a \in \mathcal{A}$.
+  \lean{Bandits.identDistrib_sum_Icc_rewardByCount}
+The random variables $\sum_{i=1}^n Y_{i,a}$ and $\sum_{i=0}^{n-1} Z_{i,a}$ are identically distributed.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:stepsUntil_pullCount_eq}
-By Lemma~\ref{lem:stepsUntil_pullCount_eq}, we have $T_{N_{t+1,A_t}, A_t} = t < \infty$, so $Y_{N_{t+1,A_t}, A_t} = X_{T_{N_{t+1,A_t}, A_t}} = X_t$.
-
+  \uses{lem:identDistrib_rewardByCount_stream}
+Immediate consequence of Lemma~\ref{lem:identDistrib_rewardByCount_stream}.
 \end{proof}
-
-
-\begin{lemma}\label{lem:sum_rewardByCount}
-  \uses{def:rewardByCount,def:pullCount}
-  \leanok
-  \lean{Learning.sum_rewardByCount_eq_sumRewards}
-\begin{align*}
-  \sum_{n=1}^{N_{t, a}} Y_{n, a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} X_s
-  \: .
-\end{align*}
-\end{lemma}
-
-\begin{proof}\leanok
-
-\end{proof}
-
 
 
 \section{Regret and other bandit quantities}
 
-\begin{definition}\label{def:armMean}
+\begin{definition}[Arm means]\label{def:armMean}
   \uses{def:bandit}
   \leanok % no actual Lean def, but we don't need one
-For an arm $a \in \mathcal{A}$, we denote by $\mu_a$ the mean of the rewards for that arm, that is $\mu_a = \nu(a)[X]$.
+For an arm $a \in \mathcal{A}$, we denote by $\mu_a$ the mean of the rewards for that arm, that is $\mu_a = \nu(a)[\mathrm{id}]$.
 We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mathcal{A}} \mu_a$.
 \end{definition}
 
 
 \begin{definition}[Regret]\label{def:regret}
-  \uses{def:armMean, def:armAndReward}
+  \uses{def:armMean, def:actionReward}
   \leanok
   \lean{Bandits.regret}
 The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:
@@ -309,6 +288,29 @@ For an arm $a \in \mathcal{A}$, its gap is defined as the difference between the
 \end{definition}
 
 
+\begin{lemma}\label{lem:sum_pullCount_mul}
+  \uses{def:pullCount}
+  \leanok
+  \lean{Learning.sum_pullCount_mul}
+Let $f : \mathcal{A} \to \mathbb{R}$ be a function on the arms. For all $t \in \mathbb{N}$,
+\begin{align*}
+  \sum_{a \in \mathcal{A}} N_{t,a} f(a) = \sum_{s=0}^{t-1} f(A_s) \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}\leanok
+\begin{align*}
+  \sum_{a \in \mathcal{A}} N_{t,a} f(a)
+  &= \sum_{a \in \mathcal{A}} \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} f(a)
+  \\
+  &= \sum_{s=0}^{t-1} \sum_{a \in \mathcal{A}} \mathbb{I}\{A_s = a\} f(a)
+  \\
+  &= \sum_{s=0}^{t-1} f(A_s)
+  \: .
+\end{align*}
+\end{proof}
+
+
 \begin{lemma}\label{lem:regret_eq_sum_pullCount_mul_gap}
   \uses{def:regret,def:gap,def:pullCount}
   \leanok
@@ -319,17 +321,16 @@ For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the ar
 \end{align*}
 \end{lemma}
 
-\begin{proof}
-  \leanok
+\begin{proof}\leanok
+  \uses{lem:sum_pullCount_mul}
+Apply Lemma~\ref{lem:sum_pullCount_mul} with $f(a) = \Delta_a$ to obtain:
 \begin{align*}
-  R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t}
-  &= T \mu^* - \sum_{a \in \mathcal{A}} \sum_{t=0}^{T-1} \mathbb{I}\{A_t = a\} \mu_a
+  \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
+  &= \sum_{s=0}^{T-1} \Delta_{A_s}
   \\
-  &= T \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
+  &= \sum_{s=0}^{T-1} \mu^* - \sum_{s=0}^{T-1} \mu_{A_s}
   \\
-  &= \sum_{a \in \mathcal{A}} N_{T,a} \mu^* - \sum_{a \in \mathcal{A}} N_{T,a} \mu_a
-  \\
-  &= \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
+  &= R_T
   \: .
 \end{align*}
 \end{proof}

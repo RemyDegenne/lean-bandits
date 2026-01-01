@@ -30,7 +30,19 @@ For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]
 \end{align*}
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:sumRewards_bestArm_le_of_arm_mul_eq}
+  \uses{def:etcAlgorithm, def:sumRewards}
+  \leanok
+  \lean{Bandits.ETC.sumRewards_bestArm_le_of_arm_mul_eq}
+If $\hat{A}_m^* = a$, then we have $S_{Km, a^*} \le S_{Km, a}$.
+\end{lemma}
+
+\begin{proof}\leanok
 
 \end{proof}
 
@@ -43,30 +55,31 @@ Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
 Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ with $\Delta_a > 0$, we have $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$.
 \end{lemma}
 
-\begin{proof}
-  \uses{lem:hasLaw_rewardByCount, lem:iIndepFun_rewardByCount, lem:independent_rewardByCount, lem:sum_rewardByCount, thm:hoeffding}
+\begin{proof}\leanok
+  \uses{lem:independent_rewardByCount, lem:sum_rewardByCount, lem:measure_sum_le_sum_le', lem:identDistrib_sum_Icc_rewardByCount, lem:sumRewards_bestArm_le_of_arm_mul_eq}
+By Lemma~\ref{lem:sumRewards_bestArm_le_of_arm_mul_eq},
 \begin{align*}
   \mathbb{P}(\hat{A}_m^* = a)
-  &\le \mathbb{P}(\hat{\mu}_a \ge \hat{\mu}_{a^*})
-  \\
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t \ge \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a^*) X_t\right)
+  &\le \mathbb{P}(S_{Km, a} \ge S_{Km, a^*})
   \: .
 \end{align*}
-By Lemma~\ref{lem:sum_rewardByCount}, the empirical means are means of $m$ i.i.d. samples $Y_{a,i}$ and $Y_{a^*,i}$ from the distributions $\nu(a)$ and $\nu(a^*)$.
+By Lemma~\ref{lem:sum_rewardByCount}, $S_{Km, a} = \sum_{i=1}^m Y_{a,i}$ and $S_{Km, a^*} = \sum_{i=1}^m Y_{a^*,i}$.
+And by Lemma~\ref{lem:identDistrib_sum_Icc_rewardByCount} and the independence lemma~\ref{lem:independent_rewardByCount}, the pair $(\sum_{i=1}^m Y_{a,i}, \sum_{i=1}^m Y_{a^*,i})$ has the same distribution as $(\sum_{i=0}^{m-1} Z_{i,a}, \sum_{i=0}^{m-1} Z_{i,a^*})$.
+We thus obtain
 \begin{align*}
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m Y_{a,i} \ge \frac{1}{m} \sum_{i=1}^m Y_{a^*,i}\right)
-  \\
-  &= \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  \mathbb{P}(\hat{A}_m^* = a)
+  &\le \mathbb{P}\left(\sum_{i=0}^{m-1} Z_{i,a} \ge \sum_{i=0}^{m-1} Z_{i,a^*}\right)
   \: .
 \end{align*}
-$Y_{a,i} - Y_{a^*,i} + \Delta_a = (Y_{a,i} - \mu_a) - (Y_{a^*,i} - \mu_{a^*})$ has mean 0 and is 2-sub-Gaussian, since $Y_{a,i}-\mu_a$ and $Y_{a^*,i} - \mu_{a^*}$ are 1-sub-Gaussian and independent.
-By Hoeffding's inequality, we have
+The random variables $Z_{i,a}$ and $Z_{i,a^*}$ are i.i.d. with distributions $\nu(a)$ and $\nu(a^*)$ respectively, and 1-sub-Gaussian by assumption.
+They satisfy the hypotheses of Lemma~\ref{lem:measure_sum_le_sum_le'}, and we thus obtain
 \begin{align*}
-  \mathbb{P}\left(\frac{1}{m} \sum_{i=1}^m (Y_{a,i} - Y_{a^*,i} + \Delta_a) \ge \Delta_a\right)
+  \mathbb{P}(\hat{A}_m^* = a)
+  &\le \mathbb{P}\left(\sum_{i=0}^{m-1} Z_{i,a} \ge \sum_{i=0}^{m-1} Z_{i,a^*}\right)
+  \\
   &\le \exp\left(- \frac{m \Delta_a^2}{4}\right)
   \: .
 \end{align*}
-This concludes the proof.
 \end{proof}
 
 
@@ -83,7 +96,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regr
 \end{align*}
 \end{theorem}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm, lem:prob_etc_error_le_exp}
 By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
 It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
@@ -93,7 +106,7 @@ It suffices to prove that
   &\le m + (T - Km) \exp\left(- \frac{m \Delta_a^2}{4}\right)
   \: .
 \end{align*}
-By definition of the Explore-Then-Commit algorithm (or by Lemma~\ref{lem:pullCount_etcAlgorithm}),
+By Lemma~\ref{lem:pullCount_etcAlgorithm},
 \begin{align*}
   N_{T,a}
   &= m + (T - Km) \mathbb{I}\{\hat{A}_m^* = a\}

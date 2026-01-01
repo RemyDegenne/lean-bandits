@@ -58,3 +58,24 @@ Then for any $t \ge 0$,
   \uses{lem:subGaussian_add_of_indepFun, lem:hoeffding_one}
 
 \end{proof}
+
+
+\begin{lemma}\label{lem:measure_sum_le_sum_le'}
+  \uses{def:subGaussian}
+  \leanok
+  \lean{ProbabilityTheory.HasSubgaussianMGF.measure_sum_le_sum_le'}
+Let $X_1, \ldots, X_n$ be random variables such that $X_i - P[X_i]$ is $\sigma_{X,i}^2$-sub-Gaussian for $i \in [n]$.
+Let $Y_1, \ldots, Y_m$ be random variables such that $Y_i - P[Y_i]$ is $\sigma_{Y,i}^2$-sub-Gaussian for $i \in [m]$.
+Suppose further that the vectors $X$ and $Y$ are independent and that $\sum_{i = 1}^m P[Y_i] \le \sum_{i = 1}^n P[X_i]$.
+Then
+\begin{align*}
+  \mathbb{P}\left(\sum_{i=1}^m Y_i \ge \sum_{i=1}^n X_i\right)
+  &\le \exp\left(- \frac{\left(\sum_{i = 1}^n P[X_i] - \sum_{i=1}^m P[Y_i]\right)^2}{2 \sum_{i=1}^n (\sigma_{X,i}^2 + \sigma_{Y,i}^2)}\right)
+  \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:subGaussian_add_of_indepFun, thm:hoeffding}
+
+\end{proof}

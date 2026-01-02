@@ -461,9 +461,23 @@ lemma rewardByCount_of_stepsUntil_eq_top {ω : (ℕ → α × R) × (ℕ → α 
     (h : stepsUntil a m ω.1 = ⊤) :
     rewardByCount a m ω = ω.2 m a := by simp [rewardByCount_eq_ite, h]
 
+lemma rewardByCount_of_stepsUntil_ne_top {ω : (ℕ → α × R) × (ℕ → α → R)}
+    (h : stepsUntil a m ω.1 ≠ ⊤) :
+    rewardByCount a m ω = reward (stepsUntil a m ω.1).toNat ω.1 := by simp [rewardByCount_eq_ite, h]
+
 lemma rewardByCount_of_stepsUntil_eq_coe {ω : (ℕ → α × R) × (ℕ → α → R)}
     (h : stepsUntil a m ω.1 = n) :
     rewardByCount a m ω = reward n ω.1 := by simp [rewardByCount_eq_ite, h]
+
+/-- The value at 0 does not matter (it would be the "zeroth" reward).
+It should be considered a junk value. -/
+@[simp]
+lemma rewardByCount_zero (a : α) (ω : (ℕ → α × R) × (ℕ → α → R)) :
+    rewardByCount a 0 ω = if action 0 ω.1 = a then ω.2 0 a else reward 0 ω.1 := by
+  rw [rewardByCount_eq_ite]
+  by_cases ha : action 0 ω.1 = a
+  · simp [ha, stepsUntil_zero_of_eq]
+  · simp [stepsUntil_zero_of_ne, ha]
 
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (ω : (ℕ → α × R) × (ℕ → α → R)) :
     rewardByCount (action t ω.1) (pullCount (action t ω.1) t ω.1 + 1) ω = reward t ω.1 := by

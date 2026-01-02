@@ -33,14 +33,6 @@ lemma Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun
 
 namespace MeasureTheory.Measure
 
-lemma trim_eq_map {hm : m ≤ mα} : μ.trim hm = @Measure.map _ _ mα m id μ := by
-  refine @Measure.ext _ m _ _ fun s hs ↦ ?_
-  rw [trim_measurableSet_eq _ hs, Measure.map_apply _ hs]
-  · simp
-  · intro t ht
-    simp only [Set.preimage_id_eq, id_eq]
-    exact hm _ ht
-
 lemma trim_comap_apply (hX : Measurable X) {s : Set β} (hs : MeasurableSet s) :
     μ.trim hX.comap_le (X ⁻¹' s) = μ.map X s := by
   rw [trim_measurableSet_eq, Measure.map_apply (by fun_prop) hs]
@@ -51,13 +43,6 @@ end MeasureTheory.Measure
 namespace ProbabilityTheory
 
 section IndepFun
-
--- fix the lemma in mathlib to allow different types for the functions
-theorem CondIndepFun.symm'
-    [StandardBorelSpace α] {hm : m ≤ mα} [IsFiniteMeasure μ] {f : α → β} {g : α → γ}
-    (hfg : CondIndepFun m hm f g μ) :
-    CondIndepFun m hm g f μ :=
-  Kernel.IndepFun.symm hfg
 
 lemma Kernel.IndepFun.of_prod_right {ε Ω : Type*} {mΩ : MeasurableSpace Ω} {mε : MeasurableSpace ε}
     {μ : Measure Ω} {κ : Kernel Ω α} {X : α → β} {Y : α → γ} {T : α → ε}

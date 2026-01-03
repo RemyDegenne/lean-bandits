@@ -44,7 +44,7 @@ Learning.empMean
 Learning.sum_rewardByCount_eq_sumRewards
 Bandits.Bandit.trajMeasure
 Bandits.Bandit.measure
-Bandits.measurable_comap_indicator_stepsUntil_eq
+Learning.measurable_comap_indicator_stepsUntil_eq
 Bandits.condIndepFun_reward_stepsUntil_arm
 Bandits.reward_cond_stepsUntil
 ProbabilityTheory.condDistrib_ae_eq_cond

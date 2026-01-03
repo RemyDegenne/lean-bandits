@@ -81,46 +81,6 @@ lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : 
   rw [h_ra] at h_eq
   exact h_eq.symm
 
--- after the Mathlib stopping time refactor, we will be able to prove that stepsUntil is a
--- stopping time
-lemma measurable_comap_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
-    Measurable[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
-      ({ω | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  let k : ((Iic (n - 1) → α × ℝ) × α) → (ℕ → α × ℝ) := fun x i ↦
-    if hi : i ∈ Iic (n - 1) then (x.1 ⟨i, hi⟩) else if i = n then (x.2, 0) else (a, 0)
-  have hk : Measurable k := by
-    unfold k
-    rw [measurable_pi_iff]
-    intro i
-    split_ifs <;> fun_prop
-  let φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ := fun x ↦ if stepsUntil a m (k x) = ↑n then 1 else 0
-  have hφ : Measurable φ :=
-    Measurable.ite ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop)
-  suffices {ω | stepsUntil a m ω = ↑n}.indicator (fun x ↦ 1)
-      = φ ∘ fun ω ↦ (hist (n - 1) ω, arm n ω) from this ▸ measurable_comp_comap _ hφ
-  ext ω
-  classical
-  simp only [Set.indicator_apply, Set.mem_setOf_eq, Function.comp_apply, φ]
-  congr 1
-  rw [stepsUntil_eq_congr]
-  intro i hin
-  simp only [arm, mem_Iic, hist, dite_eq_ite, k, action]
-  grind
-
-lemma measurable_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
-    Measurable ({ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  refine (measurable_comap_indicator_stepsUntil_eq a m n).mono ?_ le_rfl
-  refine Measurable.comap_le ?_
-  fun_prop
-
-lemma measurableSet_stepsUntil_eq (a : α) (m n : ℕ) :
-    MeasurableSet[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
-      {ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n} := by
-  let mProd := MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance
-  suffices Measurable[mProd] ({ω | stepsUntil a m ω = ↑n}.indicator fun x ↦ 1) by
-    rwa [measurable_indicator_const_iff] at this
-  exact measurable_comap_indicator_stepsUntil_eq a m n
-
 lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α] [Nonempty α]
     (a : α) (m n : ℕ) (hm : m ≠ 0) :
     reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) := by

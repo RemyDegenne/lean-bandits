@@ -239,6 +239,24 @@ lemma condIndepFun_reward_hist_arm [StandardBorelSpace α] [Nonempty α]
       (measurable_arm _).comap_le (reward (n + 1)) (hist n) (Bandit.trajMeasure alg ν) :=
   Learning.condIndepFun_reward_hist_action n
 
+lemma condIndepFun_reward_hist_arm_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R]
+    {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
+    reward (n + 1) ⟂ᵢ[arm (n + 1), measurable_arm (n + 1); Bandit.trajMeasure alg ν]
+      (fun ω ↦ (hist n ω, arm (n + 1) ω)) := by
+  have h_indep : reward (n + 1) ⟂ᵢ[arm (n + 1), measurable_arm (n + 1); Bandit.trajMeasure alg ν]
+      hist n := by
+    convert condIndepFun_reward_hist_arm (alg := alg) (ν := ν) n
+  exact h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
+
+lemma condIndepFun_reward_hist_arm_arm' [StandardBorelSpace α] [Countable α] [Nonempty α]
+    [StandardBorelSpace R] [Nonempty R]
+    {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) (hn : n ≠ 0) :
+    reward n ⟂ᵢ[arm n, measurable_arm n; Bandit.trajMeasure alg ν]
+      (fun ω ↦ (hist (n - 1) ω, arm n ω)) := by
+  have := condIndepFun_reward_hist_arm_arm (alg := alg) (ν := ν) (n - 1)
+  grind
+
 end Laws
 
 section DetAlgorithm

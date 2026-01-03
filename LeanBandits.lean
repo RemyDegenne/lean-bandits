@@ -3,6 +3,7 @@ import LeanBandits.Bandit.Regret
 import LeanBandits.BanditAlgorithms.ETC
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib
+import LeanBandits.ForMathlib.HasCondDistrib
 import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.IndepInfinitePi
 import LeanBandits.ForMathlib.KernelSub

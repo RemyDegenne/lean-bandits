@@ -81,46 +81,6 @@ lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : 
   rw [h_ra] at h_eq
   exact h_eq.symm
 
--- after the Mathlib stopping time refactor, we will be able to prove that stepsUntil is a
--- stopping time
-lemma measurable_comap_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
-    Measurable[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
-      ({ω | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  let k : ((Iic (n - 1) → α × ℝ) × α) → (ℕ → α × ℝ) := fun x i ↦
-    if hi : i ∈ Iic (n - 1) then (x.1 ⟨i, hi⟩) else if i = n then (x.2, 0) else (a, 0)
-  have hk : Measurable k := by
-    unfold k
-    rw [measurable_pi_iff]
-    intro i
-    split_ifs <;> fun_prop
-  let φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ := fun x ↦ if stepsUntil a m (k x) = ↑n then 1 else 0
-  have hφ : Measurable φ :=
-    Measurable.ite ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop)
-  suffices {ω | stepsUntil a m ω = ↑n}.indicator (fun x ↦ 1)
-      = φ ∘ fun ω ↦ (hist (n - 1) ω, arm n ω) from this ▸ measurable_comp_comap _ hφ
-  ext ω
-  classical
-  simp only [Set.indicator_apply, Set.mem_setOf_eq, Function.comp_apply, φ]
-  congr 1
-  rw [stepsUntil_eq_congr]
-  intro i hin
-  simp only [arm, mem_Iic, hist, dite_eq_ite, k, action]
-  grind
-
-lemma measurable_indicator_stepsUntil_eq (a : α) (m n : ℕ) :
-    Measurable ({ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  refine (measurable_comap_indicator_stepsUntil_eq a m n).mono ?_ le_rfl
-  refine Measurable.comap_le ?_
-  fun_prop
-
-lemma measurableSet_stepsUntil_eq (a : α) (m n : ℕ) :
-    MeasurableSet[MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance]
-      {ω : ℕ → α × ℝ | stepsUntil a m ω = ↑n} := by
-  let mProd := MeasurableSpace.comap (fun ω : ℕ → α × ℝ ↦ (hist (n-1) ω, arm n ω)) inferInstance
-  suffices Measurable[mProd] ({ω | stepsUntil a m ω = ↑n}.indicator fun x ↦ 1) by
-    rwa [measurable_indicator_const_iff] at this
-  exact measurable_comap_indicator_stepsUntil_eq a m n
-
 lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α] [Nonempty α]
     (a : α) (m n : ℕ) (hm : m ≠ 0) :
     reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) := by
@@ -142,16 +102,13 @@ lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α]
       exact h_indep.comp measurable_id (by fun_prop)
     · simp only [hm1, false_and, Set.setOf_false, Set.indicator_empty]
       exact condIndepFun_const_right (reward 0) 0
-  have h_indep : reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] hist (n - 1) := by
-    convert condIndepFun_reward_hist_arm (alg := alg) (ν := ν) (n - 1)
-      <;> rw [Nat.sub_add_cancel (by grind)]
-  have h_indep' : reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] fun ω ↦ (hist (n - 1) ω, arm n ω) :=
-    h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
+  have h_indep : reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] fun ω ↦ (hist (n - 1) ω, arm n ω) :=
+    condIndepFun_reward_hist_arm_arm' (alg := alg) (ν := ν) n (by grind)
   obtain ⟨φ, hφ_meas, h_eq⟩ : ∃ φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ, Measurable φ ∧
       {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) = φ ∘ (fun ω ↦ (hist (n - 1) ω, arm n ω)) :=
     (measurable_comap_indicator_stepsUntil_eq a m n).exists_eq_measurable_comp
   rw [h_eq]
-  exact h_indep'.comp measurable_id hφ_meas
+  exact h_indep.comp measurable_id hφ_meas
 
 lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
     (a : α) (m n : ℕ) (hm : m ≠ 0) :
@@ -281,9 +238,183 @@ lemma iIndepFun_rewardByCount' (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [Is
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   exact indepFun_rewardByCount_Iic alg ν a
 
-lemma iIndepFun_rewardByCount (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
-    iIndepFun (fun (p : α × ℕ) ↦ rewardByCount p.1 p.2) 𝔓 := by
+def E' (I : Finset (α × ℕ)) (S : Finset I) : Set (ℕ → α × ℝ) :=
+  {ω | (∀ i ∈ S, stepsUntil i.1.1 (i.1.2 + 1) ω < ⊤) ∧
+    (∀ j ∉ S, stepsUntil j.1.1 (j.1.2 + 1) ω = ⊤)}
+
+lemma measurableSet_E' [Countable α] [Nonempty α] (I : Finset (α × ℕ)) (S : Finset I) :
+    MeasurableSet (E' I S) := by
+  have h_eq : E' I S
+    = (⋂ i ∈ S, {ω | stepsUntil i.1.1 (i.1.2 + 1) ω ≠ ⊤}) ∩
+      (⋂ j ∉ S, {ω | stepsUntil j.1.1 (j.1.2 + 1) ω = ⊤}) := by ext; simp [E', lt_top_iff_ne_top]
+  rw [h_eq]
+  refine MeasurableSet.inter ?_ ?_
+  · refine MeasurableSet.iInter fun i ↦ MeasurableSet.iInter fun hi ↦ ?_
+    exact (measurableSet_singleton _).compl.preimage (by fun_prop)
+  · refine MeasurableSet.iInter fun j ↦ MeasurableSet.iInter fun hj ↦ ?_
+    exact (measurableSet_singleton _).preimage (by fun_prop)
+
+def E (I : Finset (α × ℕ)) (S : Finset I) : Set ((ℕ → α × ℝ) × (ℕ → α → ℝ)) :=
+  {ω | (∀ i ∈ S, stepsUntil i.1.1 (i.1.2 + 1) ω.1 < ⊤) ∧
+    (∀ j ∉ S, stepsUntil j.1.1 (j.1.2 + 1) ω.1 = ⊤)}
+
+lemma measurableSet_E [Countable α] [Nonempty α] (I : Finset (α × ℕ)) (S : Finset I) :
+    MeasurableSet (E I S) := by
+  have : E I S = Prod.fst ⁻¹' (E' I S) := by ext; simp [E, E']
+  rw [this]
+  exact measurable_fst (measurableSet_E' I S)
+
+lemma iIndepFun_rewardByCount.extracted_1 [Countable α] [Nonempty α]
+    (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (I : Finset (α × ℕ))
+    {B : α × ℕ → Set ℝ} (hB : ∀ i ∈ I, MeasurableSet (B i)) (S : Finset I) :
+    𝔓 (E I S ∩ ⋂ i ∈ S, (fun ω ↦ reward (stepsUntil i.1.1 (i.1.2 + 1) ω.1).toNat ω.1) ⁻¹' B i) =
+      𝔓 (E I S) * ∏ i ∈ S, (ν i.1.1) (B i) := by
   sorry
+
+lemma iIndepFun_rewardByCount.extracted_2 [Countable α] [Nonempty α]
+    (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] (I : Finset (α × ℕ))
+    {B : α × ℕ → Set ℝ} (hB : ∀ i ∈ I, MeasurableSet (B i)) (S : Finset I) :
+    Bandit.measure alg ν (⋂ j ∉ S, (fun ω ↦ ω.2 (j.1.2 + 1) j.1.1) ⁻¹' B j) =
+      ∏ j ∉ S, (ν j.1.1) (B j) := by
+  have h_indep : iIndepFun (fun (i : I) ω ↦ ω.2 (i.1.2 + 1) i.1.1) (Bandit.measure alg ν) := by
+    suffices iIndepFun (fun (i : I) ω ↦ ω (i.1.2 + 1) i.1.1) (Bandit.streamMeasure ν) by
+      sorry
+    sorry
+  rw [iIndepFun_iff_measure_inter_preimage_eq_mul] at h_indep
+  specialize h_indep Sᶜ (sets := fun i ↦ B i) (fun i hi ↦ hB i i.2)
+  simp only [mem_compl] at h_indep ⊢
+  rw [h_indep]
+  congr with i
+  rw [← Measure.map_apply (by fun_prop) (hB i i.2)]
+  congr
+  exact (hasLaw_Z i.1.1 (i.1.2 + 1)).map_eq
+
+lemma iIndepFun_rewardByCount.extracted_3 [Countable α] [Nonempty α]
+    (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [inst_4 : IsMarkovKernel ν] (I : Finset (α × ℕ))
+    {B : α × ℕ → Set ℝ} (hB : ∀ i ∈ I, MeasurableSet (B i)) (S : Finset I) :
+    IndepSet (E I S ∩
+        ⋂ i ∈ S, (fun ω ↦ reward (stepsUntil i.1.1 (i.1.2 + 1) ω.1).toNat ω.1) ⁻¹' B i)
+      (⋂ j ∉ S, (fun ω ↦ ω.2 (j.1.2 + 1) j.1.1) ⁻¹' B j) (Bandit.measure alg ν) := by
+  let A := E I S ∩ ⋂ i ∈ S, (fun ω ↦ reward (stepsUntil i.1.1 (i.1.2 + 1) ω.1).toNat ω.1) ⁻¹' B i
+  let C := ⋂ j ∉ S, (fun (ω : (ℕ → α × ℝ) × (ℕ → α → ℝ)) ↦ ω.2 (j.1.2 + 1) j.1.1) ⁻¹' B j
+  let A' := E' I S ∩ ⋂ i ∈ S, (fun ω ↦ reward (stepsUntil i.1.1 (i.1.2 + 1) ω).toNat ω) ⁻¹' B i
+  have hA : A = Prod.fst ⁻¹' A' := by
+    ext ω
+    simp [A, A', E, E']
+  let C' := ⋂ j ∉ S, (fun (ω : ℕ → α → ℝ) ↦ ω (j.1.2 + 1) j.1.1) ⁻¹' B j
+  have hC : C = Prod.snd ⁻¹' C' := by
+    ext ω
+    simp [C, C']
+  have hAC : A ∩ C = A' ×ˢ C' := by rw [hA, hC]; ext; simp
+  have hA'_meas : MeasurableSet A' := by
+    refine MeasurableSet.inter ?_ (MeasurableSet.iInter fun i ↦ MeasurableSet.iInter fun hi ↦ ?_)
+    · exact measurableSet_E' I S
+    · exact (hB i.1 i.2).preimage (by fun_prop)
+  have hC'_meas : MeasurableSet C' := by
+    refine MeasurableSet.iInter fun j ↦ MeasurableSet.iInter fun hj ↦ ?_
+    exact (hB j.1 j.2).preimage (by fun_prop)
+  change IndepSet A C (Bandit.measure alg ν)
+  rw [indepSet_iff_measure_inter_eq_mul (μ := Bandit.measure alg ν)]
+  rotate_left
+  · rw [hA]
+    exact measurable_fst hA'_meas
+  · rw [hC]
+    exact measurable_snd hC'_meas
+  rw [hAC, hA, hC, Bandit.measure, ← Measure.fst_apply, ← Measure.snd_apply]
+  · simp
+  · exact hC'_meas
+  · exact hA'_meas
+
+lemma iIndepFun_rewardByCount [Countable α] [Nonempty α]
+    (alg : Algorithm α ℝ) (ν : Kernel α ℝ) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : α × ℕ) ↦ rewardByCount p.1 (p.2 + 1)) (Bandit.measure alg ν) := by
+  rw [iIndepFun_iff_measure_inter_preimage_eq_mul]
+  intro I B hB
+  suffices Bandit.measure alg ν (⋂ i ∈ I, rewardByCount i.1 (i.2 + 1) ⁻¹' B i) =
+      ∏ i ∈ I, ν i.1 (B i) by
+    rw [this]
+    refine Finset.prod_congr rfl fun i hi ↦ ?_
+    rw [← Measure.map_apply (by fun_prop) (hB i hi)]
+    congr
+    exact (hasLaw_rewardByCount i.1 (i.2 + 1) (by simp)).map_eq.symm
+  have hE_disj (S T : Finset I) (hST : S ≠ T) : Disjoint (E I S) (E I T) := by
+    rw [Set.disjoint_iff_forall_ne]
+    simp only [Subtype.forall, Prod.forall, Set.mem_setOf_eq, ne_eq, and_imp, Prod.mk.injEq,
+      not_and, E]
+    grind
+  have hE_union : ⋃ (S : Finset I), E I S = Set.univ := by
+    ext ω
+    simp only [Subtype.forall, Prod.forall, Set.mem_iUnion, Set.mem_setOf_eq, Set.mem_univ,
+      iff_true, E]
+    use Finset.univ.filter (fun i : I ↦ stepsUntil i.1.1 (i.1.2 + 1) ω.1 < ⊤)
+    simp
+  have : ⋂ i ∈ I, rewardByCount i.1 (i.2 + 1) ⁻¹' B i =
+      ⋃ (S : Finset I), E I S ∩ (⋂ i ∈ I, rewardByCount i.1 (i.2 + 1) ⁻¹' B i) := by
+    rw [← Set.iUnion_inter, hE_union, Set.univ_inter]
+  rw [this, measure_iUnion]
+  rotate_left
+  · intro S T hST
+    simp only [Function.onFun]
+    exact Disjoint.inter_left _ (Disjoint.inter_right _ (hE_disj S T hST))
+  · refine fun S ↦ (measurableSet_E I S).inter ?_
+    refine MeasurableSet.iInter fun i ↦ MeasurableSet.iInter fun hi ↦ ?_
+    exact (hB i hi).preimage (by fun_prop)
+  suffices ∀ (S : Finset I),
+      Bandit.measure alg ν (E I S ∩ ⋂ i ∈ I, rewardByCount i.1 (i.2 + 1) ⁻¹' B i) =
+        Bandit.measure alg ν (E I S) * ∏ i ∈ I, ν i.1 (B i) by
+    simp_rw [this]
+    rw [ENNReal.tsum_mul_right, ← measure_iUnion hE_disj (measurableSet_E I), hE_union,
+      measure_univ, one_mul]
+  intro S
+  have h_eq : E I S ∩ ⋂ i ∈ I, rewardByCount i.1 (i.2 + 1) ⁻¹' B i
+      = E I S ∩ (⋂ i ∈ S, (fun ω ↦ reward (stepsUntil i.1.1 (i.1.2 + 1) ω.1).toNat ω.1) ⁻¹' B i) ∩
+        (⋂ j ∉ S, (fun ω ↦ ω.2 (j.1.2 + 1) j.1.1) ⁻¹' B j) := by
+    ext ω
+    rw [Set.inter_assoc]
+    simp only [Set.mem_inter_iff, and_congr_right_iff]
+    intro hω
+    simp only [Subtype.forall, Prod.forall, Set.mem_setOf_eq, E] at hω
+    conv_rhs => rw [Set.iInter_subtype, Set.iInter_subtype]
+    rw [← Set.mem_inter_iff, ← Set.iInter_inter_distrib]
+    simp_rw [← Set.iInter_inter_distrib]
+    simp only [Set.mem_iInter, Set.mem_preimage, Prod.forall, Set.mem_inter_iff]
+    constructor
+    · intro h_all a i hai
+      constructor
+      · intro haiS
+        convert h_all a i hai
+        replace hω := hω.1 a i hai haiS
+        rw [rewardByCount_of_stepsUntil_ne_top hω.ne]
+        rfl
+      · intro haiS
+        convert h_all a i hai
+        replace hω := hω.2 a i hai haiS
+        rw [rewardByCount_of_stepsUntil_eq_top hω]
+    · intro h a i hai
+      specialize h a i hai
+      by_cases haiS : ⟨⟨a, i⟩, hai⟩ ∈ S
+      · convert h.1 haiS
+        replace hω := hω.1 a i hai haiS
+        rw [rewardByCount_of_stepsUntil_ne_top hω.ne]
+        rfl
+      · convert h.2 haiS
+        replace hω := hω.2 a i hai haiS
+        rw [rewardByCount_of_stepsUntil_eq_top hω]
+  rw [h_eq, IndepSet.measure_inter_eq_mul]
+  swap; · exact iIndepFun_rewardByCount.extracted_3 alg ν I hB S
+  rw [iIndepFun_rewardByCount.extracted_1 alg ν I hB S,
+    iIndepFun_rewardByCount.extracted_2 alg ν I hB S, mul_assoc]
+  congr
+  rw [Finset.prod_mul_prod_compl, Finset.prod_subtype I]
+  simp
+
+lemma identDistrib_rewardByCount_stream_all [Countable α] [StandardBorelSpace α] [Nonempty α] :
+    IdentDistrib (fun ω (p : α × ℕ) ↦ rewardByCount p.1 (p.2 + 1) ω)
+      (fun ω p ↦ ω p.2 p.1) 𝔓 (Bandit.streamMeasure ν) := by
+  refine IdentDistrib.pi (fun p ↦ ?_) ?_ ?_
+  · refine identDistrib_rewardByCount_eval p.1 (p.2 + 1) p.2 (by simp) (ν := ν)
+  · exact iIndepFun_rewardByCount alg ν
+  · sorry
 
 lemma identDistrib_rewardByCount_stream' [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) :

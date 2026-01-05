@@ -487,6 +487,13 @@ lemma measurableSet_stepsUntil_eq_zero [Nonempty R] [MeasurableSingletonClass α
   refine (measurableSet_singleton _).preimage ?_
   rw [measurable_iff_comap_le]
 
+lemma measurable_comap_indicator_stepsUntil_eq_zero [Nonempty R] [MeasurableSingletonClass α]
+    (a : α) (m : ℕ) :
+    Measurable[MeasurableSpace.comap (action 0 (R := R)) inferInstance]
+      ({ω | stepsUntil a m ω = 0}.indicator fun _ ↦ 1) := by
+  rw [measurable_indicator_const_iff]
+  exact measurableSet_stepsUntil_eq_zero a m
+
 lemma measurableSet_stepsUntil_eq [Nonempty R] [MeasurableSingletonClass α] (a : α) (m n : ℕ) :
     MeasurableSet[MeasurableSpace.comap (fun ω : ℕ → α × R ↦ (hist (n-1) ω, action n ω))
         inferInstance]
@@ -534,6 +541,16 @@ lemma rewardByCount_eq_ite (a : α) (m : ℕ) (ω : (ℕ → α × R) × (ℕ �
       if (stepsUntil a m ω.1) = ⊤ then ω.2 m a else reward (stepsUntil a m ω.1).toNat ω.1 := by
   unfold rewardByCount
   cases stepsUntil a m ω.1 <;> simp
+
+lemma rewardByCount_eq_add [AddMonoid R] (a : α) (m : ℕ) :
+    rewardByCount a m =
+      {ω : (ℕ → α × R) × (ℕ → α → R) | stepsUntil a m ω.1 ≠ ⊤}.indicator
+          (fun ω ↦ reward (stepsUntil a m ω.1).toNat ω.1)
+        + {ω | stepsUntil a m ω.1 = ⊤}.indicator (fun ω ↦ ω.2 m a) := by
+  ext ω
+  simp only [rewardByCount_eq_ite, ne_eq, Pi.add_apply, Set.indicator_apply, Set.mem_setOf_eq,
+    ite_not]
+  grind
 
 lemma rewardByCount_of_stepsUntil_eq_top (h : stepsUntil a m ω.1 = ⊤) :
     rewardByCount a m ω = ω.2 m a := by simp [rewardByCount_eq_ite, h]

@@ -14,5 +14,6 @@ import LeanBandits.ForMathlib.Traj
 import LeanBandits.RewardByCountMeasure
 import LeanBandits.SequentialLearning.Algorithm
 import LeanBandits.SequentialLearning.Deterministic
+import LeanBandits.SequentialLearning.Draft
 import LeanBandits.SequentialLearning.FiniteActions
 import LeanBandits.SequentialLearning.StationaryEnv

@@ -13,6 +13,44 @@ import Mathlib.Probability.IdentDistribIndep
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
+section Aux -- todo: move
+
+namespace ProbabilityTheory
+
+variable {α β γ δ γ' δ' : Type*}
+  {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+  {mδ : MeasurableSpace δ} {mγ' : MeasurableSpace γ'} {mδ' : MeasurableSpace δ'}
+  [StandardBorelSpace α]
+  [StandardBorelSpace δ'] [Nonempty δ'] [StandardBorelSpace γ'] [Nonempty γ']
+  {μ : Measure α} [IsFiniteMeasure μ]
+  {X : α → β} {hX : Measurable X} {Y : α → γ} {Z : α → δ} {Y' : α → γ'} {Z' : α → δ'}
+
+lemma CondIndepFun.of_measurable (h_indep : Y ⟂ᵢ[X, hX; μ] Z)
+    (hY_meas : Measurable[mγ.comap Y] Y') (hZ_meas : Measurable[mδ.comap Z] Z') :
+    Y' ⟂ᵢ[X, hX; μ] Z' := by
+  obtain ⟨φ, hφ_meas, h_eqY⟩ : ∃ φ, Measurable φ ∧ Y' = φ ∘ Y := hY_meas.exists_eq_measurable_comp
+  obtain ⟨ψ, hψ_meas, h_eqZ⟩ : ∃ ψ, Measurable ψ ∧ Z' = ψ ∘ Z := hZ_meas.exists_eq_measurable_comp
+  rw [h_eqY, h_eqZ]
+  exact h_indep.comp hφ_meas hψ_meas
+
+lemma CondIndepFun.of_measurable_left
+    (h_indep : Y ⟂ᵢ[X, hX; μ] Z) (hY_meas : Measurable[mγ.comap Y] Y') :
+    Y' ⟂ᵢ[X, hX; μ] Z := by
+  obtain ⟨φ, hφ_meas, h_eqY⟩ : ∃ φ, Measurable φ ∧ Y' = φ ∘ Y := hY_meas.exists_eq_measurable_comp
+  rw [h_eqY]
+  exact h_indep.comp hφ_meas measurable_id
+
+lemma CondIndepFun.of_measurable_right
+    (h_indep : Y ⟂ᵢ[X, hX; μ] Z) (hZ_meas : Measurable[mδ.comap Z] Z') :
+    Y ⟂ᵢ[X, hX; μ] Z' := by
+  obtain ⟨ψ, hψ_meas, h_eqZ⟩ : ∃ ψ, Measurable ψ ∧ Z' = ψ ∘ Z := hZ_meas.exists_eq_measurable_comp
+  rw [h_eqZ]
+  exact h_indep.comp measurable_id hψ_meas
+
+end ProbabilityTheory
+
+end Aux
+
 namespace Bandits
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [MeasurableSingletonClass α]
@@ -82,41 +120,29 @@ lemma reward_cond_arm [StandardBorelSpace α] [Nonempty α] [Countable α] (a : 
   exact h_eq.symm
 
 lemma condIndepFun_reward_stepsUntil_arm' [StandardBorelSpace α] [Countable α] [Nonempty α]
-    (a : α) (m n : ℕ) (hm : m ≠ 0) :
+    (a : α) (m n : ℕ) :
     reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) := by
-  -- the indicator of `stepsUntil ... = n` is a function of
-  -- `hist (n-1)` and `arm n`.
-  -- It thus suffices to prove the independence of `reward n` and `hist (n-1)` conditionally
+  -- the indicator of `stepsUntil ... = n` is a function of `hist (n-1)` and `arm n`.
+  -- It thus suffices to use the independence of `reward n` and `hist (n-1)` conditionally
   -- on `arm n`.
   by_cases hn : n = 0
-  · simp only [hn, CharP.cast_eq_zero]
-    simp only [stepsUntil_eq_zero_iff, hm, ne_eq, false_and, false_or]
-    by_cases hm1 : m = 1
-    · simp only [hm1, true_and]
-      have h_indep := condIndepFun_self_right (X := reward 0) (Z := arm 0)
-        (mβ := inferInstance) (mβ' := inferInstance) (μ := 𝔓t)
-        (by fun_prop) (by fun_prop)
-      have : {ω : ℕ → α × ℝ | action 0 ω = a}.indicator (fun x ↦ 1)
-          = {b | b = a}.indicator (fun _ ↦ 1) ∘ action 0 := by ext; simp [Set.indicator]
-      rw [this]
-      exact h_indep.comp measurable_id (by fun_prop)
-    · simp only [hm1, false_and, Set.setOf_false, Set.indicator_empty]
-      exact condIndepFun_const_right (reward 0) 0
-  have h_indep : reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] fun ω ↦ (hist (n - 1) ω, arm n ω) :=
-    condIndepFun_reward_hist_arm_arm' (alg := alg) (ν := ν) n (by grind)
-  obtain ⟨φ, hφ_meas, h_eq⟩ : ∃ φ : ((Iic (n - 1) → α × ℝ) × α) → ℕ, Measurable φ ∧
-      {ω | stepsUntil a m ω = ↑n}.indicator (fun _ ↦ 1) = φ ∘ (fun ω ↦ (hist (n - 1) ω, arm n ω)) :=
-    (measurable_comap_indicator_stepsUntil_eq a m n).exists_eq_measurable_comp
-  rw [h_eq]
-  exact h_indep.comp measurable_id hφ_meas
+  · have h_indep : reward 0 ⟂ᵢ[arm 0, measurable_arm 0; 𝔓t] arm 0 :=
+      condIndepFun_self_right (by fun_prop) (by fun_prop)
+    simp only [hn, CharP.cast_eq_zero]
+    refine h_indep.of_measurable_right (hX := measurable_arm 0) ?_
+    exact measurable_comap_indicator_stepsUntil_eq_zero a m
+  · have h_indep : reward n ⟂ᵢ[arm n, measurable_arm n; 𝔓t] fun ω ↦ (hist (n - 1) ω, arm n ω) :=
+      condIndepFun_reward_hist_arm_arm' (alg := alg) (ν := ν) n (by grind)
+    refine h_indep.of_measurable_right (hX := measurable_arm n) ?_
+    exact measurable_comap_indicator_stepsUntil_eq a m n
 
 lemma condIndepFun_reward_stepsUntil_arm [StandardBorelSpace α] [Countable α] [Nonempty α]
-    (a : α) (m n : ℕ) (hm : m ≠ 0) :
+    (a : α) (m n : ℕ) :
     CondIndepFun (mα.comap (fun ω ↦ arm n ω.1)) ((measurable_arm n).comp measurable_fst).comap_le
       (fun ω ↦ reward n ω.1) ({ω | stepsUntil a m ω.1 = ↑n}.indicator (fun _ ↦ 1)) 𝔓 :=
   condIndepFun_fst_prod (ν := Bandit.streamMeasure ν)
     (measurable_indicator_stepsUntil_eq a m n) (by fun_prop) (by fun_prop)
-    (condIndepFun_reward_stepsUntil_arm' a m n hm)
+    (condIndepFun_reward_stepsUntil_arm' a m n)
 
 lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α] (a : α) (m n : ℕ)
     (hm : m ≠ 0) (hμn : 𝔓 ((fun ω ↦ stepsUntil a m ω.1) ⁻¹' {↑n}) ≠ 0) :
@@ -149,7 +175,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
     rw [and_comm]
   _ = 𝓛[fun ω ↦ reward n ω.1 | fun ω ↦ arm n ω.1 ← a; 𝔓] := by
     rw [cond_of_condIndepFun (by fun_prop)]
-    · exact condIndepFun_reward_stepsUntil_arm a m n hm
+    · exact condIndepFun_reward_stepsUntil_arm a m n
     · refine measurable_one.indicator ?_
       exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
     · fun_prop
@@ -159,7 +185,9 @@ lemma reward_cond_stepsUntil [StandardBorelSpace α] [Countable α] [Nonempty α
       simp [Set.indicator_apply]
   _ = ν a := reward_cond_arm a n hμa
 
-lemma condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]
+/-- The conditional distribution of the reward received at the `m`-th pull of arm `a`
+given the time at which number of pulls is `m` is the constant kernel with value `ν a`. -/
+theorem condDistrib_rewardByCount_stepsUntil [Countable α] [StandardBorelSpace α] [Nonempty α]
     (a : α) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (rewardByCount a m) (fun ω ↦ stepsUntil a m ω.1) 𝔓
       =ᵐ[(𝔓).map (fun ω ↦ stepsUntil a m ω.1)] Kernel.const _ (ν a) := by

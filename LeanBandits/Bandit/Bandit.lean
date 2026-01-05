@@ -6,7 +6,9 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.ForMathlib.IndepInfinitePi
 import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.StationaryEnv
+import LeanBandits.SequentialLearning.FiniteActions
 import Mathlib.Probability.IdentDistrib
+import Mathlib.MeasureTheory.Constructions.UnitInterval
 
 /-!
 # Bandit
@@ -285,6 +287,213 @@ example [StandardBorelSpace α] [Nonempty α]
   exact ⟨arm_zero_detAlgorithm, arm_detAlgorithm_ae_eq⟩
 
 end DetAlgorithm
+
+section ArrayModel
+
+open unitInterval
+
+section Aux
+
+-- from Mathlib PR #30112
+theorem representation {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    [Nonempty β] [StandardBorelSpace β]
+    (κ : Kernel α β) [IsMarkovKernel κ] :
+    ∃ (f : α → I → β), Measurable (Function.uncurry f) ∧ ∀ a, volume.map (f a) = κ a := sorry
+
+theorem representation_measure {β : Type*} {mβ : MeasurableSpace β}
+    [Nonempty β] [StandardBorelSpace β]
+    (μ : Measure β) [IsProbabilityMeasure μ] :
+    ∃ (f : I → β), Measurable f ∧ volume.map f = μ := by
+  obtain ⟨f, hf_meas, hf_map⟩ := representation (Kernel.const Unit μ)
+  specialize hf_map ⟨⟩
+  exact ⟨f ⟨⟩, by fun_prop, by simpa⟩
+
+end Aux
+
+variable (α R) in
+def probSpace : Type _ := (ℕ → I) × (ℕ → α → R)
+
+instance {α R : Type*} [MeasurableSpace R] : MeasurableSpace (probSpace α R) :=
+  inferInstanceAs (MeasurableSpace ((ℕ → I) × (ℕ → α → R)))
+
+noncomputable
+def arrayMeasure (ν : Kernel α R) : Measure (probSpace α R) :=
+  (Measure.infinitePi fun _ ↦ volume).prod (Bandit.streamMeasure ν)
+
+instance (ν : Kernel α R) [IsMarkovKernel ν] : IsProbabilityMeasure (arrayMeasure ν) :=
+  Measure.prod.instIsProbabilityMeasure _ _
+
+variable [Nonempty α] [StandardBorelSpace α]
+
+noncomputable
+def initAlgFunction (alg : Algorithm α R) : I → α :=
+  (representation_measure alg.p0).choose
+
+lemma initAlgFunction_map (alg : Algorithm α R) : volume.map (initAlgFunction alg) = alg.p0 :=
+  (representation_measure alg.p0).choose_spec.2
+
+@[fun_prop]
+lemma measurable_initAlgFunction (alg : Algorithm α R) :
+    Measurable (initAlgFunction alg) := (representation_measure alg.p0).choose_spec.1
+
+noncomputable
+def algFunction (alg : Algorithm α R) (n : ℕ) :
+    (Iic n → α × R) → I → α :=
+  (representation (alg.policy n)).choose
+
+lemma algFunction_map (alg : Algorithm α R) (n : ℕ) (h : Iic n → α × R) :
+      volume.map (algFunction alg n h) = alg.policy n h :=
+  (representation (alg.policy n)).choose_spec.2 h
+
+@[fun_prop]
+lemma measurable_algFunction (alg : Algorithm α R) (n : ℕ) :
+    Measurable (Function.uncurry (algFunction alg n)) :=
+  (representation (alg.policy n)).choose_spec.1
+
+noncomputable
+def altHist [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) : (n : ℕ) → Iic n → α × R
+| 0 => fun _ ↦ (initAlgFunction alg (ω.1 0), ω.2 0 (initAlgFunction alg (ω.1 0)))
+| n + 1 =>
+  let hn : Iic n → α × R := altHist alg ω n
+  let a : α := algFunction alg n hn (ω.1 (n + 1))
+  fun i ↦ if hin : i ≤ n then hn ⟨i, by simp [hin]⟩ else (a, ω.2 (pullCount' n hn a + 1) a)
+
+@[simp]
+lemma altHist_zero [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) :
+    altHist alg ω 0 = fun _ ↦ (initAlgFunction alg (ω.1 0), ω.2 0 (initAlgFunction alg (ω.1 0))) :=
+  rfl
+
+lemma altHist_add_one [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
+    let a : α := algFunction alg n (altHist alg ω n) (ω.1 (n + 1))
+    altHist alg ω (n + 1) =
+      fun (i : Iic (n + 1)) ↦ if hin : i ≤ n then altHist alg ω n ⟨i, by simp [hin]⟩
+        else (a, ω.2 (pullCount' n (altHist alg ω n) a + 1) a) :=
+  rfl
+
+lemma altHist_eq [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
+    altHist alg ω n = fun i : Iic n ↦ altHist alg ω i ⟨i.1, by simp⟩ := by
+  induction n with
+  | zero =>
+    ext i : 1
+    simp only [altHist]
+    sorry
+  | succ n hn =>
+    ext i : 1
+    by_cases hin : i ≤ n
+    · rw [altHist_add_one]
+      simp only [hin, ↓reduceDIte]
+      rw [funext_iff] at hn
+      simp_rw [hn]
+    · grind
+
+@[fun_prop]
+lemma measurable_altHist [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (fun ω ↦ altHist alg ω n) := by
+  induction n with
+  | zero =>
+    simp_rw [altHist_zero, measurable_pi_iff]
+    refine fun _ ↦ Measurable.prodMk (by fun_prop) ?_
+    sorry
+  | succ n hn =>
+    refine measurable_pi_iff.mpr fun i ↦ ?_
+    by_cases hin : i ≤ n
+    · simp only [altHist, hin, ↓reduceDIte]
+      rw [measurable_pi_iff] at hn
+      exact hn ⟨i.1, by simp [hin]⟩
+    · simp only [altHist, hin, ↓reduceDIte]
+      refine Measurable.prodMk (by fun_prop) ?_
+      sorry
+
+noncomputable
+def altArm [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : α :=
+  (altHist alg ω n ⟨n, by simp⟩).1
+
+lemma altArm_zero [DecidableEq α] (alg : Algorithm α R) :
+    altArm alg 0 = fun ω ↦ initAlgFunction alg (ω.1 0) := by
+  ext
+  simp [altArm, altHist_zero]
+
+@[fun_prop]
+lemma measurable_altArm [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (altArm alg n) := by unfold altArm; fun_prop
+
+noncomputable
+def altReward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : R :=
+  (altHist alg ω n ⟨n, by simp⟩).2
+
+lemma altReward_zero [DecidableEq α] (alg : Algorithm α R) :
+    altReward alg 0 = fun ω ↦ ω.2 0 (altArm alg 0 ω) := by
+  ext
+  simp [altReward, altHist_zero, altArm_zero]
+
+@[fun_prop]
+lemma measurable_altReward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (altReward alg n) := by unfold altReward; fun_prop
+
+variable [DecidableEq α]
+
+lemma hasLaw_altArm_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasLaw (altArm alg 0) alg.p0 (arrayMeasure ν) where
+  map_eq := by
+    calc (arrayMeasure ν).map (fun ω ↦ initAlgFunction alg (ω.1 0))
+    _ = ((arrayMeasure ν).fst.map (Function.eval 0)).map (initAlgFunction alg) := by
+      rw [Measure.fst, Measure.map_map (by fun_prop) (by fun_prop),
+        Measure.map_map (by fun_prop) (by fun_prop)]
+      rfl
+    _ = (volume : Measure I).map (initAlgFunction alg) := by
+      simp only [arrayMeasure, Measure.fst_prod]
+      rw [(measurePreserving_eval_infinitePi (fun _ ↦ volume) 0).map_eq]
+    _ = alg.p0 := initAlgFunction_map alg
+
+variable [StandardBorelSpace R] [Nonempty R]
+
+lemma hasCondDistrib_altReward_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasCondDistrib (altReward alg 0) (altArm alg 0) (stationaryEnv ν).ν0 (arrayMeasure ν) where
+  condDistrib_eq := by
+    simp only [stationaryEnv_ν0, (hasLaw_altArm_zero alg ν).map_eq, altReward_zero]
+    sorry
+
+lemma hasCondDistrib_altStep' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+    (n : ℕ) :
+    HasCondDistrib (altHist alg · (n + 1) ⟨n + 1, by simp⟩) (altHist alg · n)
+      (Bandit.stepKernel alg ν n) (arrayMeasure ν) where
+  condDistrib_eq := by
+    simp only [Bandit.stepKernel, stepKernel, stationaryEnv_feedback]
+    sorry
+
+lemma hasCondDistrib_altStep (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+    (n : ℕ) :
+    HasCondDistrib (fun ω ↦ (altArm alg (n + 1) ω, altReward alg (n + 1) ω))
+      (fun ω (i : Iic n) ↦ (altArm alg i ω, altReward alg i ω))
+      (Bandit.stepKernel alg ν n) (arrayMeasure ν) := by
+  convert hasCondDistrib_altStep' alg ν n with ω i
+  · simp only [altArm]
+    rw [altHist_eq _ _ n]
+  · simp only [altReward]
+    rw [altHist_eq _ _ n]
+
+lemma hasCondDistrib_altArm (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+    HasCondDistrib (altArm alg (n + 1)) (fun ω (i : Iic n) ↦ (altArm alg i ω, altReward alg i ω))
+      (alg.policy n) (arrayMeasure ν) := by
+  convert HasCondDistrib.fst (hasCondDistrib_altStep alg ν n)
+  simp
+
+lemma hasCondDistrib_altReward (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+    (n : ℕ) :
+    HasCondDistrib (altReward alg (n + 1))
+      (fun ω ↦ (fun (i : Iic n) ↦ (altArm alg i ω, altReward alg i ω), altArm alg (n + 1) ω))
+      ((stationaryEnv ν).feedback n) (arrayMeasure ν) := by
+  simp only [stationaryEnv_feedback]
+  sorry
+
+lemma isAlgEnvInteraction_arrayMeasure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    IsAlgEnvInteraction (altArm alg) (altReward alg) alg (stationaryEnv ν) (arrayMeasure ν) where
+  hasLaw_action_zero := hasLaw_altArm_zero alg ν
+  hasCondDistrib_reward_zero := hasCondDistrib_altReward_zero alg ν
+  hasCondDistrib_action := hasCondDistrib_altArm alg ν
+  hasCondDistrib_reward := hasCondDistrib_altReward alg ν
+
+end ArrayModel
 
 end MeasureSpace
 

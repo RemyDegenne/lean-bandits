@@ -17,17 +17,19 @@ open scoped ENNReal NNReal
 
 namespace Bandits
 
-variable {α : Type*} [DecidableEq α] {mα : MeasurableSpace α} {ν : Kernel α ℝ}
-  {h : ℕ → α × ℝ} {m n t : ℕ} {a : α}
+variable {α Ω : Type*} [DecidableEq α] {mα : MeasurableSpace α} {mΩ : MeasurableSpace Ω}
+  {ν : Kernel α ℝ}
+  {A : ℕ → Ω → α} {R : ℕ → Ω → ℝ}
+  {ω : Ω} {m n t : ℕ} {a : α}
 
 /-! ### Definitions of regret, gaps, pull counts -/
 
 /-- Regret of a sequence of pulls `k : ℕ → α` at time `t` for the reward kernel `ν ; Kernel α ℝ`. -/
 noncomputable
-def regret (ν : Kernel α ℝ) (t : ℕ) (h : ℕ → α × ℝ) : ℝ :=
-  t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (arm s h))[id]
+def regret (ν : Kernel α ℝ) (A : ℕ → Ω → α) (t : ℕ) (ω : Ω) : ℝ :=
+  t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
 
-/-- Gap of an arm `a`: difference between the highest mean of the arms and the mean of `a`. -/
+/-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
 noncomputable
 def gap (ν : Kernel α ℝ) (a : α) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
 
@@ -36,28 +38,19 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   rw [gap, sub_nonneg]
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
-lemma arm_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount a (s + 1) h = m) :
-    arm (stepsUntil a m h).toNat h = a := by
-  exact action_stepsUntil hm h_exists
-
-lemma arm_eq_of_stepsUntil_eq_coe {ω : ℕ → α × ℝ} (hm : m ≠ 0)
-    (h : stepsUntil a m ω = n) :
-    arm n ω = a := by
-  exact action_eq_of_stepsUntil_eq_coe hm h
-
 section RewardByCount
 
 lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
-    regret ν t h = ∑ a, pullCount a t h * gap ν a := by
-  simp [sum_pullCount_mul, regret, gap, sum_sub_distrib, arm, action]
+    regret ν A t ω = ∑ a, pullCount A a t ω * gap ν a := by
+  simp [sum_pullCount_mul, regret, gap, sum_sub_distrib]
 
 end RewardByCount
 
-section BestArm
+section bestArm
 
 variable [Fintype α] [Nonempty α]
 
-/-- Arm with the highest mean. -/
+/-- action with the highest mean. -/
 noncomputable def bestArm (ν : Kernel α ℝ) : α :=
   (exists_max_image univ (fun a ↦ (ν a)[id]) (univ_nonempty_iff.mpr inferInstance)).choose
 
@@ -78,6 +71,6 @@ omit [DecidableEq α] in
 lemma gap_bestArm : gap ν (bestArm ν) = 0 := by
   rw [gap_eq_bestArm_sub, sub_self]
 
-end BestArm
+end bestArm
 
 end Bandits

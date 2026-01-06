@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.ForMathlib.CondDistrib
+import Mathlib.Probability.HasLaw
 
 /-!
 # A predicate for having a specified conditional distribution
@@ -65,5 +66,39 @@ lemma HasCondDistrib.snd {Y : α → Ω × Ω'} {κ : Kernel β (Ω × Ω')} [Is
     HasCondDistrib (fun ω ↦ (Y ω).2) X κ.snd μ := by
   rw [Kernel.snd_eq]
   exact HasCondDistrib.comp h measurable_snd
+
+lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFiniteKernel κ]
+    (h1 : HasLaw X P μ) (h2 : HasCondDistrib Y X κ μ) :
+    HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ := by
+  have hX := h1.aemeasurable
+  have hY := h2.aemeasurable_fst
+  refine ⟨by fun_prop, ?_⟩
+  rw [← compProd_map_condDistrib (by fun_prop), h1.map_eq]
+  refine Measure.compProd_congr ?_
+  rw [← h1.map_eq]
+  exact h2.condDistrib_eq
+
+lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
+    {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsFiniteKernel η]
+    (h1 : HasCondDistrib Y X κ μ) (h2 : HasCondDistrib Z (fun ω ↦ (X ω, Y ω)) η μ) :
+    HasCondDistrib (fun ω ↦ (Y ω, Z ω)) X (κ ⊗ₖ η) μ := by
+  have hX := h1.aemeasurable_snd
+  have hY := h1.aemeasurable_fst
+  have hZ := h2.aemeasurable_fst
+  refine ⟨by fun_prop, by fun_prop, ?_⟩
+  have h_condDistrib_Y := h1.condDistrib_eq
+  have h_condDistrib_Z := h2.condDistrib_eq
+  have h_prod := condDistrib_prod_left hY hZ hX
+  have h_prod' : 𝓛[fun ω ↦ (Y ω, Z ω) | X; μ] =ᵐ[μ.map X] (κ ⊗ₖ 𝓛[Z | fun ω ↦ (X ω, Y ω); μ]) := by
+    filter_upwards [h_condDistrib_Y, h_prod] with ω hω₁ hω₂
+    rw [hω₂]
+    ext s hs
+    rw [Kernel.compProd_apply hs, Kernel.compProd_apply hs]
+    simp [hω₁]
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
+    at h_condDistrib_Z h_condDistrib_Y ⊢
+  rw [← Measure.compProd_assoc', ← h_condDistrib_Y, ← h_condDistrib_Z,
+    AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+  rfl
 
 end ProbabilityTheory

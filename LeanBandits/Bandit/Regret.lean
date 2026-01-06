@@ -110,4 +110,21 @@ lemma bestPullCount_eq_of_regret_eq_zero (hr : regret ν t h = 0) : bestPullCoun
 
 end BestArm
 
+section Asymptotics
+
+omit [DecidableEq α] in
+lemma tendsto_highest_mean_of_sublinear_regret (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) :
+    Tendsto (fun t ↦ (∑ s ∈ range t, (ν (arm s h))[id]) / (t : ℝ))
+      atTop (nhds (⨆ a, (ν a)[id])) := by
+  have ht : Tendsto (fun t ↦ (⨆ a, (ν a)[id]) - regret ν t h / t)
+      atTop (nhds (⨆ a, (ν a)[id])) := by
+    simpa using (tendsto_const_nhds.sub hr.tendsto_div_nhds_zero)
+  apply ht.congr'
+  filter_upwards [eventually_ne_atTop 0] with t ht
+  rw [regret]
+  field_simp
+  ring
+
+end Asymptotics
+
 end Bandits

@@ -98,6 +98,16 @@ omit [DecidableEq α] in
 lemma gap_bestArm : gap ν (bestArm ν) = 0 := by
   rw [gap_eq_bestArm_sub, sub_self]
 
+/-- Number of times an optimal arm was chosen up to time `t` (excluding `t`). -/
+noncomputable
+def bestPullCount (ν : Kernel α ℝ) (t : ℕ) (h : ℕ → α × ℝ) : ℕ :=
+  #(filter (fun s ↦ gap ν (arm s h) = 0) (range t))
+
+omit [DecidableEq α] [Nonempty α] in
+lemma bestPullCount_eq_of_regret_eq_zero (hr : regret ν t h = 0) : bestPullCount ν t h = t := by
+  rw [bestPullCount, filter_true_of_mem, card_range]
+  exact fun s hs ↦ gap_eq_zero_of_regret_eq_zero hr (mem_range.1 hs)
+
 end BestArm
 
 end Bandits

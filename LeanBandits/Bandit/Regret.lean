@@ -64,7 +64,7 @@ section RewardByCount
 
 lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
     regret ν t h = ∑ a, pullCount a t h * gap ν a := by
-  simp_rw [regret_eq_sum_gap, arm, sum_pullCount_mul, action]
+  simp_rw [regret_eq_sum_gap, sum_pullCount_mul, arm, action]
 
 end RewardByCount
 
@@ -89,8 +89,9 @@ lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   exact ciSup_le le_bestArm
 
 omit [DecidableEq α] in
-lemma integral_id_eq_of_gap_eq_zero (h : gap ν a = 0) : (ν a)[id] = (ν (bestArm ν))[id] :=
-  (sub_eq_zero.1 (gap_eq_bestArm_sub (a := a) ▸ h)).symm
+lemma integral_id_eq_of_gap_eq_zero (hg : gap ν a = 0) : (ν a)[id] = (ν (bestArm ν))[id] := by
+  rw [gap_eq_bestArm_sub, sub_eq_zero] at hg
+  exact hg.symm
 
 omit [DecidableEq α] in
 @[simp]

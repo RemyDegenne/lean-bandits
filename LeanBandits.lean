@@ -1,5 +1,6 @@
 import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
+import LeanBandits.Bandit.RewardByCountMeasure
 import LeanBandits.BanditAlgorithms.ETC
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib
@@ -11,8 +12,8 @@ import LeanBandits.ForMathlib.Measurable
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
-import LeanBandits.RewardByCountMeasure
 import LeanBandits.SequentialLearning.Algorithm
 import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.FiniteActions
+import LeanBandits.SequentialLearning.IonescuTulceaSpace
 import LeanBandits.SequentialLearning.StationaryEnv

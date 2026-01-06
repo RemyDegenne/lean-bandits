@@ -187,7 +187,7 @@ example [StandardBorelSpace α] [Nonempty α]
 
 end DetAlgorithm
 
-section ArrayModel
+namespace ArrayModel
 
 open unitInterval
 
@@ -250,89 +250,108 @@ lemma measurable_algFunction (alg : Algorithm α R) (n : ℕ) :
   (representation (alg.policy n)).choose_spec.1
 
 noncomputable
-def altHist [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) : (n : ℕ) → Iic n → α × R
+def hist [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) : (n : ℕ) → Iic n → α × R
 | 0 => fun _ ↦ (initAlgFunction alg (ω.1 0), ω.2 0 (initAlgFunction alg (ω.1 0)))
 | n + 1 =>
-  let hn : Iic n → α × R := altHist alg ω n
+  let hn : Iic n → α × R := hist alg ω n
   let a : α := algFunction alg n hn (ω.1 (n + 1))
-  fun i ↦ if hin : i ≤ n then hn ⟨i, by simp [hin]⟩ else (a, ω.2 (pullCount' n hn a + 1) a)
+  fun i ↦ if hin : i ≤ n then hn ⟨i, by simp [hin]⟩ else (a, ω.2 (pullCount' n hn a) a)
 
 @[simp]
-lemma altHist_zero [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) :
-    altHist alg ω 0 = fun _ ↦ (initAlgFunction alg (ω.1 0), ω.2 0 (initAlgFunction alg (ω.1 0))) :=
+lemma hist_zero [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) :
+    hist alg ω 0 = fun _ ↦ (initAlgFunction alg (ω.1 0), ω.2 0 (initAlgFunction alg (ω.1 0))) :=
   rfl
 
-lemma altHist_add_one [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
-    let a : α := algFunction alg n (altHist alg ω n) (ω.1 (n + 1))
-    altHist alg ω (n + 1) =
-      fun (i : Iic (n + 1)) ↦ if hin : i ≤ n then altHist alg ω n ⟨i, by simp [hin]⟩
-        else (a, ω.2 (pullCount' n (altHist alg ω n) a + 1) a) :=
+lemma hist_add_one [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
+    let a : α := algFunction alg n (hist alg ω n) (ω.1 (n + 1))
+    hist alg ω (n + 1) =
+      fun (i : Iic (n + 1)) ↦ if hin : i ≤ n then hist alg ω n ⟨i, by simp [hin]⟩
+        else (a, ω.2 (pullCount' n (hist alg ω n) a) a) :=
   rfl
 
-lemma altHist_eq [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
-    altHist alg ω n = fun i : Iic n ↦ altHist alg ω i ⟨i.1, by simp⟩ := by
+lemma hist_eq [DecidableEq α] (alg : Algorithm α R) (ω : probSpace α R) (n : ℕ) :
+    hist alg ω n = fun i : Iic n ↦ hist alg ω i ⟨i.1, by simp⟩ := by
   induction n with
   | zero =>
     ext i : 1
-    simp only [altHist]
+    simp only [hist]
     sorry
   | succ n hn =>
     ext i : 1
     by_cases hin : i ≤ n
-    · rw [altHist_add_one]
+    · rw [hist_add_one]
       simp only [hin, ↓reduceDIte]
       rw [funext_iff] at hn
       simp_rw [hn]
     · grind
 
 @[fun_prop]
-lemma measurable_altHist [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
-    Measurable (fun ω ↦ altHist alg ω n) := by
+lemma measurable_hist [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (fun ω ↦ hist alg ω n) := by
   induction n with
   | zero =>
-    simp_rw [altHist_zero, measurable_pi_iff]
+    simp_rw [hist_zero, measurable_pi_iff]
     refine fun _ ↦ Measurable.prodMk (by fun_prop) ?_
     sorry
   | succ n hn =>
     refine measurable_pi_iff.mpr fun i ↦ ?_
     by_cases hin : i ≤ n
-    · simp only [altHist, hin, ↓reduceDIte]
+    · simp only [hist, hin, ↓reduceDIte]
       rw [measurable_pi_iff] at hn
       exact hn ⟨i.1, by simp [hin]⟩
-    · simp only [altHist, hin, ↓reduceDIte]
+    · simp only [hist, hin, ↓reduceDIte]
       refine Measurable.prodMk (by fun_prop) ?_
       sorry
 
 noncomputable
-def altaction [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : α :=
-  (altHist alg ω n ⟨n, by simp⟩).1
+def action [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : α :=
+  (hist alg ω n ⟨n, by simp⟩).1
 
-lemma altaction_zero [DecidableEq α] (alg : Algorithm α R) :
-    altaction alg 0 = fun ω ↦ initAlgFunction alg (ω.1 0) := by
+lemma action_zero [DecidableEq α] (alg : Algorithm α R) :
+    action alg 0 = fun ω ↦ initAlgFunction alg (ω.1 0) := by
   ext
-  simp [altaction, altHist_zero]
+  simp [action, hist_zero]
+
+lemma action_add_one_eq [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    action alg (n + 1) = fun ω ↦ algFunction alg n (hist alg ω n) (ω.1 (n + 1)) := by
+  ext ω
+  rw [action, hist_add_one]
+  simp only [add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, ↓reduceDIte]
 
 @[fun_prop]
-lemma measurable_altaction [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
-    Measurable (altaction alg n) := by unfold altaction; fun_prop
+lemma measurable_action [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (action alg n) := by unfold action; fun_prop
 
 noncomputable
-def altReward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : R :=
-  (altHist alg ω n ⟨n, by simp⟩).2
+def reward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) (ω : probSpace α R) : R :=
+  (hist alg ω n ⟨n, by simp⟩).2
 
-lemma altReward_zero [DecidableEq α] (alg : Algorithm α R) :
-    altReward alg 0 = fun ω ↦ ω.2 0 (altaction alg 0 ω) := by
+lemma reward_zero [DecidableEq α] (alg : Algorithm α R) :
+    reward alg 0 = fun ω ↦ ω.2 0 (action alg 0 ω) := by
   ext
-  simp [altReward, altHist_zero, altaction_zero]
+  simp [reward, hist_zero, action_zero]
+
+lemma reward_eq [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    reward alg n = fun ω ↦ ω.2 (pullCount (action alg) (action alg n ω) n ω) (action alg n ω) := by
+  cases n with
+  | zero => ext; simp [reward_zero, action_zero]
+  | succ n =>
+    ext ω
+    rw [reward, hist_add_one]
+    simp only [add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, ↓reduceDIte]
+    rw [action_add_one_eq, pullCount_eq_pullCount' (R' := reward alg) (by simp)]
+    simp only [Nat.add_one_sub_one]
+    rw [hist_eq]
+    rfl
 
 @[fun_prop]
-lemma measurable_altReward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
-    Measurable (altReward alg n) := by unfold altReward; fun_prop
+lemma measurable_reward [DecidableEq α] (alg : Algorithm α R) (n : ℕ) :
+    Measurable (reward alg n) := by unfold reward; fun_prop
 
 variable [DecidableEq α]
 
-lemma hasLaw_altaction_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
-    HasLaw (altaction alg 0) alg.p0 (arrayMeasure ν) where
+lemma hasLaw_action_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasLaw (action alg 0) alg.p0 (arrayMeasure ν) where
   map_eq := by
     calc (arrayMeasure ν).map (fun ω ↦ initAlgFunction alg (ω.1 0))
     _ = ((arrayMeasure ν).fst.map (Function.eval 0)).map (initAlgFunction alg) := by
@@ -346,15 +365,15 @@ lemma hasLaw_altaction_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovK
 
 variable [StandardBorelSpace R] [Nonempty R]
 
-lemma hasCondDistrib_altReward_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
-    HasCondDistrib (altReward alg 0) (altaction alg 0) (stationaryEnv ν).ν0 (arrayMeasure ν) where
+lemma hasCondDistrib_reward_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+    HasCondDistrib (reward alg 0) (action alg 0) (stationaryEnv ν).ν0 (arrayMeasure ν) where
   condDistrib_eq := by
-    simp only [stationaryEnv_ν0, (hasLaw_altaction_zero alg ν).map_eq, altReward_zero]
+    simp only [stationaryEnv_ν0, (hasLaw_action_zero alg ν).map_eq, reward_zero]
     sorry
 
 lemma hasCondDistrib_altStep' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     (n : ℕ) :
-    HasCondDistrib (altHist alg · (n + 1) ⟨n + 1, by simp⟩) (altHist alg · n)
+    HasCondDistrib (hist alg · (n + 1) ⟨n + 1, by simp⟩) (hist alg · n)
       (Bandit.stepKernel alg ν n) (arrayMeasure ν) where
   condDistrib_eq := by
     simp only [Bandit.stepKernel, stepKernel, stationaryEnv_feedback]
@@ -362,36 +381,36 @@ lemma hasCondDistrib_altStep' (alg : Algorithm α R) (ν : Kernel α R) [IsMarko
 
 lemma hasCondDistrib_altStep (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     (n : ℕ) :
-    HasCondDistrib (fun ω ↦ (altaction alg (n + 1) ω, altReward alg (n + 1) ω))
-      (fun ω (i : Iic n) ↦ (altaction alg i ω, altReward alg i ω))
+    HasCondDistrib (fun ω ↦ (action alg (n + 1) ω, reward alg (n + 1) ω))
+      (fun ω (i : Iic n) ↦ (action alg i ω, reward alg i ω))
       (Bandit.stepKernel alg ν n) (arrayMeasure ν) := by
   convert hasCondDistrib_altStep' alg ν n with ω i
-  · simp only [altaction]
-    rw [altHist_eq _ _ n]
-  · simp only [altReward]
-    rw [altHist_eq _ _ n]
+  · simp only [action]
+    rw [hist_eq _ _ n]
+  · simp only [reward]
+    rw [hist_eq _ _ n]
 
-lemma hasCondDistrib_altaction (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
-    HasCondDistrib (altaction alg (n + 1))
-      (fun ω (i : Iic n) ↦ (altaction alg i ω, altReward alg i ω))
+lemma hasCondDistrib_action (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+    HasCondDistrib (action alg (n + 1))
+      (fun ω (i : Iic n) ↦ (action alg i ω, reward alg i ω))
       (alg.policy n) (arrayMeasure ν) := by
   convert HasCondDistrib.fst (hasCondDistrib_altStep alg ν n)
   simp
 
-lemma hasCondDistrib_altReward (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+lemma hasCondDistrib_reward (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     (n : ℕ) :
-    HasCondDistrib (altReward alg (n + 1))
-      (fun ω ↦ (fun (i : Iic n) ↦ (altaction alg i ω, altReward alg i ω), altaction alg (n + 1) ω))
+    HasCondDistrib (reward alg (n + 1))
+      (fun ω ↦ (fun (i : Iic n) ↦ (action alg i ω, reward alg i ω), action alg (n + 1) ω))
       ((stationaryEnv ν).feedback n) (arrayMeasure ν) := by
   simp only [stationaryEnv_feedback]
   sorry
 
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
-    IsAlgEnvSeq (altaction alg) (altReward alg) alg (stationaryEnv ν) (arrayMeasure ν) where
-  hasLaw_action_zero := hasLaw_altaction_zero alg ν
-  hasCondDistrib_reward_zero := hasCondDistrib_altReward_zero alg ν
-  hasCondDistrib_action := hasCondDistrib_altaction alg ν
-  hasCondDistrib_reward := hasCondDistrib_altReward alg ν
+    IsAlgEnvSeq (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where
+  hasLaw_action_zero := hasLaw_action_zero alg ν
+  hasCondDistrib_reward_zero := hasCondDistrib_reward_zero alg ν
+  hasCondDistrib_action := hasCondDistrib_action alg ν
+  hasCondDistrib_reward := hasCondDistrib_reward alg ν
 
 end ArrayModel
 

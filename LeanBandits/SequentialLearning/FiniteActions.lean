@@ -261,6 +261,17 @@ lemma stepsUntil_eq_leastGE (a : α) (hm : m ≠ 0) :
     refine hn.not_ge ?_
     exact csInf_le (by simp) (by simp [h_contra])
 
+lemma stepsUntil_mono (a : α) (ω : Ω) {n m : ℕ} (hn : n ≠ 0) (hnm : n ≤ m) :
+    stepsUntil A a n ω ≤ stepsUntil A a m ω := by
+  rw [stepsUntil_eq_leastGE a hn, stepsUntil_eq_leastGE a (by lia)]
+  simp_rw [leastGE]
+  have h_Ici_subset : Set.Ici (m : ℝ) ⊆ Set.Ici (n : ℝ) := by
+    intro x hx
+    simp only [Set.mem_Ici] at hx ⊢
+    refine le_trans ?_ hx
+    exact mod_cast hnm
+  exact hittingAfter_anti (fun n ω ↦ (pullCount A a (n + 1) ω : ℝ)) 0 h_Ici_subset ω
+
 lemma stepsUntil_pullCount_le (ω : Ω) (a : α) (t : ℕ) :
     stepsUntil A a (pullCount A a (t + 1) ω) ω ≤ t := by
   rw [stepsUntil]

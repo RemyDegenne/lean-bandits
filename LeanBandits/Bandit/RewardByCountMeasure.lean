@@ -295,13 +295,18 @@ lemma iIndepFun_rewardByCount' [StandardBorelSpace Ω] [Nonempty Ω] [Countable 
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   exact indepFun_rewardByCount_Iic h a
 
+lemma iIndepFun_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+    iIndepFun (fun (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1)) 𝔓' := by
+  sorry
+
 lemma identDistrib_rewardByCount_stream_all [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
     IdentDistrib (fun ω (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
       (fun ω p ↦ ω p.2 p.1) 𝔓' (Bandit.streamMeasure ν) := by
   refine IdentDistrib.pi (fun p ↦ ?_) ?_ ?_
   · refine identDistrib_rewardByCount_eval h p.1 (p.2 + 1) p.2 (by simp) (ν := ν)
-  · sorry
+  · exact iIndepFun_rewardByCount h
   · sorry
 
 lemma identDistrib_rewardByCount_stream' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]

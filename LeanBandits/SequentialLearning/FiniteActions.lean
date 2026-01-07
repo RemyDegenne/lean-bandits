@@ -128,6 +128,41 @@ lemma exists_pullCount_eq_of_le (hnm : t ≤ pullCount A a (n + 1) ω) (ht : t �
   refine lt_of_lt_of_le ?_ hnm
   exact pullCount_lt_of_forall_ne h_contra ht
 
+lemma pullCount_le_add [Nonempty α] (a : α) (n C : ℕ) (ω : Ω) :
+    pullCount A a n ω ≤ C + 1 +
+      ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω}.indicator 1 s := by
+  rw [pullCount_eq_sum]
+  calc ∑ s ∈ range n, if A s ω = a then 1 else 0
+  _ ≤ ∑ s ∈ range n, ({s | A s ω = a ∧ pullCount A a s ω ≤ C}.indicator 1 s +
+      {s | A s ω = a ∧ C < pullCount A a s ω}.indicator 1 s) := by
+    gcongr with s hs
+    simp [Set.indicator_apply]
+    grind
+  _ = ∑ s ∈ range n, {s | A s ω = a ∧ pullCount A a s ω ≤ C}.indicator 1 s +
+      ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω}.indicator 1 s := by
+    rw [Finset.sum_add_distrib]
+  _ ≤ C + 1 + ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω}.indicator 1 s := by
+    gcongr
+    have h_le n : ∑ s ∈ range n, {s | A s ω = a ∧ pullCount A a s ω ≤ C}.indicator 1 s ≤
+        pullCount A a n ω := by
+      rw [pullCount_eq_sum]
+      gcongr with s hs
+      simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+      grind
+    induction n with
+    | zero => simp
+    | succ n hn =>
+      rw [Finset.sum_range_succ]
+      rcases le_or_gt (pullCount A a n ω) C with h_pc | h_pc
+      · have hn' : ∑ s ∈ range n, {s | A s ω = a ∧ pullCount A a s ω ≤ C}.indicator 1 s ≤ C :=
+          (h_le n).trans h_pc
+        grw [hn']
+        gcongr
+        simp only [Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+        grind
+      · refine le_trans ?_ hn
+        simp [h_pc]
+
 section Measurability
 
 @[fun_prop]
@@ -171,6 +206,14 @@ lemma isPredictable_pullCount [MeasurableSingletonClass α]
   refine ⟨?_, fun n ↦ (adapted_pullCount_add_one hA hR' a n).measurable⟩
   simp only [pullCount_zero]
   fun_prop
+
+lemma integrable_pullCount [MeasurableSingletonClass α]
+    (hA : ∀ n, Measurable (A n)) (a : α) (n : ℕ) :
+    Integrable (fun ω ↦ (pullCount A a n ω : ℝ)) P := by
+  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
+    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
+  simp only [Nat.cast_le]
+  exact pullCount_le a n ω
 
 end Measurability
 

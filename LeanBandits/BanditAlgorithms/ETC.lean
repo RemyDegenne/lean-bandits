@@ -3,9 +3,8 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.Bandit.RewardByCountMeasure
+import LeanBandits.Bandit.SumRewards
 import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.ForMathlib.SubGaussian
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -21,21 +20,6 @@ lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s
   rw [Filter.EventuallyEq]
   simp only [eq_iff_iff]
   congr!
-
---todo: generalize Icc
-lemma measurable_sum_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
 
 lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :
     (∑ s ∈ range K, if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) = 1 := by
@@ -245,31 +229,46 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
   · simp [ha, hm]
   · simp [h_best, hm]
 
-variable [StandardBorelSpace Ω] [Nonempty Ω]
+-- lemma identDistrib_aux [Nonempty (Fin K)]
+--     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a b : Fin K) :
+--     IdentDistrib
+--       (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount A R a s ω, ∑ s ∈ Icc 1 m, rewardByCount A R b s ω))
+--       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b))
+--       𝔓 (Bandit.measure (etcAlgorithm hK m) ν) := by
+--   have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
+--       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 (Bandit.measure (etcAlgorithm hK m) ν) :=
+--     identDistrib_sum_Icc_rewardByCount h m a
+--   by_cases hab : a = b
+--   · simp only [hab]
+--     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
+--   refine (h2 a).prodMk (h2 b) ?_ ?_
+--   · suffices IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω)
+--         𝔓 by
+--       exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
+--         (by fun_prop) (by fun_prop)
+--     exact indepFun_rewardByCount_of_ne h hab
+--   · suffices IndepFun (fun ω s ↦ ω.2 s a) (fun ω s ↦ ω.2 s b)
+--         (Bandit.measure (etcAlgorithm hK m) ν) by
+--       exact this.comp (φ := fun p ↦ ∑ i ∈ range m, p i) (ψ := fun p ↦ ∑ j ∈ range m, p j)
+--         (by fun_prop) (by fun_prop)
+--     exact indepFun_eval_snd_measure _ ν hab
 
-lemma identDistrib_aux [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a b : Fin K) :
-    IdentDistrib
-      (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount A R a s ω, ∑ s ∈ Icc 1 m, rewardByCount A R b s ω))
-      (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b))
-      𝔓 (Bandit.measure (etcAlgorithm hK m) ν) := by
-  have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
-      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 (Bandit.measure (etcAlgorithm hK m) ν) :=
-    identDistrib_sum_Icc_rewardByCount h m a
-  by_cases hab : a = b
-  · simp only [hab]
-    exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
-  refine (h2 a).prodMk (h2 b) ?_ ?_
-  · suffices IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω)
-        𝔓 by
-      exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
-        (by fun_prop) (by fun_prop)
-    exact indepFun_rewardByCount_of_ne h hab
-  · suffices IndepFun (fun ω s ↦ ω.2 s a) (fun ω s ↦ ω.2 s b)
-        (Bandit.measure (etcAlgorithm hK m) ν) by
-      exact this.comp (φ := fun p ↦ ∑ i ∈ range m, p i) (ψ := fun p ↦ ∑ j ∈ range m, p j)
-        (by fun_prop) (by fun_prop)
-    exact indepFun_eval_snd_measure _ ν hab
+lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
+    P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
+      Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+  have hA := h.measurable_A
+  have hR := h.measurable_R
+  have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h a (K * m) m m
+  have h2 := probReal_sum_le_sum_streamMeasure hν a m
+  refine le_trans (le_of_eq ?_) (h1.trans h2)
+  simp_rw [measureReal_def]
+  congr 1
+  refine measure_congr ?_
+  rw [ae_eq_set_iff]
+  filter_upwards [pullCount_mul h a, pullCount_mul h (bestArm ν)] with ω ha h_best
+  simp [ha, h_best]
 
 /-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
 `exp(- m * Δ_a^2 / 4)`. -/
@@ -278,8 +277,6 @@ lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
   have h_pos : 0 < K * m := Nat.mul_pos hK hm.bot_lt
   have h_le : P.real {ω | A (K * m) ω = a}
       ≤ P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} := by
@@ -288,111 +285,7 @@ lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
     · simp
     refine measure_mono_ae ?_
     exact sumRewards_bestArm_le_of_arm_mul_eq h a hm
-  refine h_le.trans ?_
-  -- extend the probability space to include the stream of independent rewards
-  suffices (𝔓).real {ω | sumRewards A R (bestArm ν) (K * m) ω.1 ≤ sumRewards A R a (K * m) ω.1}
-      ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) by
-    suffices P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω}
-      = (𝔓).real {ω | sumRewards A R (bestArm ν) (K * m) ω.1 ≤ sumRewards A R a (K * m) ω.1} by
-        rwa [this]
-    calc P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω}
-    _ = ((𝔓).fst).real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} := by
-      simp
-    _ = (𝔓).real {ω | sumRewards A R (bestArm ν) (K * m) ω.1 ≤ sumRewards A R a (K * m) ω.1} := by
-      rw [Measure.fst, map_measureReal_apply (by fun_prop)]
-      · rfl
-      · have h_meas := measurable_sumRewards h.measurable_A h.measurable_R
-        exact measurableSet_le (by fun_prop) (by fun_prop)
-  calc (𝔓).real {ω | sumRewards A R (bestArm ν) (K * m) ω.1 ≤ sumRewards A R a (K * m) ω.1}
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 (pullCount A (bestArm ν) (K * m) ω.1),
-        rewardByCount A R (bestArm ν) s ω
-      ≤ ∑ s ∈ Icc 1 (pullCount A a (K * m) ω.1), rewardByCount A R a s ω} := by
-    congr with ω
-    congr! 1 <;> rw [sum_rewardByCount_eq_sumRewards]
-  _ = (𝔓).real {ω | ∑ s ∈ Icc 1 m, rewardByCount A R (bestArm ν) s ω
-      ≤ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω} := by
-    simp_rw [measureReal_def]
-    congr 1
-    refine measure_congr ?_
-    have ha := pullCount_mul h a (hK := hK) (ν := ν) (m := m)
-    have h_best := pullCount_mul h (bestArm ν) (hK := hK) (ν := ν) (m := m)
-    rw [ae_eq_set_iff, Measure.ae_prod_iff_ae_ae]
-    · filter_upwards [ha, h_best] with ω ha h_best
-      refine ae_of_all _ fun ω' ↦ ?_
-      rw [ha, h_best]
-    · simp only [Set.mem_setOf_eq]
-      let f₁ := fun ω : Ω × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount A (bestArm ν) (K * m) ω.1), rewardByCount A R (bestArm ν) s ω
-      let g₁ := fun ω : Ω × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 (pullCount A a (K * m) ω.1), rewardByCount A R a s ω
-      let f₂ := fun ω : Ω × (ℕ → Fin K → ℝ) ↦
-        ∑ s ∈ Icc 1 m, rewardByCount A R (bestArm ν) s ω
-      let g₂ := fun ω : Ω × (ℕ → Fin K → ℝ) ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω
-      change MeasurableSet {x | f₁ x ≤ g₁ x ↔ f₂ x ≤ g₂ x}
-      have hf₁ : Measurable f₁ := by
-        refine measurable_sum_of_le (n := K * m + 1)
-          (g := fun ω : Ω × (ℕ → Fin K → ℝ) ↦ pullCount A (bestArm ν) (K * m) ω.1)
-          (f := rewardByCount A R (bestArm ν)) (fun ω ↦ ?_)
-          (by fun_prop) (by fun_prop)
-        have h_le := pullCount_le (A := A) (bestArm ν) (K * m) ω.1
-        grind
-      have hg₁ : Measurable g₁ := by
-        refine measurable_sum_of_le (n := K * m + 1)
-          (g := fun ω : Ω × (ℕ → Fin K → ℝ) ↦ pullCount A a (K * m) ω.1)
-          (f := rewardByCount A R a) (fun ω ↦ ?_) (by fun_prop) (by fun_prop)
-        have h_le := pullCount_le (A := A) a (K * m) ω.1
-        grind
-      refine MeasurableSet.iff ?_ ?_
-      · exact measurableSet_le (by fun_prop) (by fun_prop)
-      · exact measurableSet_le (by fun_prop) (by fun_prop)
-  _ = (Bandit.measure (etcAlgorithm hK m) ν).real
-      {ω | ∑ s ∈ range m, ω.2 s (bestArm ν) ≤ ∑ s ∈ range m, ω.2 s a} := by
-    simp_rw [measureReal_def]
-    congr 1
-    have : (𝔓).map (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount A R (bestArm ν) s ω,
-          ∑ s ∈ Icc 1 m, rewardByCount A R a s ω))
-        = (Bandit.measure (etcAlgorithm hK m) ν).map
-          (fun ω ↦ (∑ s ∈ range m, ω.2 s (bestArm ν), ∑ s ∈ range m, ω.2 s a)) :=
-      (identDistrib_aux h (bestArm ν) a).map_eq
-    rw [Measure.ext_iff] at this
-    have h_meas : MeasurableSet {x : ℝ × ℝ | x.1 ≤ x.2} :=
-      measurableSet_le (by fun_prop) (by fun_prop)
-    specialize this {x | x.1 ≤ x.2} h_meas
-    rw [Measure.map_apply (by fun_prop) h_meas, Measure.map_apply (by fun_prop) h_meas] at this
-    convert this
-  _ = (Bandit.streamMeasure ν).real
-      {ω | ∑ s ∈ range m, ω s (bestArm ν) ≤ ∑ s ∈ range m, ω s a} := by
-    simp_rw [measureReal_def]
-    congr 1
-    rw [← Bandit.snd_measure (etcAlgorithm hK m), Measure.snd_apply]
-    · rfl
-    · exact measurableSet_le (by fun_prop) (by fun_prop)
-  _ ≤ Real.exp (-↑m * gap ν a ^ 2 / 4) := by
-    by_cases ha : a = bestArm ν
-    · simp [ha]
-    -- Apply a sub-Gaussian concentration inequality
-    refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ 1) (cY := fun _ ↦ 1)
-      ?_ ?_ ?_ ?_ ?_ ?_).trans_eq ?_
-    · exact iIndepFun_eval_streamMeasure'' ν (bestArm ν)
-    · exact iIndepFun_eval_streamMeasure'' ν a
-    · intro i him
-      simp_rw [integral_eval_streamMeasure]
-      refine (hν (bestArm ν)).congr_identDistrib ?_
-      exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-    · intro i him
-      simp_rw [integral_eval_streamMeasure]
-      refine (hν a).congr_identDistrib ?_
-      exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-    · exact indepFun_eval_streamMeasure' ν (Ne.symm ha)
-    · gcongr 1 with i him
-      simp_rw [integral_eval_streamMeasure]
-      exact le_bestArm a
-    · congr 1
-      simp_rw [integral_eval_streamMeasure]
-      simp only [id_eq, sum_const, card_range, nsmul_eq_mul, mul_one, NNReal.coe_natCast,
-        gap_eq_bestArm_sub, neg_mul]
-      field_simp
-      ring
+  exact h_le.trans (probReal_sumRewards_le_sumRewards_le h hν a)
 
 /-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le [Nonempty (Fin K)]

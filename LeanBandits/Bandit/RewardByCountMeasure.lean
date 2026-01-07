@@ -59,15 +59,6 @@ variable {α Ω : Type*} {mα : MeasurableSpace α} {mΩ : MeasurableSpace Ω} [
   {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
   {h_inter : IsAlgEnvSeq A R alg (stationaryEnv ν) P}
 
-omit [StandardBorelSpace α] [Nonempty α] in
-lemma integrable_pullCount [MeasurableSingletonClass α]
-    (hA : ∀ n, Measurable (A n)) (a : α) (n : ℕ) :
-    Integrable (fun ω ↦ (pullCount A a n ω : ℝ)) P := by
-  refine integrable_of_le_of_le (g₁ := 0) (g₂ := fun _ ↦ n) (by fun_prop)
-    (ae_of_all _ fun ω ↦ by simp) (ae_of_all _ fun ω ↦ ?_) (integrable_const _) (integrable_const _)
-  simp only [Nat.cast_le]
-  exact pullCount_le a n ω
-
 local notation "𝔓'" => P.prod (Bandit.streamMeasure ν)
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in

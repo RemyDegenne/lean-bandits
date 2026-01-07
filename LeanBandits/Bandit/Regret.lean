@@ -89,9 +89,8 @@ lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   exact ciSup_le le_bestArm
 
 omit [DecidableEq α] in
-lemma integral_eq_of_gap_eq_zero (hg : gap ν a = 0) : (ν a)[id] = (ν (bestArm ν))[id] := by
-  rw [gap_eq_bestArm_sub, sub_eq_zero] at hg
-  exact hg.symm
+lemma integral_eq_of_gap_eq_zero (hg : gap ν a = 0) : (ν (bestArm ν))[id] = (ν a)[id] := by
+  rwa [← sub_eq_zero, ← gap_eq_bestArm_sub]
 
 omit [DecidableEq α] in
 @[simp]
@@ -118,18 +117,18 @@ lemma avg_mean_reward_tendsto_of_sublinear_regret (hr : (regret ν · h) =o[atTo
 lemma pullCount_rate_tendsto_of_sublinear_regret [Fintype α]
     (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) (hg : 0 < gap ν a) :
     Tendsto (fun t ↦ (pullCount a t h : ℝ) / t) atTop (nhds 0) := by
-  have hb (t : ℕ) : (pullCount a t h : ℝ) / t ≤ regret ν t h / t / gap ν a := by
+  have hb (t : ℕ) : (pullCount a t h : ℝ) * gap ν a ≤ regret ν t h := by
+    rw [regret_eq_sum_pullCount_mul_gap]
+    exact single_le_sum (f := fun a ↦ pullCount a t h * gap ν a)
+      (fun _ _ ↦ mul_nonneg (Nat.cast_nonneg _) gap_nonneg) (mem_univ a)
+  have hb' (t : ℕ) : (pullCount a t h : ℝ) / t ≤ regret ν t h / t / gap ν a := by
     obtain ht | ht := eq_or_ne t 0
     · simp [ht]
     · calc (pullCount a t h : ℝ) / t
           = pullCount a t h * gap ν a / gap ν a / t := by field_simp
-        _ ≤ regret ν t h / gap ν a / t := by
-            gcongr
-            rw [regret_eq_sum_pullCount_mul_gap]
-            exact single_le_sum (f := fun a ↦ (pullCount a t h : ℝ) * gap ν a)
-              (fun _ _ ↦ mul_nonneg (Nat.cast_nonneg _) gap_nonneg) (mem_univ a)
+        _ ≤ regret ν t h / gap ν a / t := by gcongr; exact hb t
         _ = regret ν t h / t / gap ν a := by ring
-  apply squeeze_zero' (Eventually.of_forall fun _ ↦ by positivity) (Eventually.of_forall hb)
+  apply squeeze_zero' (Eventually.of_forall fun _ ↦ by positivity) (Eventually.of_forall hb')
   simpa using hr.tendsto_div_nhds_zero.div_const (gap ν a)
 
 end Asymptotics

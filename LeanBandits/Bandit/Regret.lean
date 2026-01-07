@@ -102,6 +102,7 @@ end BestArm
 section Asymptotics
 
 omit [DecidableEq α] in
+/-- If the regret is sublinear, the average mean reward tends to the highest mean of the arms. -/
 lemma avg_mean_reward_tendsto_of_sublinear_regret (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) :
     Tendsto (fun t ↦ (∑ s ∈ range t, (ν (arm s h))[id]) / (t : ℝ))
       atTop (nhds (⨆ a, (ν a)[id])) := by
@@ -114,6 +115,7 @@ lemma avg_mean_reward_tendsto_of_sublinear_regret (hr : (regret ν · h) =o[atTo
   field_simp
   ring
 
+/-- If the regret is sublinear, the rate of suboptimal arm pulls tends to zero. -/
 lemma pullCount_rate_tendsto_of_sublinear_regret [Fintype α]
     (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) (hg : 0 < gap ν a) :
     Tendsto (fun t ↦ (pullCount a t h : ℝ) / t) atTop (nhds 0) := by

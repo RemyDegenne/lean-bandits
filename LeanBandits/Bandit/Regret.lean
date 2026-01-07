@@ -31,7 +31,7 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   rw [gap, sub_nonneg]
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
-/-- Regret of a sequence of pulls `k : ℕ → α` at time `t` for the reward kernel `ν ; Kernel α ℝ`. -/
+/-- Regret of a history `h` at time `t` for the reward kernel `ν : Kernel α ℝ`. -/
 noncomputable
 def regret (ν : Kernel α ℝ) (t : ℕ) (h : ℕ → α × ℝ) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (arm s h))[id]
@@ -89,7 +89,7 @@ lemma gap_eq_bestArm_sub : gap ν a = (ν (bestArm ν))[id] - (ν a)[id] := by
   exact ciSup_le le_bestArm
 
 omit [DecidableEq α] in
-lemma integral_id_eq_of_gap_eq_zero (hg : gap ν a = 0) : (ν a)[id] = (ν (bestArm ν))[id] := by
+lemma integral_eq_of_gap_eq_zero (hg : gap ν a = 0) : (ν a)[id] = (ν (bestArm ν))[id] := by
   rw [gap_eq_bestArm_sub, sub_eq_zero] at hg
   exact hg.symm
 
@@ -103,32 +103,34 @@ end BestArm
 section Asymptotics
 
 omit [DecidableEq α] in
-lemma avg_mean_reward_tendsto_highest_mean_of_sublinear_regret
-  (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) :
+lemma avg_mean_reward_tendsto_of_sublinear_regret (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) :
     Tendsto (fun t ↦ (∑ s ∈ range t, (ν (arm s h))[id]) / (t : ℝ))
       atTop (nhds (⨆ a, (ν a)[id])) := by
   have ht : Tendsto (fun t ↦ (⨆ a, (ν a)[id]) - regret ν t h / t)
       atTop (nhds (⨆ a, (ν a)[id])) := by
-    simpa using (tendsto_const_nhds.sub hr.tendsto_div_nhds_zero)
+    simpa using tendsto_const_nhds.sub hr.tendsto_div_nhds_zero
   apply ht.congr'
   filter_upwards [eventually_ne_atTop 0] with t ht
   rw [regret]
   field_simp
   ring
 
-lemma pullCount_rate_tendsto_zero_of_sublinear_regret [Fintype α]
-    (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) (hg : gap ν a ≠ 0) :
+lemma pullCount_rate_tendsto_of_sublinear_regret [Fintype α]
+    (hr : (regret ν · h) =o[atTop] fun t ↦ (t : ℝ)) (hg : 0 < gap ν a) :
     Tendsto (fun t ↦ (pullCount a t h : ℝ) / t) atTop (nhds 0) := by
-  have hb : ∀ᶠ t in atTop, (pullCount a t h : ℝ) / t ≤ regret ν t h / t / gap ν a := by
-    filter_upwards [eventually_gt_atTop 0] with t ht
-    have ht' : (0 : ℝ) < t := Nat.cast_pos.mpr ht
-    rw [le_div_iff₀ (gap_nonneg.lt_of_ne' hg), div_mul_eq_mul_div, le_div_iff₀ ht',
-      div_mul_cancel₀ _ ht'.ne']
-    rw [regret_eq_sum_pullCount_mul_gap]
-    exact single_le_sum (f := fun b ↦ (pullCount b t h : ℝ) * gap ν b)
-      (fun _ _ ↦ mul_nonneg (Nat.cast_nonneg _) gap_nonneg) (mem_univ a)
-  exact squeeze_zero' (Eventually.of_forall fun _ ↦ by positivity)
-    hb (by simpa using hr.tendsto_div_nhds_zero.div_const (gap ν a))
+  have hb (t : ℕ) : (pullCount a t h : ℝ) / t ≤ regret ν t h / t / gap ν a := by
+    obtain ht | ht := eq_or_ne t 0
+    · simp [ht]
+    · calc (pullCount a t h : ℝ) / t
+          = pullCount a t h * gap ν a / gap ν a / t := by field_simp
+        _ ≤ regret ν t h / gap ν a / t := by
+            gcongr
+            rw [regret_eq_sum_pullCount_mul_gap]
+            exact single_le_sum (f := fun a ↦ (pullCount a t h : ℝ) * gap ν a)
+              (fun _ _ ↦ mul_nonneg (Nat.cast_nonneg _) gap_nonneg) (mem_univ a)
+        _ = regret ν t h / t / gap ν a := by ring
+  apply squeeze_zero' (Eventually.of_forall fun _ ↦ by positivity) (Eventually.of_forall hb)
+  simpa using hr.tendsto_div_nhds_zero.div_const (gap ν a)
 
 end Asymptotics
 

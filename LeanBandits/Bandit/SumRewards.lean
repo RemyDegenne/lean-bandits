@@ -44,7 +44,8 @@ namespace Bandits
 
 namespace ArrayModel
 
-variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [StandardBorelSpace α] [Nonempty α]
+variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [Countable α]
+  [StandardBorelSpace α] [Nonempty α]
   {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
 
 local notation "A" => action alg
@@ -110,6 +111,7 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
       ((𝔓).prod (Bandit.streamMeasure ν)) 𝔓 := by
   convert identDistrib_pullCount_prod_sum_Icc_rewardByCount' n using 2 with ω
   rotate_left
+  · infer_instance
   · infer_instance
   ext a : 1
   congr 1

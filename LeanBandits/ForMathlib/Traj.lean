@@ -29,6 +29,30 @@ lemma traj_zero_map_eval_zero :
   rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
   rfl
 
+def _root_.MeasurableEquiv.IicSuccProd (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
+    MeasurableEquiv (Π i : Iic (n + 1), X i) ((Π i : Iic n, X i) × X (n + 1)) :=
+  (MeasurableEquiv.IicProdIoc (Nat.le_succ n)).symm.trans
+    (MeasurableEquiv.prodCongr (MeasurableEquiv.refl _) (MeasurableEquiv.piSingleton n).symm)
+
+lemma symm_IicSuccProd (n : ℕ) :
+    (MeasurableEquiv.IicSuccProd X n).symm =
+      (MeasurableEquiv.prodCongr (MeasurableEquiv.refl _) (MeasurableEquiv.piSingleton n)).trans
+        (MeasurableEquiv.IicProdIoc (Nat.le_succ n)) := rfl
+
+@[simp]
+lemma MeasurableEquiv.IicSuccProd_apply (n : ℕ) (h : Π i : Iic (n + 1), X i) :
+    MeasurableEquiv.IicSuccProd X n h = (fun i : Iic n ↦ h ⟨i.1, by grind⟩, h ⟨n + 1, by simp⟩) :=
+  rfl
+
+lemma MeasurableEquiv.coe_prodCongr {α β γ δ : Type*}
+    {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ}
+    (e₁ : MeasurableEquiv α β) (e₂ : MeasurableEquiv γ δ) :
+    (MeasurableEquiv.prodCongr e₁ e₂ : (α × γ) → (β × δ)) = Prod.map e₁ e₂ := rfl
+
+lemma MeasurableEquiv.coe_refl {α : Type*} {mα : MeasurableSpace α} :
+    (MeasurableEquiv.refl α : α → α) = id := rfl
+
 theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
@@ -45,38 +69,39 @@ theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [�
         ext ω i
         simp only [piUnique_symm_apply, Function.comp_apply]
         rw [Unique.eq_default i]
-        simp [uniqueElim_default, coe_default_Iic_zero]
+        simp [coe_default_Iic_zero]
       rw [this]
       exact AEMeasurable.comp_aemeasurable (by fun_prop) h_meas
     · congr
       ext ω i
       simp only [Function.comp_apply]
       rw [Unique.eq_default i]
-      simp [uniqueElim_default, coe_default_Iic_zero]
+      simp [coe_default_Iic_zero]
   | succ n hn =>
     specialize h_condDistrib n
     have h_law := hn.prod_of_hasCondDistrib h_condDistrib
     have : (fun ω (i : Iic (n + 1)) ↦ Y i ω) =
-        ((IicProdIoc n (n + 1)) ∘ (Prod.map id (MeasurableEquiv.piSingleton n))) ∘
+        (MeasurableEquiv.IicSuccProd X n).symm ∘
           (fun ω ↦ (fun i : Iic n ↦ Y i ω, Y (n + 1) ω)) := by
-      ext ω i
-      simp only [Function.comp_apply]
-      simp only [_root_.IicProdIoc, piSingleton, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
-        Prod.map_apply, id_eq, left_eq_dite_iff, not_le]
-      intro hi
-      grind
+      suffices (MeasurableEquiv.IicSuccProd X n) ∘ (fun ω (i : Iic (n + 1)) ↦ Y i ω) =
+          (fun ω ↦ (fun i : Iic n ↦ Y i ω, Y (n + 1) ω)) by
+        rw [← this, ← Function.comp_assoc, MeasurableEquiv.symm_comp_self]
+        simp
+      ext ω : 1
+      simp
     rw [this]
-    refine HasLaw.comp ?_ h_law
-    refine ⟨by fun_prop, ?_⟩
+    refine HasLaw.comp ⟨by fun_prop, ?_⟩ h_law
     rw [Measure.compProd_eq_comp_prod, partialTraj_succ_eq_comp (by simp), Measure.comp_assoc,
       ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc]
     congr 1
     rw [← Kernel.comp_assoc]
     congr
-    rw [Kernel.deterministic_comp_eq_map, partialTraj_succ_self,
-      Kernel.map_comp_right _ (by fun_prop) (by fun_prop),
+    rw [Kernel.deterministic_comp_eq_map, partialTraj_succ_self, symm_IicSuccProd]
+    rw [MeasurableEquiv.coe_trans, MeasurableEquiv.coe_prodCongr]
+    rw [Kernel.map_comp_right _ (by fun_prop) (by fun_prop),
       ← Kernel.map_prod_map _ _ (by fun_prop) (by fun_prop)]
-    simp only [map_id]
+    congr
+    simp [MeasurableEquiv.coe_refl]
 
 omit [IsProbabilityMeasure μ₀] in
 lemma trajMeasure_map_frestrictLe (n : ℕ) :

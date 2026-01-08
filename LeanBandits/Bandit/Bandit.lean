@@ -544,56 +544,26 @@ lemma hasCondDistrib_reward' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkov
   · sorry
   sorry
 
-lemma hasLaw_and_hasCondDistrib (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
-    (n : ℕ) :
-    HasLaw (hist alg · n) ((Bandit.trajMeasure alg ν).map (Preorder.frestrictLe n))
-        (arrayMeasure ν) ∧
-      HasCondDistrib (hist alg · (n + 1) ⟨n + 1, by simp⟩) (hist alg · n)
-        (Bandit.stepKernel alg ν n) (arrayMeasure ν) := by
-  induction n with
-  | zero => sorry
-  | succ n hn =>
-    have h1 : HasLaw (fun x ↦ hist alg x (n + 1))
-        ((Bandit.trajMeasure alg ν).map (Preorder.frestrictLe (n + 1))) (arrayMeasure ν) := by
-      have h_law := HasLaw.prod_of_hasCondDistrib hn.1 hn.2
-      sorry
-    refine ⟨h1, ?_⟩
-    simp_rw [hist_add_one_eq_IicSuccProd _ _ (n + 1)]
-    sorry
-
-lemma hasCondDistrib_altStep' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
-    (n : ℕ) :
-    HasCondDistrib (hist alg · (n + 1) ⟨n + 1, by simp⟩) (hist alg · n)
-      (Bandit.stepKernel alg ν n) (arrayMeasure ν) where
-  condDistrib_eq := by
-    simp only [Bandit.stepKernel, stepKernel, stationaryEnv_feedback]
-    sorry
-
-lemma hasCondDistrib_altStep (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
-    (n : ℕ) :
-    HasCondDistrib (fun ω ↦ (action alg (n + 1) ω, reward alg (n + 1) ω))
-      (fun ω (i : Iic n) ↦ (action alg i ω, reward alg i ω))
-      (Bandit.stepKernel alg ν n) (arrayMeasure ν) := by
-  convert hasCondDistrib_altStep' alg ν n with ω i
-  · simp only [action]
-    rw [hist_eq _ _ n]
-  · simp only [reward]
-    rw [hist_eq _ _ n]
-
 lemma hasCondDistrib_action (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     HasCondDistrib (action alg (n + 1))
       (fun ω (i : Iic n) ↦ (action alg i ω, reward alg i ω))
       (alg.policy n) (arrayMeasure ν) := by
-  convert HasCondDistrib.fst (hasCondDistrib_altStep alg ν n)
-  simp
+  convert hasCondDistrib_action' alg ν n with ω i
+  · simp only [action]
+    rw [hist_eq _ _ n]
+  · simp only [reward]
+    rw [hist_eq _ _ n]
 
 lemma hasCondDistrib_reward (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
     (n : ℕ) :
     HasCondDistrib (reward alg (n + 1))
       (fun ω ↦ (fun (i : Iic n) ↦ (action alg i ω, reward alg i ω), action alg (n + 1) ω))
       ((stationaryEnv ν).feedback n) (arrayMeasure ν) := by
-  simp only [stationaryEnv_feedback]
-  sorry
+  convert hasCondDistrib_reward' alg ν n with ω i
+  · simp only [action]
+    rw [hist_eq _ _ n]
+  · simp only [reward]
+    rw [hist_eq _ _ n]
 
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     IsAlgEnvSeq (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where

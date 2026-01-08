@@ -184,9 +184,13 @@ lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
-lemma measurable_uncurry_pullCount' [MeasurableSingletonClass α] [Countable α] (n : ℕ) :
+lemma measurable_uncurry_pullCount' [MeasurableSingletonClass α] [MeasurableEq α] (n : ℕ) :
     Measurable (fun p : (Iic n → α × R) × α ↦ pullCount' n p.1 p.2) := by
-  refine measurable_from_prod_countable_left fun a ↦ measurable_pullCount' n a
+  simp_rw [pullCount'_eq_sum]
+  have h_meas s : Measurable (fun h : (Iic n → α × R) × α ↦ if (h.1 s).1 = h.2 then 1 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
+  fun_prop
 
 lemma adapted_pullCount_add_one' [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (n : ℕ) :

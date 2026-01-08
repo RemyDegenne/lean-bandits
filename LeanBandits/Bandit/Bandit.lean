@@ -305,7 +305,11 @@ lemma measurable_action_add_one' [DecidableEq α] {alg : Algorithm α R}
     (n : ℕ) (h : Measurable (hist alg · n)) :
     Measurable (fun x ↦ algFunction alg n (hist alg x n) (x.1 (n + 1))) := by fun_prop
 
-lemma measurable_pullCount'_action_add_one [DecidableEq α] [Countable α] {alg : Algorithm α R}
+instance : MeasurableEq α := by
+  letI := upgradeStandardBorel α
+  infer_instance
+
+lemma measurable_pullCount'_action_add_one [DecidableEq α] {alg : Algorithm α R}
     (n : ℕ) (h_hist : Measurable (hist alg · n)) :
     Measurable (fun x ↦
       pullCount' n (hist alg x n) (algFunction alg n (hist alg x n) (x.1 (n + 1)))) := by
@@ -320,7 +324,6 @@ lemma measurable_hist [DecidableEq α] [Countable α] (alg : Algorithm α R) (n 
   | zero =>
     simp_rw [hist_zero, measurable_pi_iff]
     refine fun _ ↦ Measurable.prodMk (by fun_prop) ?_
-    unfold probSpace
     change Measurable ((fun x : α × ((ℕ → I) × (ℕ → α → R)) ↦ x.2.2 0 x.1) ∘
         (fun x : (ℕ → I) × (ℕ → α → R) ↦ (initAlgFunction alg (x.1 0), x)))
     have : Measurable (fun x : α × ((ℕ → I) × (ℕ → α → R)) ↦ x.2.2 0 x.1) :=
@@ -418,17 +421,36 @@ lemma hasLaw_action_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKern
 
 variable [StandardBorelSpace R] [Nonempty R]
 
-lemma hasCondDistrib_reward_zero [Countable α]
-    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
+omit [Nonempty α] [StandardBorelSpace α] [DecidableEq α] [Countable α]
+  [StandardBorelSpace R] [Nonempty R] in
+lemma indepFun_fst_snd (ν : Kernel α R) [IsMarkovKernel ν] :
+    IndepFun Prod.fst Prod.snd (arrayMeasure ν) :=
+  indepFun_prod measurable_id measurable_id
+
+omit [Nonempty α] [StandardBorelSpace α] [DecidableEq α] [Countable α]
+  [StandardBorelSpace R] [Nonempty R] in
+lemma indepFun_fst_zero_snd_zero_action (ν : Kernel α R) [IsMarkovKernel ν] (a : α) :
+    IndepFun (fun ω ↦ ω.1 0) (fun ω ↦ ω.2 0 a) (arrayMeasure ν) :=
+  indepFun_prod (X := fun ω : ℕ → I ↦ ω 0) (Y := fun ω : ℕ → α → R ↦ ω 0 a)
+    (by fun_prop) (by fun_prop)
+
+omit [Nonempty α] [StandardBorelSpace α] [DecidableEq α] [Countable α]
+  [StandardBorelSpace R] [Nonempty R] in
+lemma map_snd_apply_arrayMeasure {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) (a : α) :
+    (arrayMeasure ν).map (fun ω ↦ ω.2 n a) = ν a := by
+  calc (arrayMeasure ν).map (fun ω ↦ ω.2 n a)
+  _ = (arrayMeasure ν).snd.map (fun ω ↦ ω n a) := by
+    rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
+    rfl
+  _ = ν a := by
+    rw [arrayMeasure, Measure.snd_prod, Bandit.streamMeasure]
+    have : (fun ω ↦ ω n a) = (fun h : α → R ↦ h a) ∘ (fun ω : ℕ → α → R ↦ ω n) := rfl
+    rw [this, ← Measure.map_map (by fun_prop) (by fun_prop), Measure.infinitePi_map_eval,
+      Measure.infinitePi_map_eval]
+
+lemma hasCondDistrib_reward_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     HasCondDistrib (reward alg 0) (action alg 0) (stationaryEnv ν).ν0 (arrayMeasure ν) where
   condDistrib_eq := by
-    -- simp only [stationaryEnv_ν0]
-    -- refine condDistrib_ae_eq_of_measure_eq_compProd _ (by fun_prop) ?_
-    -- rw [reward_zero]
-    -- simp only
-    -- have : (fun x ↦ (action alg 0 x, x.2 0 (action alg 0 x))) =
-    --   (fun p ↦ (p.2, p.1.2 0 p.2)) ∘ (fun x ↦ (x, action alg 0 x)) := rfl
-
     refine (condDistrib_ae_eq_cond (by fun_prop) (by fun_prop)).trans ?_
     rw [Filter.EventuallyEq, ae_iff_of_countable]
     intro a ha
@@ -440,7 +462,17 @@ lemma hasCondDistrib_reward_zero [Countable α]
       intro x hx
       simp only [Set.mem_preimage, Set.mem_singleton_iff] at hx
       simp [hx]
-    _ = ν a := sorry
+    _ = ν a := by
+      rw [cond_of_indepFun]
+      · exact map_snd_apply_arrayMeasure 0 a
+      · have : (fun ω ↦ ω.1 0) ⟂ᵢ[arrayMeasure ν] fun ω ↦ ω.2 0 a :=
+          indepFun_fst_zero_snd_zero_action ν a
+        rw [action_zero]
+        exact this.comp (φ := initAlgFunction alg) (by fun_prop) measurable_id
+      · fun_prop
+      · fun_prop
+      · simp
+      · rwa [Measure.map_apply (by fun_prop) (by simp)] at ha
 
 lemma indepFun_fst_add_one_hist (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     IndepFun (fun ω ↦ ω.1 (n + 1)) (hist alg · n) (arrayMeasure ν) := by

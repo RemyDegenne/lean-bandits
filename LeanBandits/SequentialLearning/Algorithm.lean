@@ -228,8 +228,8 @@ theorem eq_trajMeasure_of_isAlgEnvSeq (h : IsAlgEnvSeq A₁ R₁ alg env P) :
     have hR := h.measurable_R n
     fun_prop
   · simp only
-    exact h.hasLaw_step_zero.map_eq
-  · exact (h.hasCondDistrib_step n).condDistrib_eq
+    exact h.hasLaw_step_zero
+  · exact h.hasCondDistrib_step n
 
 theorem isAlgEnvSeq_unique (h1 : IsAlgEnvSeq A₁ R₁ alg env P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg env P') :

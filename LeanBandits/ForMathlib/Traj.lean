@@ -1,6 +1,7 @@
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mathlib.Probability.Kernel.CondDistrib
-import LeanBandits.ForMathlib.CondDistrib
+import Mathlib.Probability.Process.FiniteDimensionalLaws
+import LeanBandits.ForMathlib.HasCondDistrib
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory
 
@@ -28,14 +29,75 @@ lemma traj_zero_map_eval_zero :
   rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
   rfl
 
+theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+    {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
+    (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
+    (n : ℕ) :
+    HasLaw (fun ω (i : Iic n) ↦ Y i ω)
+      ((partialTraj κ 0 n) ∘ₘ (μ₀.map (MeasurableEquiv.piUnique _).symm)) P := by
+  induction n with
+  | zero =>
+    simp only [piUnique_symm_apply, partialTraj_self, Measure.id_comp]
+    rw [← h0.map_eq, AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+    constructor
+    · have h_meas := h0.aemeasurable
+      have : (fun ω (i : Iic 0) ↦ Y i ω) = (MeasurableEquiv.piUnique _).symm ∘ (Y 0) := by
+        ext ω i
+        simp only [piUnique_symm_apply, Function.comp_apply]
+        -- casting hell
+        sorry
+      rw [this]
+      exact AEMeasurable.comp_aemeasurable (by fun_prop) h_meas
+    · congr
+      ext ω i
+      simp only [Function.comp_apply]
+      -- same goal as above
+      sorry
+  | succ n hn =>
+    specialize h_condDistrib n
+    have h_law := hn.prod_of_hasCondDistrib h_condDistrib
+    have : (fun ω (i : Iic (n + 1)) ↦ Y i ω) =
+        ((IicProdIoc n (n + 1)) ∘ (Prod.map id (MeasurableEquiv.piSingleton n))) ∘
+          (fun ω ↦ (fun i : Iic n ↦ Y i ω, Y (n + 1) ω)) := by
+      ext ω i
+      simp only [Function.comp_apply]
+      simp only [_root_.IicProdIoc, piSingleton, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
+        Prod.map_apply, id_eq, left_eq_dite_iff, not_le]
+      intro hi
+      grind
+    rw [this]
+    refine HasLaw.comp ?_ h_law
+    refine ⟨by fun_prop, ?_⟩
+    rw [Measure.compProd_eq_comp_prod, partialTraj_succ_eq_comp (by simp), Measure.comp_assoc,
+      ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc]
+    congr 1
+    rw [← Kernel.comp_assoc]
+    congr
+    rw [Kernel.deterministic_comp_eq_map, partialTraj_succ_self,
+      Kernel.map_comp_right _ (by fun_prop) (by fun_prop),
+      ← Kernel.map_prod_map _ _ (by fun_prop) (by fun_prop)]
+    simp only [map_id]
+
+omit [IsProbabilityMeasure μ₀] in
+lemma trajMeasure_map_frestrictLe (n : ℕ) :
+    (trajMeasure μ₀ κ).map (frestrictLe n) =
+      (partialTraj κ 0 n) ∘ₘ (μ₀.map (MeasurableEquiv.piUnique _).symm) := by
+  rw [trajMeasure, ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
+    Kernel.deterministic_comp_eq_map, traj_map_frestrictLe]
+
+-- todo: switch to `HasLaw`
 /-- Uniqueness of `trajMeasure`. -/
 theorem eq_trajMeasure [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n} (hY_meas : ∀ n, Measurable (Y n))
-    (h0 : P.map (Y 0) = μ₀)
-    (h_condDistrib : ∀ n,
-      condDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) P
-        =ᵐ[P.map (fun ω ↦ fun i : Iic n ↦ Y i ω)] κ n) :
+    (h0 : HasLaw (Y 0) μ₀ P)
+    (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
     P.map (fun ω n ↦ Y n ω) = trajMeasure μ₀ κ := by
-  sorry
+  refine IsProjectiveLimit.unique (P := fun (J : Finset ℕ) ↦ P.map (fun ω (i : J) ↦ Y i ω)) ?_ ?_
+  · exact isProjectiveLimit_map (by fun_prop)
+  rw [isProjectiveLimit_nat_iff]
+  swap; · exact isProjectiveMeasureFamily_map_restrict (by fun_prop)
+  intro n
+  rw [(hasLaw_Iic_of_forall_hasCondDistrib h0 h_condDistrib n).map_eq,
+    trajMeasure_map_frestrictLe]
 
 end ProbabilityTheory.Kernel

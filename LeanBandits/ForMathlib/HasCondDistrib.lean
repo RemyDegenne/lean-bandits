@@ -26,6 +26,8 @@ structure HasCondDistrib (Y : α → Ω) (X : α → β) (κ : Kernel β Ω)
   aemeasurable_snd : AEMeasurable X μ := by fun_prop
   condDistrib_eq : condDistrib Y X μ =ᵐ[μ.map X] κ
 
+attribute [fun_prop] HasCondDistrib.aemeasurable_fst HasCondDistrib.aemeasurable_snd
+
 lemma hasCondDistrib_fst_prod {Y : α → Ω} {X : α → β}
     {κ : Kernel β Ω}
     {μ : Measure α} [IsFiniteMeasure μ] {ν : Measure γ} [IsProbabilityMeasure ν]

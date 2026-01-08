@@ -424,7 +424,8 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     exact fun n ↦ Measurable.prodMk (hA n) (hR n)
 
 -- this is what we will use for UCB
-lemma prob_pullCount_prod_sumRewards_mem_le (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
@@ -445,7 +446,8 @@ lemma prob_pullCount_prod_sumRewards_mem_le (h : IsAlgEnvSeq A R alg (stationary
       Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     ArrayModel.prob_pullCount_prod_sumRewards_mem_le a n hs
 
-lemma prob_pullCount_mem_and_sumRewards_mem_le (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable α]
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {s : Set ℕ} [DecidablePred (· ∈ s)] (hs : MeasurableSet s) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω ∈ s ∧ sumRewards A R a n ω ∈ B} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ s),
@@ -462,7 +464,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (h : IsAlgEnvSeq A R alg (station
       exists_eq_right, mem_filter, mem_range] at hk
     simp [hk.2.1]
 
-lemma todo (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma todo [Countable α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {B : Set ℝ} (hB : MeasurableSet B) :
     P (sumRewards A R a n ⁻¹' B) ≤
       ∑ k ∈ range (n + 1), Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
@@ -470,7 +472,8 @@ lemma todo (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
   have h_le := prob_pullCount_mem_and_sumRewards_mem_le h .univ hB (a := a) (n := n)
   simpa using h_le
 
-lemma prob_pullCount_eq_and_sumRewards_mem_le (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable α]
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {m : ℕ} (hm : m ≤ n) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
       Bandit.streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by

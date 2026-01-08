@@ -44,15 +44,15 @@ theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [�
       have : (fun ω (i : Iic 0) ↦ Y i ω) = (MeasurableEquiv.piUnique _).symm ∘ (Y 0) := by
         ext ω i
         simp only [piUnique_symm_apply, Function.comp_apply]
-        -- casting hell
-        sorry
+        rw [Unique.eq_default i]
+        simp [uniqueElim_default, coe_default_Iic_zero]
       rw [this]
       exact AEMeasurable.comp_aemeasurable (by fun_prop) h_meas
     · congr
       ext ω i
       simp only [Function.comp_apply]
-      -- same goal as above
-      sorry
+      rw [Unique.eq_default i]
+      simp [uniqueElim_default, coe_default_Iic_zero]
   | succ n hn =>
     specialize h_condDistrib n
     have h_law := hn.prod_of_hasCondDistrib h_condDistrib

@@ -100,6 +100,11 @@ lemma pullCount_eq_pullCount' {n : ℕ} {ω : Ω} (hn : n ≠ 0) :
     have : n + 1 - 1 = n := by simp
     exact this ▸ rfl
 
+lemma pullCount'_mono {n m : ℕ} (hnm : n ≤ m) :
+    pullCount' n (fun i ↦ (A i ω, R' i ω)) a ≤ pullCount' m (fun i ↦ (A i ω, R' i ω)) a := by
+  simp_rw [pullCount']
+  sorry
+
 lemma pullCount_le (a : α) (t : ℕ) (ω : Ω) : pullCount A a t ω ≤ t :=
   (card_filter_le _ _).trans_eq (by simp)
 
@@ -173,6 +178,16 @@ lemma measurable_pullCount [MeasurableSingletonClass α] (hA : ∀ n, Measurable
   have h_meas s : Measurable (fun ω : Ω ↦ if A s ω = a then 1 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact (measurableSet_singleton _).preimage (by fun_prop)
+  fun_prop
+
+@[fun_prop]
+lemma measurable_uncurry_pullCount [MeasurableSingletonClass α] [MeasurableEq α]
+    (hA : ∀ n, Measurable (A n)) (t : ℕ) :
+    Measurable (fun p : Ω × α ↦ pullCount A p.2 t p.1) := by
+  simp_rw [pullCount_eq_sum]
+  have h_meas s : Measurable (fun h : Ω × α ↦ if A s h.1 = h.2 then 1 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
   fun_prop
 
 @[fun_prop]
@@ -513,7 +528,6 @@ lemma measurable_stepsUntil [MeasurableSingletonClass α]
     rw [h_union]
     refine MeasurableSet.iUnion fun s ↦ (measurableSet_singleton _).preimage ?_
     exact measurable_pullCount hA a (s + 1)
-  --simp_rw [stepsUntil_eq_dite]
   suffices Measurable fun k ↦ if h : k ∈ {k' | ∃ s, pullCount A a (s + 1) k' = m}
       then (Nat.find h : ℕ∞) else ⊤ by
     convert this with ω

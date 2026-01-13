@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit.Regret
+import LeanBandits.ForMathlib.CondIndepFun
 import LeanBandits.ForMathlib.IndepFun
 import Mathlib.Probability.IdentDistribIndep
 
@@ -12,44 +13,6 @@ import Mathlib.Probability.IdentDistribIndep
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
-
-section Aux -- todo: move
-
-namespace ProbabilityTheory
-
-variable {α β γ δ γ' δ' : Type*}
-  {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-  {mδ : MeasurableSpace δ} {mγ' : MeasurableSpace γ'} {mδ' : MeasurableSpace δ'}
-  [StandardBorelSpace α]
-  [StandardBorelSpace δ'] [Nonempty δ'] [StandardBorelSpace γ'] [Nonempty γ']
-  {μ : Measure α} [IsFiniteMeasure μ]
-  {X : α → β} {hX : Measurable X} {Y : α → γ} {Z : α → δ} {Y' : α → γ'} {Z' : α → δ'}
-
-lemma CondIndepFun.of_measurable (h_indep : Y ⟂ᵢ[X, hX; μ] Z)
-    (hY_meas : Measurable[mγ.comap Y] Y') (hZ_meas : Measurable[mδ.comap Z] Z') :
-    Y' ⟂ᵢ[X, hX; μ] Z' := by
-  obtain ⟨φ, hφ_meas, h_eqY⟩ : ∃ φ, Measurable φ ∧ Y' = φ ∘ Y := hY_meas.exists_eq_measurable_comp
-  obtain ⟨ψ, hψ_meas, h_eqZ⟩ : ∃ ψ, Measurable ψ ∧ Z' = ψ ∘ Z := hZ_meas.exists_eq_measurable_comp
-  rw [h_eqY, h_eqZ]
-  exact h_indep.comp hφ_meas hψ_meas
-
-lemma CondIndepFun.of_measurable_left
-    (h_indep : Y ⟂ᵢ[X, hX; μ] Z) (hY_meas : Measurable[mγ.comap Y] Y') :
-    Y' ⟂ᵢ[X, hX; μ] Z := by
-  obtain ⟨φ, hφ_meas, h_eqY⟩ : ∃ φ, Measurable φ ∧ Y' = φ ∘ Y := hY_meas.exists_eq_measurable_comp
-  rw [h_eqY]
-  exact h_indep.comp hφ_meas measurable_id
-
-lemma CondIndepFun.of_measurable_right
-    (h_indep : Y ⟂ᵢ[X, hX; μ] Z) (hZ_meas : Measurable[mδ.comap Z] Z') :
-    Y ⟂ᵢ[X, hX; μ] Z' := by
-  obtain ⟨ψ, hψ_meas, h_eqZ⟩ : ∃ ψ, Measurable ψ ∧ Z' = ψ ∘ Z := hZ_meas.exists_eq_measurable_comp
-  rw [h_eqZ]
-  exact h_indep.comp measurable_id hψ_meas
-
-end ProbabilityTheory
-
-end Aux
 
 namespace Bandits
 

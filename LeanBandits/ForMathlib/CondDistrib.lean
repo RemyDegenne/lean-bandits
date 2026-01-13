@@ -392,6 +392,120 @@ lemma condDistrib_ae_eq_cond [Countable β] [MeasurableSingletonClass β]
   · congr
   · exact hb
 
+lemma lintegral_cond {μ : Measure α} (s : Set α) (f : α → ℝ≥0∞) :
+    ∫⁻ x, f x ∂μ[|s] = (μ s)⁻¹ * ∫⁻ (a : α) in s, f a ∂μ := by
+  unfold cond
+  simp [lintegral_smul_measure]
+
+omit [Nonempty Ω'] in
+lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasure μ]
+    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
+    (κ : Kernel (β × Ω') Ω) [IsFiniteKernel κ]
+    (h_cond : ∀ b, μ (Z ⁻¹' {b}) ≠ 0 → condDistrib Y X μ[|Z ⁻¹' {b}] =ᵐ[μ[|Z ⁻¹' {b}].map X]
+      (κ.comap (fun ω ↦ (ω, b)) (by fun_prop))) :
+    condDistrib Y (fun ω ↦ (X ω, Z ω)) μ =ᵐ[μ.map (fun ω ↦ (X ω, Z ω))] κ := by
+  refine condDistrib_ae_eq_of_measure_eq_compProd _ (by fun_prop) ?_
+  ext s hs
+  suffices ∀ b, (Measure.map (fun x ↦ ((X x, Z x), Y x)) μ) (s ∩ {p | p.1.2 = b}) =
+      (Measure.map (fun ω ↦ (X ω, Z ω)) μ ⊗ₘ κ) (s ∩ {p | p.1.2 = b}) by
+    have hs_iUnion : s = ⋃ b, s ∩ {p | p.1.2 = b} := by
+      ext p
+      simp only [Set.mem_iUnion, Set.mem_inter_iff, Set.mem_setOf_eq]
+      grind
+    have h_disj : Pairwise (Function.onFun Disjoint fun b ↦ s ∩ {p | p.1.2 = b}) := by
+      intro i j hij
+      simp only [Set.disjoint_iff_inter_eq_empty]
+      ext
+      grind
+    have h_meas (b : Ω') : MeasurableSet (s ∩ {p | p.1.2 = b}) :=
+      hs.inter ((measurableSet_singleton _).preimage (by fun_prop))
+    rw [hs_iUnion, measure_iUnion h_disj h_meas, measure_iUnion h_disj h_meas]
+    congr with b
+    exact this b
+  intro b
+  by_cases hb : μ (Z ⁻¹' {b}) = 0
+  · have h_left : (Measure.map (fun x ↦ ((X x, Z x), Y x)) μ) (s ∩ {p | p.1.2 = b}) = 0 := by
+      suffices (Measure.map (fun x ↦ ((X x, Z x), Y x)) μ) {p | p.1.2 = b} = 0 from
+        measure_mono_null Set.inter_subset_right this
+      rw [Measure.map_apply (by fun_prop)]
+      · simpa
+      · exact (measurableSet_singleton _).preimage (by fun_prop)
+    have h_right : (Measure.map (fun ω ↦ (X ω, Z ω)) μ ⊗ₘ κ) (s ∩ {p | p.1.2 = b}) = 0 := by
+      suffices (Measure.map (fun ω ↦ (X ω, Z ω)) μ ⊗ₘ κ) {p | p.1.2 = b} = 0 from
+        measure_mono_null Set.inter_subset_right this
+      rw [Measure.compProd_apply, lintegral_map]
+      rotate_left
+      · exact Kernel.measurable_kernel_prodMk_left
+          ((measurableSet_singleton _).preimage (by fun_prop))
+      · fun_prop
+      · exact (measurableSet_singleton _).preimage (by fun_prop)
+      simp only [Set.preimage_setOf_eq]
+      classical
+      have h_le : ∫⁻ a, (κ (X a, Z a)) {a_1 | Z a = b} ∂μ ≤
+          ∫⁻ a, {a' | Z a' = b}.indicator (fun _ ↦ κ.bound) a ∂μ := by
+        gcongr with a
+        by_cases hZ : Z a = b
+        · simp only [hZ, Set.setOf_true, Set.mem_setOf_eq, Set.indicator_of_mem]
+          exact κ.measure_le_bound _ _
+        · simp [hZ]
+      refine le_antisymm (h_le.trans ?_) zero_le'
+      rw [lintegral_indicator]
+      swap; · exact (measurableSet_singleton _).preimage (by fun_prop)
+      simp only [lintegral_const, MeasurableSet.univ, Measure.restrict_apply, Set.univ_inter,
+        nonpos_iff_eq_zero, mul_eq_zero]
+      exact .inr hb
+    rw [h_left, h_right]
+  specialize h_cond b hb
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd] at h_cond
+  swap; · fun_prop
+  rw [Measure.ext_iff] at h_cond
+  have hs' : MeasurableSet {p : β × Ω | ((p.1, b), p.2) ∈ s} := hs.preimage (by fun_prop)
+  have h1 := h_cond {p | ((p.1, b), p.2) ∈ s} hs'
+  have h_indicator : Measurable ({ω' | Z ω' = b}.indicator (fun x ↦ 1)) :=
+    Measurable.indicator (by fun_prop) ((measurableSet_singleton _).preimage (by fun_prop))
+  rw [Measure.map_apply] at h1 ⊢
+  rotate_left
+  · fun_prop
+  · exact hs.inter ((measurableSet_singleton _).preimage (by fun_prop))
+  · fun_prop
+  · exact hs'
+  rw [cond_apply] at h1
+  swap; · exact (measurableSet_singleton _).preimage (by fun_prop)
+  have h1' : μ (Z ⁻¹' {b} ∩ (fun x ↦ (X x, Y x)) ⁻¹' {p | ((p.1, b), p.2) ∈ s}) =
+      (μ (Z ⁻¹' {b})) *
+        (Measure.map X μ[|Z ⁻¹' {b}] ⊗ₘ κ.comap (fun ω ↦ (ω, b)) (by fun_prop))
+        {p | ((p.1, b), p.2) ∈ s} := by
+    rw [← h1, ← mul_assoc, ENNReal.mul_inv_cancel hb (by simp), one_mul]
+  convert h1'
+  · ext x
+    simp only [Set.preimage_inter, Set.preimage_setOf_eq, Set.mem_inter_iff, Set.mem_preimage,
+      Set.mem_setOf_eq]
+    grind
+  · rw [Measure.compProd_apply, Measure.compProd_apply, lintegral_map, lintegral_map]
+    rotate_left
+    · exact Kernel.measurable_kernel_prodMk_left hs'
+    · fun_prop
+    · apply Kernel.measurable_kernel_prodMk_left
+      exact hs.inter ((measurableSet_singleton _).preimage (by fun_prop))
+    · fun_prop
+    · exact hs'
+    · exact hs.inter ((measurableSet_singleton _).preimage (by fun_prop))
+    rw [lintegral_cond, ← mul_assoc, ENNReal.mul_inv_cancel hb (by simp), one_mul]
+    simp only [Set.preimage_inter, Set.preimage_setOf_eq, Kernel.coe_comap, Function.comp_apply]
+    classical
+    have h_eq : (fun a ↦ κ (X a, Z a) (Prod.mk (X a, Z a) ⁻¹' s ∩ {a_1 | Z a = b})) =
+        {a | Z a = b}.indicator
+          (fun a ↦ κ (X a, b) (Prod.mk (X a, b) ⁻¹' s ∩ {a_1 | Z a = b})) := by
+      ext a
+      by_cases hZ : Z a = b <;> simp [hZ]
+    simp_rw [h_eq]
+    rw [lintegral_indicator]
+    swap; · exact (measurableSet_singleton _).preimage (by fun_prop)
+    refine setLIntegral_congr_fun ((measurableSet_singleton _).preimage (by fun_prop)) fun a ha ↦ ?_
+    congr 1 with ω
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq, and_iff_left_iff_imp]
+    grind
+
 lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)
     (hX : Measurable X) (hT : Measurable T) {s : Set β} (hs : MeasurableSet s)
     (hμs : μ (X ⁻¹' s) ≠ 0) :

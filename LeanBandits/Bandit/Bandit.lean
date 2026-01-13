@@ -1008,7 +1008,7 @@ lemma hasCondDistrib_reward_hist_action_pullCount
       intro ha
       simp [ha]
 
-lemma condIndepFun_todo (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+lemma condIndepFun_reward_hist (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     (reward alg (n + 1)) ⟂ᵢ[(fun ω ↦ (action alg (n + 1) ω,
           pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω)),
         Measurable.prodMk (by fun_prop) (measurable_pullCount_action_add_one alg ν n);
@@ -1019,20 +1019,33 @@ lemma condIndepFun_todo (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKerne
     h_cond.condDistrib_eq
   exact Measurable.prodMk (by fun_prop) (measurable_pullCount_action_add_one alg ν n)
 
-lemma hasCondDistrib_reward' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
-    (n : ℕ) :
+lemma hasCondDistrib_reward' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     HasCondDistrib (reward alg (n + 1)) (fun ω ↦ (hist alg ω n, action alg (n + 1) ω))
       (ν.prodMkLeft _) (arrayMeasure ν) := by
-  suffices HasCondDistrib (reward alg (n + 1))
-      (fun ω ↦ (hist alg ω n, action alg (n + 1) ω,
-        pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω))
-      ((ν.prodMkRight _).prodMkLeft _) (arrayMeasure ν) by
+  let R := reward alg (n + 1)
+  let H := (hist alg · n)
+  let A := action alg (n + 1)
+  let P := fun ω ↦ pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω
+  have hP : Measurable P := measurable_pullCount_action_add_one alg ν n
+  change HasCondDistrib R (fun ω ↦ (H ω, A ω)) (ν.prodMkLeft _) _
+  suffices HasCondDistrib R (fun ω ↦ ((A ω, P ω), H ω))
+      ((ν.prodMkRight _).prodMkRight _) (arrayMeasure ν) by
+    -- use that `P` is measurable wrt `(A, H)` to drop it from the conditioning
     sorry
-  suffices HasCondDistrib (reward alg (n + 1))
-      (fun ω ↦ (action alg (n + 1) ω,
-        pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω))
-      (ν.prodMkRight _) (arrayMeasure ν) by
-    sorry
+  suffices HasCondDistrib R (fun ω ↦ (A ω, P ω)) (ν.prodMkRight _) (arrayMeasure ν) by
+    have h_indep : H ⟂ᵢ[(fun ω ↦ (A ω, P ω)), (by fun_prop); arrayMeasure ν] R :=
+      (condIndepFun_reward_hist alg ν n).symm
+    have h_condDistrib := this.condDistrib_eq
+    rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkRight (by fun_prop) (by fun_prop)
+      (by fun_prop)] at h_indep
+    refine ⟨by fun_prop, by fun_prop, ?_⟩
+    refine h_indep.trans ?_
+    rw [Filter.EventuallyEq, ae_map_iff] at h_condDistrib ⊢
+    · simpa only [Kernel.prodMkRight_apply]
+    · fun_prop
+    · exact Kernel.measurableSet_eq _ _
+    · fun_prop
+    · exact Kernel.measurableSet_eq _ _
   exact hasCondDistrib_reward_pullCount_action alg ν n
 
 lemma hasCondDistrib_action (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :

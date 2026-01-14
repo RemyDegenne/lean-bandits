@@ -2,6 +2,7 @@ import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
 import LeanBandits.Bandit.RewardByCountMeasure
 import LeanBandits.Bandit.SumRewards
+import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.BanditAlgorithms.ETC
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib

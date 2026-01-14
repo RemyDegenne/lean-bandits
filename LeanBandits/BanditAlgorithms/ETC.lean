@@ -68,8 +68,6 @@ variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
 
-local notation "𝔓" => P.prod (Bandit.streamMeasure ν)
-
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
@@ -192,30 +190,6 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
     rwa [empMean_eq_empMean' this.ne', empMean_eq_empMean' this.ne']
   · simp [ha, hm]
   · simp [h_best, hm]
-
--- lemma identDistrib_aux [Nonempty (Fin K)]
---     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a b : Fin K) :
---     IdentDistrib
---       (fun ω ↦ (∑ s ∈ Icc 1 m, rewardByCount A R a s ω, ∑ s ∈ Icc 1 m, rewardByCount A R b s ω))
---       (fun ω ↦ (∑ s ∈ range m, ω.2 s a, ∑ s ∈ range m, ω.2 s b))
---       𝔓 (Bandit.measure (etcAlgorithm hK m) ν) := by
---   have h2 (a : Fin K) : IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
---       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓 (Bandit.measure (etcAlgorithm hK m) ν) :=
---     identDistrib_sum_Icc_rewardByCount h m a
---   by_cases hab : a = b
---   · simp only [hab]
---     exact (h2 b).comp (u := fun p ↦ (p, p)) (by fun_prop)
---   refine (h2 a).prodMk (h2 b) ?_ ?_
---   · suffices IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω)
---         𝔓 by
---       exact this.comp (φ := fun p ↦ ∑ i ∈ Icc 1 m, p i) (ψ := fun p ↦ ∑ j ∈ Icc 1 m, p j)
---         (by fun_prop) (by fun_prop)
---     exact indepFun_rewardByCount_of_ne h hab
---   · suffices IndepFun (fun ω s ↦ ω.2 s a) (fun ω s ↦ ω.2 s b)
---         (Bandit.measure (etcAlgorithm hK m) ν) by
---       exact this.comp (φ := fun p ↦ ∑ i ∈ range m, p i) (ψ := fun p ↦ ∑ j ∈ range m, p j)
---         (by fun_prop) (by fun_prop)
---     exact indepFun_eval_snd_measure _ ν hab
 
 lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)

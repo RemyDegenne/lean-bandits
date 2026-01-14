@@ -77,8 +77,6 @@ lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n �
   norm_cast
   grind
 
-local notation "𝔓" => P.prod (Bandit.streamMeasure ν)
-
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.ForMathlib.CondIndepFun
+import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.IndepInfinitePi
 import LeanBandits.ForMathlib.KernelRepresentation
 import LeanBandits.SequentialLearning.Deterministic
@@ -885,30 +886,6 @@ lemma reward_ae_eq_cond
   simp only [hω.2]
   simp [hω.1]
 
-lemma indepFun_cond_of_indepFun {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-    {mγ : MeasurableSpace γ} {μ : Measure α}
-    {X : α → β} {Y : α → γ} (hXY : X ⟂ᵢ[μ] Y) (hY : Measurable Y) {s : Set γ}
-    (hs : MeasurableSet s) :
-    X ⟂ᵢ[μ[|Y ⁻¹' s]] Y := by
-  by_cases h_zero : μ[|Y ⁻¹' s] = 0
-  · simp only [h_zero]
-    -- missing simp lemma : `X ⟂ᵢ[0] Y`
-    simp [indepFun_iff_measure_inter_preimage_eq_mul]
-  rw [cond_eq_zero] at h_zero
-  push_neg at h_zero
-  rw [indepFun_iff_measure_inter_preimage_eq_mul] at hXY ⊢
-  intro u t hu ht
-  rw [cond_apply (hs.preimage hY), cond_apply (hs.preimage hY), cond_apply (hs.preimage hY)]
-  have h_eq : Y ⁻¹' s ∩ (X ⁻¹' u ∩ Y ⁻¹' t) = X ⁻¹' u ∩ Y ⁻¹' (s ∩ t) := by grind
-  have hsu := hXY u s hu hs
-  have hust := hXY u (s ∩ t) hu (hs.inter ht)
-  rw [Set.inter_comm] at hsu
-  rw [hsu, h_eq, hust]
-  simp_rw [mul_assoc]
-  congr 1
-  rw [← mul_assoc (μ (Y ⁻¹' s)), ENNReal.mul_inv_cancel h_zero.2 h_zero.1, one_mul]
-  congr
-
 lemma indepFun_todo {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
     {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ} [MeasurableSingletonClass δ] {μ : Measure α}
     {X : α → β} {Y : α → γ} (hXY : X ⟂ᵢ[μ] Y) (hY : Measurable Y)
@@ -1019,21 +996,55 @@ lemma condIndepFun_reward_hist (alg : Algorithm α R) (ν : Kernel α R) [IsMark
     h_cond.condDistrib_eq
   exact Measurable.prodMk (by fun_prop) (measurable_pullCount_action_add_one alg ν n)
 
+omit [Countable α] [StandardBorelSpace R] [Nonempty R] in
+lemma measurable_pullCount_action_add_one_hist (alg : Algorithm α R)
+    (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+    Measurable[MeasurableSpace.comap (fun ω ↦ (action alg (n + 1) ω, hist alg ω n)) inferInstance]
+      (fun ω ↦ pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω) := by
+  simp_rw [pullCount_eq_sum]
+  refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
+  refine measurableSet_eq_fun ?_ (measurable_comp_comap _ measurable_fst)
+  simp_rw [hist_eq _ _ n]
+  unfold action
+  refine Measurable.fst (mγ := inferInstance) ?_
+  have : (hist alg · i ⟨i, by grind⟩) =
+      (fun ω : α × (Iic n → α × R) ↦ ω.2 ⟨i, by grind⟩) ∘
+        (fun ω ↦ (action alg (n + 1) ω, fun i : Iic n ↦ hist alg ω i ⟨i, by grind⟩)) := rfl
+  rw [this]
+  exact measurable_comp_comap _ (Measurable.prodMk (by fun_prop) (by fun_prop))
+
 lemma hasCondDistrib_reward' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     HasCondDistrib (reward alg (n + 1)) (fun ω ↦ (hist alg ω n, action alg (n + 1) ω))
       (ν.prodMkLeft _) (arrayMeasure ν) := by
-  let R := reward alg (n + 1)
+  let R' := reward alg (n + 1)
   let H := (hist alg · n)
   let A := action alg (n + 1)
   let P := fun ω ↦ pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω
   have hP : Measurable P := measurable_pullCount_action_add_one alg ν n
-  change HasCondDistrib R (fun ω ↦ (H ω, A ω)) (ν.prodMkLeft _) _
-  suffices HasCondDistrib R (fun ω ↦ ((A ω, P ω), H ω))
+  change HasCondDistrib R' (fun ω ↦ (H ω, A ω)) (ν.prodMkLeft _) _
+  suffices HasCondDistrib R' (fun ω ↦ (A ω, H ω)) (ν.prodMkRight _) (arrayMeasure ν) by
+    have h_eq : (fun ω ↦ (H ω, A ω)) = MeasurableEquiv.prodComm ∘ (fun ω ↦ (A ω, H ω)) := rfl
+    rw [h_eq]
+    exact this.comp_right (κ := ν.prodMkRight _) _
+  suffices HasCondDistrib R' (fun ω ↦ ((A ω, H ω), P ω))
       ((ν.prodMkRight _).prodMkRight _) (arrayMeasure ν) by
     -- use that `P` is measurable wrt `(A, H)` to drop it from the conditioning
-    sorry
-  suffices HasCondDistrib R (fun ω ↦ (A ω, P ω)) (ν.prodMkRight _) (arrayMeasure ν) by
-    have h_indep : H ⟂ᵢ[(fun ω ↦ (A ω, P ω)), (by fun_prop); arrayMeasure ν] R :=
+    have hP_meas :
+        Measurable[MeasurableSpace.comap (fun ω ↦ (A ω, H ω)) inferInstance] P :=
+      measurable_pullCount_action_add_one_hist alg ν n
+    obtain ⟨f, hf_meas, hf_eq⟩ := hP_meas.exists_eq_measurable_comp
+    simp only [hf_eq, Function.comp_apply] at this
+    rwa [hasCondDistrib_prod_right_iff _ _ hf_meas] at this
+  suffices HasCondDistrib R' (fun ω ↦ ((A ω, P ω), H ω))
+      ((ν.prodMkRight _).prodMkRight _) (arrayMeasure ν) by
+    let e : ((α × ℕ) × (Iic n → α × R)) ≃ᵐ ((α × (Iic n → α × R)) × ℕ) :=
+    { toFun := fun x ↦ ((x.1.1, x.2), x.1.2)
+      invFun := fun x ↦ ((x.1.1, x.2), x.1.2)
+      measurable_toFun := by fun_prop
+      measurable_invFun := by fun_prop }
+    exact this.comp_right e
+  suffices HasCondDistrib R' (fun ω ↦ (A ω, P ω)) (ν.prodMkRight _) (arrayMeasure ν) by
+    have h_indep : H ⟂ᵢ[(fun ω ↦ (A ω, P ω)), (by fun_prop); arrayMeasure ν] R' :=
       (condIndepFun_reward_hist alg ν n).symm
     have h_condDistrib := this.condDistrib_eq
     rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkRight (by fun_prop) (by fun_prop)

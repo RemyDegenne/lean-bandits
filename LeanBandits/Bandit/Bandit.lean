@@ -9,10 +9,8 @@ import LeanBandits.ForMathlib.IndepInfinitePi
 import LeanBandits.ForMathlib.KernelRepresentation
 import LeanBandits.ForMathlib.StandardBorel
 import LeanBandits.SequentialLearning.Deterministic
-import LeanBandits.SequentialLearning.StationaryEnv
 import LeanBandits.SequentialLearning.FiniteActions
-import Mathlib.Probability.IdentDistrib
-import Mathlib.MeasureTheory.Constructions.UnitInterval
+import LeanBandits.SequentialLearning.StationaryEnv
 
 /-!
 # Bandit

@@ -3,9 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.Bandit.Regret
-import LeanBandits.ForMathlib.CondIndepFun
-import LeanBandits.ForMathlib.IndepFun
+import LeanBandits.Bandit.Bandit
 import Mathlib.Probability.IdentDistribIndep
 
 /-! # Laws of `stepsUntil` and `rewardByCount`

@@ -1,7 +1,11 @@
-import Mathlib.Probability.Kernel.IonescuTulcea.Traj
-import Mathlib.Probability.Kernel.CondDistrib
-import Mathlib.Probability.Process.FiniteDimensionalLaws
+/-
+Copyright (c) 2025 Rémy Degenne. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémy Degenne, Paulo Rauber
+-/
 import LeanBandits.ForMathlib.HasCondDistrib
+import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+import Mathlib.Probability.Process.FiniteDimensionalLaws
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory
 

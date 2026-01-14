@@ -29,20 +29,20 @@ def detAlgorithm (nextaction : (n : ℕ) → (Iic n → α × R) → α)
 variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}
   {action0 : α} {env : Environment α R}
 
-section IsAlgEnvSeq
+namespace IsAlgEnvSeq
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
   {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
-lemma IsAlgEnvSeq.HasLaw_action_zero_detAlgorithm
+lemma HasLaw_action_zero_detAlgorithm
     (h : IsAlgEnvSeq A R' (detAlgorithm nextaction h_next action0) env P) :
     HasLaw (A 0) (Measure.dirac action0) P where
   aemeasurable := have hA := h.measurable_A; by fun_prop
   map_eq := (hasLaw_action_zero h).map_eq
 
-lemma IsAlgEnvSeq.action_zero_detAlgorithm
+lemma action_zero_detAlgorithm
     (h : IsAlgEnvSeq A R' (detAlgorithm nextaction h_next action0) env P) :
     A 0 =ᵐ[P] fun _ ↦ action0 := by
   have h_eq : ∀ᵐ x ∂(P.map (A 0)), x = action0 := by
@@ -51,7 +51,7 @@ lemma IsAlgEnvSeq.action_zero_detAlgorithm
   have hA := h.measurable_A
   exact ae_of_ae_map (by fun_prop) h_eq
 
-lemma IsAlgEnvSeq.action_detAlgorithm_ae_eq
+lemma action_detAlgorithm_ae_eq
     (h : IsAlgEnvSeq A R' (detAlgorithm nextaction h_next action0) env P) (n : ℕ) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextaction n (hist A R' n ω) := by
   have hA := h.measurable_A
@@ -59,7 +59,7 @@ lemma IsAlgEnvSeq.action_detAlgorithm_ae_eq
   exact ae_eq_of_condDistrib_eq_deterministic (by fun_prop) (by fun_prop) (by fun_prop)
     (h.hasCondDistrib_action n).condDistrib_eq
 
-lemma IsAlgEnvSeq.action_detAlgorithm_ae_all_eq
+lemma action_detAlgorithm_ae_all_eq
     (h : IsAlgEnvSeq A R' (detAlgorithm nextaction h_next action0) env P) :
     ∀ᵐ ω ∂P, A 0 ω = action0 ∧ ∀ n, A (n + 1) ω = nextaction n (hist A R' n ω) := by
   rw [eventually_and, ae_all_iff]

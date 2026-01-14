@@ -102,8 +102,8 @@ lemma pullCount_eq_pullCount' {n : ℕ} {ω : Ω} (hn : n ≠ 0) :
 
 lemma pullCount'_mono {n m : ℕ} (hnm : n ≤ m) :
     pullCount' n (fun i ↦ (A i ω, R' i ω)) a ≤ pullCount' m (fun i ↦ (A i ω, R' i ω)) a := by
-  simp_rw [pullCount']
-  sorry
+  rw [← pullCount_add_one_eq_pullCount', ← pullCount_add_one_eq_pullCount']
+  exact pullCount_mono a (by lia) _
 
 lemma pullCount_le (a : α) (t : ℕ) (ω : Ω) : pullCount A a t ω ≤ t :=
   (card_filter_le _ _).trans_eq (by simp)
@@ -133,7 +133,7 @@ lemma exists_pullCount_eq_of_le (hnm : t ≤ pullCount A a (n + 1) ω) (ht : t �
   refine lt_of_lt_of_le ?_ hnm
   exact pullCount_lt_of_forall_ne h_contra ht
 
-lemma pullCount_le_add [Nonempty α] (a : α) (n C : ℕ) (ω : Ω) :
+lemma pullCount_le_add (a : α) (n C : ℕ) (ω : Ω) :
     pullCount A a n ω ≤ C + 1 +
       ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω}.indicator 1 s := by
   rw [pullCount_eq_sum]
@@ -181,7 +181,7 @@ lemma measurable_pullCount [MeasurableSingletonClass α] (hA : ∀ n, Measurable
   fun_prop
 
 @[fun_prop]
-lemma measurable_uncurry_pullCount [MeasurableSingletonClass α] [MeasurableEq α]
+lemma measurable_uncurry_pullCount [MeasurableEq α]
     (hA : ∀ n, Measurable (A n)) (t : ℕ) :
     Measurable (fun p : Ω × α ↦ pullCount A p.2 t p.1) := by
   simp_rw [pullCount_eq_sum]
@@ -199,7 +199,7 @@ lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
-lemma measurable_uncurry_pullCount' [MeasurableSingletonClass α] [MeasurableEq α] (n : ℕ) :
+lemma measurable_uncurry_pullCount' [MeasurableEq α] (n : ℕ) :
     Measurable (fun p : (Iic n → α × R) × α ↦ pullCount' n p.1 p.2) := by
   simp_rw [pullCount'_eq_sum]
   have h_meas s : Measurable (fun h : (Iic n → α × R) × α ↦ if (h.1 s).1 = h.2 then 1 else 0) := by
@@ -555,7 +555,7 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass α]
     Measurable (fun ω : Ω × (ℕ → α → R) ↦ stepsUntil A a m ω.1) :=
   (measurable_stepsUntil hA a m).comp measurable_fst
 
-lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α] [Nonempty R]
+lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
         (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω)) inferInstance]
@@ -595,7 +595,7 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α] [No
     have h_meas := adapted_pullCount_add_one' hA hR' a (n - 1)
     rwa [Nat.sub_add_cancel (by lia)] at h_meas
 
-lemma measurable_indicator_stepsUntil_eq [Nonempty R] [MeasurableSingletonClass α]
+lemma measurable_indicator_stepsUntil_eq [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m n : ℕ) :
     Measurable ({ω : Ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
   refine (measurable_comap_indicator_stepsUntil_eq hA hR' a m n).mono ?_ le_rfl
@@ -622,7 +622,7 @@ lemma measurable_comap_indicator_stepsUntil_eq_zero [MeasurableSingletonClass α
   rw [measurable_indicator_const_iff]
   exact measurableSet_stepsUntil_eq_zero a m
 
-lemma measurableSet_stepsUntil_eq [Nonempty R] [MeasurableSingletonClass α]
+lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m n : ℕ) :
     MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω))
         inferInstance]
@@ -634,7 +634,7 @@ lemma measurableSet_stepsUntil_eq [Nonempty R] [MeasurableSingletonClass α]
   exact measurable_comap_indicator_stepsUntil_eq hA hR' a m n
 
 /-- `stepsUntil a m` is a stopping time with respect to the filtration `filtrationAction`. -/
-theorem isStoppingTime_stepsUntil_filtrationAction [Nonempty R] [MeasurableSingletonClass α]
+theorem isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m : ℕ) :
     IsStoppingTime (IsAlgEnvSeq.filtrationAction hA hR') (stepsUntil A a m) := by
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_

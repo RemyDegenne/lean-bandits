@@ -20,6 +20,8 @@ variable {α β γ Ω Ω' : Type*}
   {mΩ' : MeasurableSpace Ω'} [StandardBorelSpace Ω'] [Nonempty Ω']
   {μ : Measure α} {X : α → β} {Y : α → Ω} {κ : Kernel β Ω}
 
+/-- Predicate stating that the conditional distribution of `Y` given `X` under the measure `μ`
+is equal to the kernel `κ`. -/
 structure HasCondDistrib (Y : α → Ω) (X : α → β) (κ : Kernel β Ω)
   (μ : Measure α) [IsFiniteMeasure μ] : Prop where
   aemeasurable_fst : AEMeasurable Y μ := by fun_prop

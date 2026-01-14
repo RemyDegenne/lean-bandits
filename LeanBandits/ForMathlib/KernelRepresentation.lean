@@ -144,3 +144,11 @@ theorem representation {β : Type*} [Nonempty β] [MeasurableSpace β] [Standard
   κ.embedding_representation (measurableEmbedding_sigmoid_comp_embeddingReal β)
 
 end ProbabilityTheory.Kernel
+
+theorem ProbabilityTheory.representation_measure {β : Type*} {mβ : MeasurableSpace β}
+    [Nonempty β] [StandardBorelSpace β]
+    (μ : Measure β) [IsProbabilityMeasure μ] :
+    ∃ (f : I → β), Measurable f ∧ volume.map f = μ := by
+  obtain ⟨f, hf_meas, hf_map⟩ := Kernel.representation (Kernel.const Unit μ)
+  specialize hf_map ⟨⟩
+  exact ⟨f ⟨⟩, by fun_prop, by simpa⟩

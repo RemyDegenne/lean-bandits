@@ -29,6 +29,8 @@ lemma traj_zero_map_eval_zero :
   rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
   rfl
 
+/-- Measurable equivalence between a product up to `n + 1` and the pair of the product up to `n` and
+the space at `n + 1`. -/
 def _root_.MeasurableEquiv.IicSuccProd (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
     MeasurableEquiv (Π i : Iic (n + 1), X i) ((Π i : Iic n, X i) × X (n + 1)) :=
   (MeasurableEquiv.IicProdIoc (Nat.le_succ n)).symm.trans

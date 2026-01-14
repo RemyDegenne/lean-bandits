@@ -55,7 +55,7 @@ lemma IsAlgEnvSeq.condDistrib_reward_stationaryEnv
 
 /-- The reward at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
-lemma IsAlgEnvSeq.condIndepFun_reward_hist_action [StandardBorelSpace Ω] [Nonempty Ω]
+lemma IsAlgEnvSeq.condIndepFun_reward_hist_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
     R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A _ ; P] hist A R' n := by
   have hA := h.measurable_A
@@ -63,7 +63,7 @@ lemma IsAlgEnvSeq.condIndepFun_reward_hist_action [StandardBorelSpace Ω] [Nonem
   exact condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
     (by fun_prop) (by fun_prop) (by fun_prop) (h.hasCondDistrib_reward n).condDistrib_eq
 
-lemma IsAlgEnvSeq.condIndepFun_reward_hist_action_action [StandardBorelSpace Ω] [Nonempty Ω]
+lemma IsAlgEnvSeq.condIndepFun_reward_hist_action_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
     R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A (n + 1); P]
       (fun ω ↦ (hist A R' n ω, A (n + 1) ω)) := by
@@ -73,7 +73,7 @@ lemma IsAlgEnvSeq.condIndepFun_reward_hist_action_action [StandardBorelSpace Ω]
   have hR' := h.measurable_R
   exact h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
 
-lemma IsAlgEnvSeq.condIndepFun_reward_hist_action_action' [StandardBorelSpace Ω] [Nonempty Ω]
+lemma IsAlgEnvSeq.condIndepFun_reward_hist_action_action' [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) (hn : n ≠ 0) :
     R' n ⟂ᵢ[A n, h.measurable_A n; P] (fun ω ↦ (hist A R' (n - 1) ω, A n ω)) := by
   have := h.condIndepFun_reward_hist_action_action (n - 1)

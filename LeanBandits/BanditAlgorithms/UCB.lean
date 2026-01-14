@@ -214,8 +214,7 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
-lemma todo [Nonempty (Fin K)]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     Bandit.streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} ≤
       1 / (n + 1) ^ (c / 2) := by
@@ -237,8 +236,7 @@ lemma todo [Nonempty (Fin K)]
       mul_assoc (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
   _ ≤ 1 / (n + 1) ^ (c / 2) := prob_sum_le_sqrt_log hν hc a k hk
 
-lemma todo' [Nonempty (Fin K)]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     Bandit.streamMeasure ν
         {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)} ≤

@@ -97,14 +97,14 @@ lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [Standard
   have h_fst' := (Measure.ae_compProd_iff (Kernel.measurableSet_eq _ _)).mp h_fst
   filter_upwards [h_prod, h_fst'] with z hz1 hz2
   rw [hz1]
+  simp only [Kernel.deterministic_apply] at hz2
+  change ∀ᵐ y ∂(condDistrib X T μ z), condDistrib T (fun ω ↦ (T ω, X ω)) μ (z, y) = Measure.dirac z
+    at hz2
   ext t ht
   rw [Kernel.compProd_apply ht]
-  have hz2' : ∀ᵐ y ∂(condDistrib X T μ z),
-      condDistrib T (fun ω ↦ (T ω, X ω)) μ (z, y) = Measure.dirac z := by
-    filter_upwards [hz2] with y hy; convert hy using 2
   calc ∫⁻ y, condDistrib T (fun ω ↦ (T ω, X ω)) μ (z, y) (Prod.mk y ⁻¹' t) ∂condDistrib X T μ z
   _ = ∫⁻ y, (Measure.dirac z) (Prod.mk y ⁻¹' t) ∂condDistrib X T μ z :=
-    lintegral_congr_ae (hz2'.mono fun y hy ↦ by simp only [hy])
+    lintegral_congr_ae (hz2.mono fun y hy ↦ by simp only [hy])
   _ = ∫⁻ y, (Prod.mk y ⁻¹' t).indicator 1 z ∂condDistrib X T μ z :=
     lintegral_congr fun y ↦ Measure.dirac_apply' _ (ht.preimage (by fun_prop))
   _ = (condDistrib X T μ z) ((fun y ↦ (y, z)) ⁻¹' t) := by

@@ -436,11 +436,54 @@ lemma hasCondDistrib_reward_zero (alg : Algorithm α R) (ν : Kernel α R) [IsMa
       · simp
       · rwa [Measure.map_apply (by fun_prop) (by simp)] at ha
 
-omit [DecidableEq α] in
-lemma indepFun_fst_add_one_aux (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
+-- proved by Claude, then slightly golfed
+omit [DecidableEq α] [Nonempty α] [StandardBorelSpace α] [Countable α] [StandardBorelSpace R]
+  [Nonempty R] in
+lemma indepFun_fst_add_one_aux (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     (fun ω ↦ ω.1 (n + 1)) ⟂ᵢ[arrayMeasure ν] (fun ω ↦ (fun (i : Iic n) ↦ ω.1 i, ω.2)) := by
-  rw [indepFun_iff_map_prod_eq_prod_map_map (by fun_prop) (by fun_prop)]
-  sorry
+  let μ₁ : Measure (ℕ → I) := Measure.infinitePi fun _ ↦ volume
+  let μ₂ : Measure (ℕ → α → R) := Bandit.streamMeasure ν
+  -- Coordinates of μ₁ are independent
+  have h_indep : iIndepFun (fun i (ω : ℕ → I) ↦ ω i) μ₁ :=
+    iIndepFun_infinitePi (fun _ ↦ measurable_id)
+  have h_indep_n : IndepFun (fun ω ↦ ω (n + 1)) (fun ω ↦ fun i : Iic n ↦ ω i) μ₁ := by
+    have h := h_indep.indepFun_finset₀ {n + 1} (Iic n) (by simp)
+      (fun i ↦ (measurable_pi_apply i).aemeasurable)
+    convert h.comp (measurable_pi_apply ⟨n + 1, by simp⟩) measurable_id using 1
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro s t hs ht
+  let X : (ℕ → I) × (ℕ → α → R) → I := fun ω ↦ ω.1 (n + 1)
+  let Y : (ℕ → I) × (ℕ → α → R) → (Iic n → I) × (ℕ → α → R) := fun ω ↦ (fun i ↦ ω.1 i, ω.2)
+  change (μ₁.prod μ₂) (X ⁻¹' s ∩ Y ⁻¹' t) = (μ₁.prod μ₂) (X ⁻¹' s) * (μ₁.prod μ₂) (Y ⁻¹' t)
+  -- Rewrite using Fubini
+  rw [Measure.prod_apply (hs.preimage (by fun_prop : Measurable X)),
+    Measure.prod_apply (ht.preimage (by fun_prop : Measurable Y)),
+    Measure.prod_apply ((hs.preimage (by fun_prop : Measurable X)).inter
+      (ht.preimage (by fun_prop : Measurable Y)))]
+  -- Compute fibers
+  have hX_fst ω₁ : μ₂ (Prod.mk ω₁ ⁻¹' (X ⁻¹' s)) = s.indicator 1 (ω₁ (n + 1)) := by
+    simp only [X, Set.preimage_preimage]
+    by_cases h : ω₁ (n + 1) ∈ s <;> simp [h]
+  have hY_fst ω₁ : μ₂ (Prod.mk ω₁ ⁻¹' (Y ⁻¹' t)) = μ₂ {y | ((fun i : Iic n ↦ ω₁ i), y) ∈ t} := rfl
+  have hXY ω₁ : μ₂ (Prod.mk ω₁ ⁻¹' (X ⁻¹' s ∩ Y ⁻¹' t)) =
+      s.indicator 1 (ω₁ (n + 1)) * μ₂ {y | ((fun i : Iic n ↦ ω₁ i), y) ∈ t} := by
+    simp only [X, Y, Set.preimage_inter, Set.preimage_preimage]
+    by_cases h : ω₁ (n + 1) ∈ s
+    · simp [h]
+      grind
+    · simp [h]
+  simp_rw [hY_fst, hX_fst, hXY]
+  -- Factor the integral using independence
+  let g : (Iic n → I) → ENNReal := fun x ↦ μ₂ {y | (x, y) ∈ t}
+  have hg_meas : Measurable g := measurable_measure_prodMk_left ht
+  have hf_meas : Measurable (fun ω₁ : ℕ → I ↦ s.indicator (1 : I → ENNReal) (ω₁ (n + 1))) :=
+    (measurable_one.indicator hs).comp (measurable_pi_apply _)
+  have hindep_fg : IndepFun (fun ω₁ ↦ s.indicator (1 : I → ENNReal) (ω₁ (n + 1)))
+      (fun ω₁ ↦ g (fun i ↦ ω₁ i)) μ₁ :=
+    h_indep_n.comp (measurable_one.indicator hs) hg_meas
+  have h_eq (ω₁ : ℕ → I) : μ₂ {y | ((fun i : Iic n ↦ ω₁ i), y) ∈ t} = g (fun i ↦ ω₁ i) := rfl
+  simp_rw [h_eq]
+  exact lintegral_mul_eq_lintegral_mul_lintegral_of_indepFun hf_meas (by fun_prop) hindep_fg
 
 omit [StandardBorelSpace R] [Nonempty R] in
 lemma measurable_hist_todo (alg : Algorithm α R) (n : ℕ) :
@@ -520,7 +563,7 @@ lemma measurable_hist_todo (alg : Algorithm α R) (n : ℕ) :
 
 lemma indepFun_fst_add_one_hist (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     IndepFun (fun ω ↦ ω.1 (n + 1)) (hist alg · n) (arrayMeasure ν) :=
-  (indepFun_fst_add_one_aux alg ν n).of_measurable_right (measurable_hist_todo alg n)
+  (indepFun_fst_add_one_aux ν n).of_measurable_right (measurable_hist_todo alg n)
 
 lemma hasCondDistrib_action' (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] (n : ℕ) :
     HasCondDistrib (action alg (n + 1)) (hist alg · n) (alg.policy n) (arrayMeasure ν) := by

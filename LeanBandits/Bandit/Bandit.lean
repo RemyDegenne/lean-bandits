@@ -417,7 +417,7 @@ lemma hist_congr (alg : Algorithm α R) (n : ℕ) {ω ω' : probSpace α R}
 lemma stepsUntil_congr_aux (alg : Algorithm α R)
     (a : α) (m n : ℕ) {ω ω' : probSpace α R}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
-    (hω2_eq : ∀ i ≤ m - 1, ω.2 i a = ω'.2 i a)
+    (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a)
     (h_eq : action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m) :
     action alg (n + 1) ω' = a ∧ pullCount (action alg) a (n + 1) ω' = m := by
   obtain ⟨h_action, h_pc⟩ := h_eq
@@ -442,7 +442,7 @@ lemma stepsUntil_congr_aux (alg : Algorithm α R)
 
 lemma stepsUntil_congr (alg : Algorithm α R) (a : α) (m n : ℕ) {ω ω' : probSpace α R}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
-    (hω2_eq : ∀ i ≤ m - 1, ω.2 i a = ω'.2 i a) :
+    (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a) :
     (action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m) ↔
       (action alg (n + 1) ω' = a ∧ pullCount (action alg) a (n + 1) ω' = m) :=
   ⟨stepsUntil_congr_aux alg a m n hω1 hω2_ne hω2_eq,
@@ -450,7 +450,7 @@ lemma stepsUntil_congr (alg : Algorithm α R) (a : α) (m n : ℕ) {ω ω' : pro
 
 lemma stepsUntil_indicator_congr (alg : Algorithm α R) (a : α) (m n : ℕ) {ω ω' : probSpace α R}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
-    (hω2_eq : ∀ i ≤ m - 1, ω.2 i a = ω'.2 i a) :
+    (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a) :
     {ω | action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m}.indicator (fun _ ↦ 1)
         ω =
       {ω | action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m}.indicator
@@ -660,17 +660,27 @@ time `n`. -/
 noncomputable
 def truePast (alg : Algorithm α R) (a : α) (n : ℕ) (ω : probSpace α R) :
     probSpace α R :=
-  (ω.1, fun i b ↦ if b = a then ω.2 (min i ((pullCount (action alg) a (n + 1) ω) - 1)) a
+  (ω.1, fun i b ↦ if b = a then if pullCount (action alg) a (n + 1) ω ≠ 0 then
+      ω.2 (min i ((pullCount (action alg) a (n + 1) ω) - 1)) a else Nonempty.some inferInstance
     else ω.2 i b)
 
-omit [Countable α] [StandardBorelSpace R] [Nonempty R] in
+omit [Countable α] [StandardBorelSpace R] in
 lemma truePast_eq_of_pullCount_eq (alg : Algorithm α R)
     (a : α) (n m : ℕ) (ω : probSpace α R)
     (h_pc : pullCount (action alg) a (n + 1) ω = m) :
-    truePast alg a n ω = (ω.1, fun i b ↦ if b = a then ω.2 (min i (m - 1)) a else ω.2 i b) := by
+    truePast alg a n ω = (ω.1, fun i b ↦ if b = a then if m ≠ 0 then
+      ω.2 (min i (m - 1)) a else Nonempty.some inferInstance else ω.2 i b) := by
   simp [truePast, h_pc]
 
-omit [StandardBorelSpace R] [Nonempty R] in
+omit [Countable α] [StandardBorelSpace R] in
+lemma truePast_eq_of_pullCount_eq_of_ne_zero (alg : Algorithm α R)
+    (a : α) (n m : ℕ) (ω : probSpace α R)
+    (h_pc : pullCount (action alg) a (n + 1) ω = m) (hm : m ≠ 0) :
+    truePast alg a n ω = (ω.1, fun i b ↦ if b = a then
+      ω.2 (min i (m - 1)) a else ω.2 i b) := by
+  simp [truePast, h_pc, hm]
+
+omit [StandardBorelSpace R] in
 lemma measurable_hist_truePast (alg : Algorithm α R)
     (a : α) (n : ℕ) :
     Measurable[MeasurableSpace.comap (truePast alg a n) inferInstance] (hist alg · n) := by
@@ -680,14 +690,14 @@ lemma measurable_hist_truePast (alg : Algorithm α R)
     by_cases hb : b = a
     · subst hb
       simp only [truePast, ↓reduceIte]
-      rw [min_eq_left]
+      rw [min_eq_left, if_pos (by grind)]
       grind
     · simp [truePast, hb]
   rw [h_eq]
   refine Measurable.comp ?_ (Measurable.of_comap_le le_rfl)
   fun_prop
 
-omit [StandardBorelSpace R] [Nonempty R] in
+omit [StandardBorelSpace R] in
 lemma measurable_action_add_one_truePast (alg : Algorithm α R)
     (a : α) (n : ℕ) :
     Measurable[MeasurableSpace.comap (truePast alg a n) inferInstance]
@@ -702,7 +712,7 @@ lemma measurable_action_add_one_truePast (alg : Algorithm α R)
     rw [this]
     exact Measurable.comp (by fun_prop) (Measurable.of_comap_le le_rfl)
 
-omit [StandardBorelSpace R] [Nonempty R] in
+omit [StandardBorelSpace R] in
 lemma measurable_pullCount_add_one_truePast (alg : Algorithm α R) (a : α) (n : ℕ) :
     Measurable[MeasurableSpace.comap (truePast alg a n) inferInstance]
       (pullCount (action alg) a (n + 1)) := by
@@ -715,38 +725,246 @@ lemma measurable_pullCount_add_one_truePast (alg : Algorithm α R) (a : α) (n :
   simp_rw [hist_eq _ _ n, @measurable_pi_iff] at h_meas
   exact (h_meas ⟨i, by grind⟩).fst
 
-lemma indepFun_snd_apply_aux (alg : Algorithm α R)
-    (ν : Kernel α R) [IsMarkovKernel ν] (a : α) (m n : ℕ) :
+omit [Nonempty α] [StandardBorelSpace α] [Countable α] [StandardBorelSpace R] in
+lemma indepFun_snd_apply_aux (ν : Kernel α R) [IsMarkovKernel ν] (a : α) (m : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν]
-      (fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b)) := by
-  sorry
+      (fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+        else Nonempty.some inferInstance else ω.2 k b)) := by
+  unfold arrayMeasure
+  let μ₁ : Measure (ℕ → I) := Measure.infinitePi fun _ ↦ volume
+  let μ₂ : Measure (ℕ → α → R) := Measure.infinitePi fun _ ↦ Measure.infinitePi ν
+  -- Independence within μ₂: coordinates ω i are independent
+  have h_indep₂ : iIndepFun (fun i (ω : ℕ → α → R) ↦ ω i) μ₂ :=
+    iIndepFun_infinitePi (fun _ ↦ measurable_id)
+  -- Independence within each infinitePi ν: coordinates f b are independent
+  have h_indep_inner : iIndepFun (fun (b : α) (f : α → R) ↦ f b) (Measure.infinitePi ν) :=
+    iIndepFun_infinitePi (fun _ ↦ measurable_id)
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro s t hs ht
+  let X : (ℕ → I) × (ℕ → α → R) → R := fun ω ↦ ω.2 m a
+  let Y : (ℕ → I) × (ℕ → α → R) → (ℕ → I) × (ℕ → α → R) :=
+    fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+      else Nonempty.some inferInstance else ω.2 k b)
+  have hX_meas : Measurable X :=
+    (measurable_pi_apply a).comp ((measurable_pi_apply m).comp measurable_snd)
+  have hY_meas : Measurable Y := by
+    change Measurable (fun ω : (ℕ → I) × (ℕ → α → R) ↦
+      (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+        else Nonempty.some inferInstance else ω.2 k b))
+    refine Measurable.prod measurable_fst ?_
+    refine measurable_pi_lambda _ (fun k ↦ ?_)
+    refine measurable_pi_lambda _ (fun b ↦ ?_)
+    by_cases hb : b = a
+    · simp only [hb, ↓reduceIte]
+      by_cases hm : m ≠ 0
+      · simp only [ne_eq, hm, not_false_eq_true, ↓reduceIte]
+        exact (measurable_pi_apply a).comp
+          ((measurable_pi_apply (min k (m - 1))).comp measurable_snd)
+      · simp only [hm, ↓reduceIte]
+        exact measurable_const
+    · simp only [hb, ↓reduceIte]
+      exact (measurable_pi_apply b).comp ((measurable_pi_apply k).comp measurable_snd)
+  change (μ₁.prod μ₂) (X ⁻¹' s ∩ Y ⁻¹' t) = (μ₁.prod μ₂) (X ⁻¹' s) * (μ₁.prod μ₂) (Y ⁻¹' t)
+  -- Use Fubini on μ₁.prod μ₂
+  rw [Measure.prod_apply (hs.preimage hX_meas),
+    Measure.prod_apply (ht.preimage hY_meas),
+    Measure.prod_apply ((hs.preimage hX_meas).inter (ht.preimage hY_meas))]
+  -- X only depends on ω₂, so its fiber is constant in ω₁
+  have hX_fst : ∀ ω₁, μ₂ (Prod.mk ω₁ ⁻¹' (X ⁻¹' s)) = μ₂ ((fun ω₂ ↦ ω₂ m a) ⁻¹' s) := fun _ ↦ rfl
+  simp_rw [hX_fst]
+  -- The LHS integral: fiber of X ∩ Y at ω₁
+  -- Key: X depends only on ω₂ m a, while Y's dependence on ω₂ avoids (m, a)
+  -- Define the "truncation" map on ω₂
+  let trunc : (ℕ → α → R) → (ℕ → α → R) :=
+    fun ω₂ k b ↦ if b = a then if m ≠ 0 then ω₂ (min k (m - 1)) b
+      else Nonempty.some inferInstance else ω₂ k b
+  -- The fiber of Y at ω₁ only depends on trunc(ω₂)
+  have hY_fiber : ∀ ω₁, Prod.mk ω₁ ⁻¹' (Y ⁻¹' t) = (fun ω₂ ↦ (ω₁, trunc ω₂)) ⁻¹' t := fun _ ↦ rfl
+  -- The fiber of X ∩ Y factors
+  have hXY_fiber : ∀ ω₁, Prod.mk ω₁ ⁻¹' (X ⁻¹' s ∩ Y ⁻¹' t) =
+      ((fun ω₂ ↦ ω₂ m a) ⁻¹' s) ∩ ((fun ω₂ ↦ (ω₁, trunc ω₂)) ⁻¹' t) := fun _ ↦ rfl
+  simp_rw [hXY_fiber, hY_fiber]
+  -- Now we use independence in μ₂: (ω₂ m a) is independent of (trunc ω₂)
+  -- because trunc only uses indices (k, a) with k < m, and (k, b) with b ≠ a
+  have h_trunc_meas : Measurable trunc := by
+    refine measurable_pi_lambda _ (fun k ↦ ?_)
+    refine measurable_pi_lambda _ (fun b ↦ ?_)
+    simp only [trunc]
+    by_cases hb : b = a
+    · simp only [hb, ↓reduceIte]
+      by_cases hm : m = 0
+      · simp only [hm]
+        exact measurable_const
+      · simp only [ne_eq, hm, not_false_eq_true, ↓reduceIte]
+        exact (measurable_pi_apply a).comp (measurable_pi_apply (min k (m - 1)))
+    · simp only [hb, ↓reduceIte]
+      exact (measurable_pi_apply b).comp (measurable_pi_apply k)
+  -- Key independence: (ω₂ m a) ⟂ trunc because trunc only uses coordinates ≠ (m, a)
+  have h_indep_trunc : IndepFun (fun ω₂ ↦ ω₂ m a) trunc μ₂ := by
+    -- Factor trunc through proj which extracts the relevant coordinates
+    let proj : (ℕ → α → R) → ((ℕ → R) × (ℕ → {b : α // b ≠ a} → R)) := fun ω₂ ↦
+      (fun k ↦ if m ≠ 0 then ω₂ (min k (m - 1)) a else Nonempty.some inferInstance,
+      fun k ⟨b, _⟩ ↦ ω₂ k b)
+    have h_trunc_proj : ∀ ω₂, trunc ω₂ = (fun p k b ↦
+        if h : b = a then if m ≠ 0 then p.1 k
+          else Nonempty.some inferInstance else p.2 k ⟨b, h⟩) (proj ω₂) := by
+      intro ω₂; ext k b; simp only [trunc, proj]; by_cases hb : b = a <;> simp [hb]; grind
+    have h_proj_meas : Measurable proj := by
+      refine Measurable.prod ?_ ?_
+      · refine measurable_pi_lambda _ fun k ↦ ?_
+        by_cases hm : m ≠ 0
+        · simp only [proj, ne_eq, hm, not_false_eq_true, ↓reduceIte]
+          exact (measurable_pi_apply a).comp (measurable_pi_apply (min k (m - 1)))
+        · simp [proj, hm]
+      · exact measurable_pi_lambda _ (fun k ↦ measurable_pi_lambda _ (fun ⟨b, _⟩ ↦
+          (measurable_pi_apply b).comp (measurable_pi_apply k)))
+    have h_g_meas : Measurable (fun p : (ℕ → R) × (ℕ → {b : α // b ≠ a} → R) ↦
+        (fun k b ↦ if h : b = a then if m ≠ 0 then p.1 k else Nonempty.some inferInstance
+          else p.2 k ⟨b, h⟩)) := by
+      refine measurable_pi_lambda _ (fun k ↦ measurable_pi_lambda _ (fun b ↦ ?_))
+      by_cases hb : b = a
+      · simp only [hb, ↓reduceDIte]
+        by_cases hm : m ≠ 0
+        · simp only [ne_eq, hm, not_false_eq_true]
+          exact (measurable_pi_apply k).comp measurable_fst
+        · simp [hm]
+      · simp only [hb, ↓reduceDIte]
+        exact (measurable_pi_apply (⟨b, hb⟩ : {b : α // b ≠ a})).comp
+          ((measurable_pi_apply k).comp measurable_snd)
+    -- Show (ω₂ m a) ⟂ proj: proj uses coordinates disjoint from (m, a)
+    have h_indep_proj : IndepFun (fun ω₂ ↦ ω₂ m a) proj μ₂ := by
+      have h_row_bound (hm : m ≠ 0) : ∀ k, min k (m - 1) < m := by
+        intro k
+        calc min k (m - 1) ≤ m - 1 := Nat.min_le_right k (m - 1)
+          _ < m := Nat.sub_lt (by grind) Nat.one_pos
+      rw [indepFun_iff_measure_inter_preimage_eq_mul]
+      intro s t' hs ht'
+      -- rows_lt_m extracts column a at rows < m, other_cols extracts columns ≠ a
+      let rows_lt_m : (ℕ → α → R) → (Iio m → R) := fun ω₂ ⟨j, _⟩ ↦ ω₂ j a
+      let other_cols : (ℕ → α → R) → (ℕ → {b : α // b ≠ a} → R) := fun ω₂ k ⟨b, _⟩ ↦ ω₂ k b
+      have h_proj_factor : ∀ ω₂, proj ω₂ =
+          ((fun r k ↦ if hm : m ≠ 0 then r ⟨min k (m - 1), Finset.mem_Iio.mpr (h_row_bound hm k)⟩
+            else Nonempty.some inferInstance) (rows_lt_m ω₂),
+           other_cols ω₂) := by
+        intro ω₂; ext1
+        · ext k
+          by_cases hm : m ≠ 0
+          · simp [proj, rows_lt_m, hm]
+          · simp [proj, hm]
+        · rfl
+      -- Use iIndepFun structure of the doubly-indexed infinite product
+      have h_iindep : iIndepFun (fun (p : ℕ × α) ω ↦ ω p.1 p.2) μ₂ :=
+        iIndepFun_uncurry_infinitePi' (X := fun _ _ ↦ id) (fun _ ↦ ν) (by fun_prop)
+      have h_rows_meas : Measurable rows_lt_m :=
+        measurable_pi_lambda _ (fun ⟨j, _⟩ ↦ (measurable_pi_apply a).comp (measurable_pi_apply j))
+      have h_other_meas : Measurable other_cols :=
+        measurable_pi_lambda _ (fun k ↦ measurable_pi_lambda _ (fun ⟨b, _⟩ ↦
+          (measurable_pi_apply b).comp (measurable_pi_apply k)))
+      -- Show (ω₂ m a) ⟂ (rows_lt_m, other_cols) via indep_iSup_of_disjoint
+      have h_indep_combined : IndepFun (fun ω₂ ↦ ω₂ m a)
+          (fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) μ₂ := by
+        rw [IndepFun_iff_Indep]
+        have h_comap_le : (MeasurableSpace.pi.prod MeasurableSpace.pi).comap
+            (fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) ≤
+            ⨆ (p : {p : ℕ × α // p ≠ (m, a)}), mR.comap (fun ω ↦ ω p.val.1 p.val.2) := by
+          rw [MeasurableSpace.comap_prodMk]
+          refine sup_le ?_ ?_
+          · rw [MeasurableSpace.comap_pi]
+            refine iSup_le (fun ⟨j, hj⟩ ↦ ?_)
+            have h_ne : (j, a) ≠ (m, a) := fun h ↦ (Finset.mem_Iio.mp hj).ne (Prod.mk.inj h).1
+            exact le_iSup_of_le ⟨(j, a), h_ne⟩ le_rfl
+          · rw [MeasurableSpace.comap_pi]
+            refine iSup_le (fun k ↦ ?_)
+            rw [MeasurableSpace.comap_pi]
+            refine iSup_le (fun ⟨b, hb⟩ ↦ ?_)
+            have h_ne : (k, b) ≠ (m, a) := fun h ↦ hb (Prod.mk.inj h).2
+            exact le_iSup_of_le ⟨(k, b), h_ne⟩ le_rfl
+        refine indep_of_indep_of_le_right ?_ h_comap_le
+        have h_disjoint : Disjoint ({(m, a)} : Set (ℕ × α)) {p | p ≠ (m, a)} := by simp
+        have h_le : ∀ p : ℕ × α, mR.comap (fun ω : ℕ → α → R ↦ ω p.1 p.2) ≤
+            MeasurableSpace.pi (m := fun _ ↦ MeasurableSpace.pi) := fun p ↦
+          Measurable.comap_le ((measurable_pi_apply p.2).comp (measurable_pi_apply p.1))
+        have h_iindep' : iIndep (fun p : ℕ × α ↦ mR.comap (fun ω : ℕ → α → R ↦ ω p.1 p.2)) μ₂ :=
+          h_iindep.iIndep
+        have h_indep := indep_iSup_of_disjoint h_le h_iindep' h_disjoint
+        convert h_indep using 2
+        · simp only [Set.mem_singleton_iff, iSup_iSup_eq_left]
+        · simp only [ne_eq, Set.mem_setOf_eq, iSup_subtype']
+      have h_proj_preimage : proj ⁻¹' t' = (fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) ⁻¹'
+          {p | ((fun r k ↦ if hm : m ≠ 0 then
+            r ⟨min k (m - 1), Finset.mem_Iio.mpr (h_row_bound hm k)⟩
+            else Nonempty.some inferInstance) p.1, p.2) ∈ t'}
+          := by ext ω₂; simp only [Set.mem_preimage, Set.mem_setOf_eq, h_proj_factor]
+      rw [indepFun_iff_measure_inter_preimage_eq_mul] at h_indep_combined
+      rw [h_proj_preimage]
+      let T : Set ((Iio m → R) × (ℕ → {b : α // b ≠ a} → R)) :=
+        {p | ((fun r k ↦ if hm : m ≠ 0 then
+          r ⟨min k (m - 1), Finset.mem_Iio.mpr (h_row_bound hm k)⟩
+          else Nonempty.some inferInstance) p.1, p.2) ∈ t'}
+      have hT_meas : MeasurableSet T := by
+        refine ht'.preimage (Measurable.prod ?_ measurable_snd)
+        refine measurable_pi_lambda _ (fun k ↦ ?_)
+        by_cases hm : m ≠ 0
+        · simp only [ne_eq, hm, not_false_eq_true, ↓reduceDIte]
+          exact (measurable_pi_apply (⟨min k (m - 1), Finset.mem_Iio.mpr (h_row_bound hm k)⟩ :
+            Iio m)).comp measurable_fst
+        · simp [hm]
+      change μ₂ ((fun ω₂ ↦ ω₂ m a) ⁻¹' s ∩ (fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) ⁻¹' T) =
+        μ₂ ((fun ω₂ ↦ ω₂ m a) ⁻¹' s) *
+        μ₂ ((fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) ⁻¹' T)
+      exact h_indep_combined s T hs hT_meas
+    have h_eq : trunc = (fun p k b ↦ if h : b = a then if m ≠ 0 then p.1 k
+        else Nonempty.some inferInstance else p.2 k ⟨b, h⟩) ∘ proj := by
+      funext ω₂; exact h_trunc_proj ω₂
+    rw [h_eq]
+    exact h_indep_proj.comp measurable_id h_g_meas
+  rw [indepFun_iff_measure_inter_preimage_eq_mul] at h_indep_trunc
+  have h_const : ∀ ω₁, μ₂ (((fun ω₂ ↦ ω₂ m a) ⁻¹' s) ∩ ((fun ω₂ ↦ (ω₁, trunc ω₂)) ⁻¹' t)) =
+      μ₂ ((fun ω₂ ↦ ω₂ m a) ⁻¹' s) * μ₂ ((fun ω₂ ↦ (ω₁, trunc ω₂)) ⁻¹' t) := fun ω₁ ↦
+    h_indep_trunc s _ hs (ht.preimage (by fun_prop))
+  simp_rw [h_const]
+  let c := μ₂ ((fun ω₂ ↦ ω₂ m a) ⁻¹' s)
+  change ∫⁻ x, c * μ₂ ((fun ω₂ ↦ (x, trunc ω₂)) ⁻¹' t) ∂μ₁ =
+    (∫⁻ _, c ∂μ₁) * ∫⁻ x, μ₂ ((fun ω₂ ↦ (x, trunc ω₂)) ⁻¹' t) ∂μ₁
+  have h_preimage : ∀ x, (fun ω₂ ↦ (x, trunc ω₂)) ⁻¹' t = trunc ⁻¹' (Prod.mk x ⁻¹' t) := fun _ ↦ rfl
+  simp_rw [h_preimage]
+  have h_map : ∀ x, μ₂ (trunc ⁻¹' (Prod.mk x ⁻¹' t)) = (μ₂.map trunc) (Prod.mk x ⁻¹' t) := by
+    intro x; rw [Measure.map_apply h_trunc_meas (ht.preimage (by fun_prop))]
+  simp_rw [h_map]
+  rw [lintegral_const_mul _ (measurable_measure_prodMk_left_finite ht),
+    lintegral_const, measure_univ, mul_one]
 
-omit [StandardBorelSpace R] [Nonempty R] in
+
+omit [StandardBorelSpace R] in
 lemma measurable_stepsUntil (alg : Algorithm α R) (a : α) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
-        (fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b)) inferInstance]
+        (fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+          else Nonempty.some inferInstance else ω.2 k b)) inferInstance]
       (({ω | action alg (n + 1) ω = a ∧
         pullCount (action alg) a (n + 1) ω = m}).indicator (fun _ ↦ 1)) := by
   let f := ({ω | action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m}).indicator
     (fun _ ↦ 1)
   have h_eq : f = f ∘
-      fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b) := by
+      fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+        else Nonempty.some inferInstance else ω.2 k b) := by
     ext ω
     exact stepsUntil_indicator_congr alg a m n (by grind) (by grind) (by grind)
   change Measurable[MeasurableSpace.comap
-    (fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b)) inferInstance] f
+    (fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+      else Nonempty.some inferInstance else ω.2 k b)) inferInstance] f
   rw [h_eq]
   refine Measurable.comp ?_ (Measurable.of_comap_le le_rfl)
   refine Measurable.indicator (by fun_prop) ?_
   exact MeasurableSet.inter ((measurableSet_singleton _).preimage (by fun_prop))
     ((measurableSet_singleton _).preimage (by fun_prop))
 
+omit [StandardBorelSpace R] in
 lemma indepFun_snd_apply_pullCount_action (alg : Algorithm α R)
     (ν : Kernel α R) [IsMarkovKernel ν] (a : α) (m n : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν]
       ({ω | action alg (n + 1) ω = a ∧
         pullCount (action alg) a (n + 1) ω = m}).indicator (fun _ ↦ 1) :=
-  (indepFun_snd_apply_aux alg ν a m n).of_measurable_right (measurable_stepsUntil alg a m n)
+  (indepFun_snd_apply_aux ν a m).of_measurable_right (measurable_stepsUntil alg a m n)
 
 omit [StandardBorelSpace R] [Nonempty R] in
 @[fun_prop]
@@ -848,7 +1066,8 @@ lemma indepFun_snd_hist_cond (alg : Algorithm α R)
   refine IndepFun.of_measurable_right ?_ h_meas
   have h_ae_eq : truePast alg a n =ᵐ[(arrayMeasure ν)[|(fun ω ↦ (action alg (n + 1) ω,
         pullCount (action alg) (action alg (n + 1) ω) (n + 1) ω)) ⁻¹' {(a, m)}]]
-      (fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b)) := by
+      (fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+        else Nonempty.some inferInstance else ω.2 k b)) := by
     refine ae_cond_of_forall_mem ?_ fun x hx ↦ ?_
     · refine (measurableSet_singleton _).preimage ?_
       have h_meas_pc : Measurable fun ω ↦
@@ -868,7 +1087,8 @@ lemma indepFun_snd_hist_cond (alg : Algorithm α R)
   refine IndepFun.congr ?_ EventuallyEq.rfl h_ae_eq.symm
   suffices (fun ω ↦ ω.2 m a) ⟂ᵢ[(arrayMeasure ν)[|(({ω | action alg (n + 1) ω = a ∧
         pullCount (action alg) a (n + 1) ω = m}).indicator (fun _ ↦ 1)) ⁻¹' {1}]]
-      fun ω ↦ (ω.1, fun k b ↦ if b = a then ω.2 (min k (m - 1)) b else ω.2 k b) by
+      fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
+        else Nonempty.some inferInstance else ω.2 k b) by
     convert this
     ext ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
@@ -880,12 +1100,12 @@ lemma indepFun_snd_hist_cond (alg : Algorithm α R)
   obtain ⟨f, hf, hf_eq⟩ := h_meas.exists_eq_measurable_comp
   simp_rw [hf_eq]
   refine indepFun_todo (Z := f) (z := 1) ?_ ?_ hf
-  · exact indepFun_snd_apply_aux alg ν a m n
+  · exact indepFun_snd_apply_aux ν a m
   · refine Measurable.prodMk (by fun_prop) ?_
     simp_rw [measurable_pi_iff]
-    intro m a
-    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact MeasurableSet.const _
+    intro i b
+    refine Measurable.ite (MeasurableSet.const _) ?_ (by fun_prop)
+    refine Measurable.ite (MeasurableSet.const _) (by fun_prop) (by fun_prop)
 
 /-- The conditional distribution of the reward at time `n + 1`, given the history up to time `n`,
 the action at time `n + 1`, and the number of times that action has been pulled before time `n + 1`,

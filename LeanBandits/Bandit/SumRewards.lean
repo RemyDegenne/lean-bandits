@@ -306,21 +306,19 @@ variable {α Ω Ω' : Type*} [DecidableEq α] {mα : MeasurableSpace α} {mΩ : 
   {A : ℕ → Ω → α} {R : ℕ → Ω → ℝ} {A₂ : ℕ → Ω' → α} {R₂ : ℕ → Ω' → ℝ}
   {ω : Ω} {m n t : ℕ} {a : α}
 
-variable [StandardBorelSpace α] [Nonempty α]
-
-omit [Nonempty α] in
 lemma sumRewards_eq_comp :
     sumRewards A R a n =
      (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0) ∘ (fun ω n ↦ (A n ω, R n ω)) := by
   ext
   simp [sumRewards]
 
-omit [Nonempty α] in
 lemma pullCount_eq_comp :
     pullCount A a n =
       (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then 1 else 0) ∘ (fun ω n ↦ (A n ω, R n ω)) := by
   ext
   simp [pullCount]
+
+variable [StandardBorelSpace α] [Nonempty α]
 
 -- todo: write those lemmas with IdentDistrib instead of equality of maps
 lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique
@@ -467,7 +465,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable α]
       exists_eq_right, mem_filter, mem_range] at hk
     simp [hk.2.1]
 
-lemma todo [Countable α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_sumRewards_mem_le [Countable α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {B : Set ℝ} (hB : MeasurableSet B) :
     P (sumRewards A R a n ⁻¹' B) ≤
       ∑ k ∈ range (n + 1), Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by

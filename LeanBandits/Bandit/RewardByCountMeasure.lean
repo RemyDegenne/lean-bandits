@@ -233,43 +233,43 @@ lemma identDistrib_rewardByCount_eval [StandardBorelSpace Ω] [Countable α]
   (identDistrib_rewardByCount_id h a n hn).trans
     (identDistrib_eval_eval_id_streamMeasure ν m a).symm
 
-lemma indepFun_rewardByCount_Iic [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α)
-    (n : ℕ) :
-    (rewardByCount A R a (n + 1)) ⟂ᵢ[𝔓'] fun ω (i : Iic n) ↦ rewardByCount A R a i ω := by
-  sorry
+-- lemma indepFun_rewardByCount_Iic [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α)
+--     (n : ℕ) :
+--     (rewardByCount A R a (n + 1)) ⟂ᵢ[𝔓'] fun ω (i : Iic n) ↦ rewardByCount A R a i ω := by
+--   sorry
 
-lemma iIndepFun_rewardByCount' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
-    iIndepFun (rewardByCount A R a) 𝔓' := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
-  rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
-  exact indepFun_rewardByCount_Iic h a
+-- lemma iIndepFun_rewardByCount' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
+--     iIndepFun (rewardByCount A R a) 𝔓' := by
+--   have hA := h.measurable_A
+--   have hR := h.measurable_R
+--   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
+--   exact indepFun_rewardByCount_Iic h a
 
-lemma iIndepFun_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
-    iIndepFun (fun (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1)) 𝔓' := by
-  sorry
+-- lemma iIndepFun_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+--     iIndepFun (fun (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1)) 𝔓' := by
+--   sorry
 
-lemma identDistrib_rewardByCount_stream_all [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
-    IdentDistrib (fun ω (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
-      (fun ω p ↦ ω p.2 p.1) 𝔓' (Bandit.streamMeasure ν) := by
-  refine IdentDistrib.pi (fun p ↦ ?_) ?_ ?_
-  · refine identDistrib_rewardByCount_eval h p.1 (p.2 + 1) p.2 (by simp) (ν := ν)
-  · exact iIndepFun_rewardByCount h
-  · sorry
+-- lemma identDistrib_rewardByCount_stream_all [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+--     IdentDistrib (fun ω (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
+--       (fun ω p ↦ ω p.2 p.1) 𝔓' (Bandit.streamMeasure ν) := by
+--   refine IdentDistrib.pi (fun p ↦ ?_) ?_ ?_
+--   · refine identDistrib_rewardByCount_eval h p.1 (p.2 + 1) p.2 (by simp) (ν := ν)
+--   · exact iIndepFun_rewardByCount h
+--   · sorry
 
-lemma identDistrib_rewardByCount_stream' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
-    IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω n a)
-      𝔓' (Bandit.streamMeasure ν) := by
-  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
-  · refine identDistrib_rewardByCount_eval h a (n + 1) n (by simp) (ν := ν)
-  · have h_indep := iIndepFun_rewardByCount' h a
-    exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
-  · exact iIndepFun_eval_streamMeasure'' ν a
+-- lemma identDistrib_rewardByCount_stream' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
+--     IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω n a)
+--       𝔓' (Bandit.streamMeasure ν) := by
+--   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
+--   · refine identDistrib_rewardByCount_eval h a (n + 1) n (by simp) (ν := ν)
+--   · have h_indep := iIndepFun_rewardByCount' h a
+--     exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
+--   · exact iIndepFun_eval_streamMeasure'' ν a
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
 lemma identDistrib_eval_streamMeasure_measure (a : α) :
@@ -286,40 +286,40 @@ lemma identDistrib_eval_streamMeasure_measure (a : α) :
     rw [← Measure.snd, Bandit.snd_measure]
     exact iIndepFun_eval_streamMeasure'' ν a
 
-lemma identDistrib_rewardByCount_stream [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
-    IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω.2 n a) 𝔓' 𝔓 :=
-  (identDistrib_rewardByCount_stream' h a).trans (identDistrib_eval_streamMeasure_measure a)
+-- lemma identDistrib_rewardByCount_stream [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
+--     IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω.2 n a) 𝔓' 𝔓 :=
+--   (identDistrib_rewardByCount_stream' h a).trans (identDistrib_eval_streamMeasure_measure a)
 
-lemma indepFun_rewardByCount_of_ne [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {a b : α} (hab : a ≠ b) :
-    IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω) 𝔓' := by
-  sorry
+-- lemma indepFun_rewardByCount_of_ne [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {a b : α} (hab : a ≠ b) :
+--     IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω) 𝔓' := by
+--   sorry
 
-lemma identDistrib_sum_Icc_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (m : ℕ) (a : α) :
-    IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
-      (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓' 𝔓 := by
-  have h1 (a : α) :
-      IdentDistrib (fun ω s ↦ rewardByCount A R a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓' 𝔓 :=
-    identDistrib_rewardByCount_stream h a
-  have h_eq (ω : Ω × (ℕ → α → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount A R a s ω
-      = ∑ s ∈ range m, rewardByCount A R a (s + 1) ω := by
-    let e : Icc 1 m ≃ range m :=
-    { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
-      invFun x := ⟨x + 1, by
-        have h := x.2
-        simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
-        simp only [mem_range] at h
-        grind⟩
-      left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
-      right_inv x := by have h := x.2; grind }
-    rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
-    · simp
-    · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
-        forall_and_index]
-      grind
-  simp_rw [h_eq]
-  exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
+-- lemma identDistrib_sum_Icc_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
+--     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (m : ℕ) (a : α) :
+--     IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
+--       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓' 𝔓 := by
+--   have h1 (a : α) :
+--       IdentDistrib (fun ω s ↦ rewardByCount A R a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓' 𝔓 :=
+--     identDistrib_rewardByCount_stream h a
+--   have h_eq (ω : Ω × (ℕ → α → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount A R a s ω
+--       = ∑ s ∈ range m, rewardByCount A R a (s + 1) ω := by
+--     let e : Icc 1 m ≃ range m :=
+--     { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
+--       invFun x := ⟨x + 1, by
+--         have h := x.2
+--         simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
+--         simp only [mem_range] at h
+--         grind⟩
+--       left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
+--       right_inv x := by have h := x.2; grind }
+--     rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
+--     · simp
+--     · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
+--         forall_and_index]
+--       grind
+--   simp_rw [h_eq]
+--   exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
 
 end Bandits

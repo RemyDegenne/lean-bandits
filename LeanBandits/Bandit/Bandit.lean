@@ -161,27 +161,6 @@ lemma indepFun_eval_snd_measure (alg : Algorithm α R) (ν : Kernel α R) [IsMar
 
 end StreamMeasure
 
-section DetAlgorithm
-
-variable {nextaction : (n : ℕ) → (Iic n → α × R) → α} {h_next : ∀ n, Measurable (nextaction n)}
-  {action0 : α} {ν : Kernel α R} [IsMarkovKernel ν]
-
-local notation "𝔓t" => Bandit.trajMeasure (detAlgorithm nextaction h_next action0) ν
-
-lemma HasLaw_action_zero_detAlgorithm : HasLaw (IT.action 0) (Measure.dirac action0) 𝔓t where
-  map_eq := (IT.hasLaw_action_zero _ _).map_eq
-
-lemma action_zero_detAlgorithm [MeasurableSingletonClass α] :
-    IT.action 0 =ᵐ[𝔓t] fun _ ↦ action0 :=
-  IT.action_zero_detAlgorithm
-
-lemma action_detAlgorithm_ae_eq [StandardBorelSpace α] [Nonempty α]
-    [StandardBorelSpace R] [Nonempty R] (n : ℕ) :
-    IT.action (n + 1) =ᵐ[𝔓t] fun h ↦ nextaction n (fun i ↦ h i) :=
-  IT.action_detAlgorithm_ae_eq n
-
-end DetAlgorithm
-
 namespace ArrayModel
 
 open unitInterval

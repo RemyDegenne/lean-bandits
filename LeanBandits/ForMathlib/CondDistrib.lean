@@ -72,14 +72,6 @@ lemma CondIndepFun.of_prod_left {ε : Type*} {mε : MeasurableSpace ε}
     X ⟂ᵢ[Z, hZ; μ] Y :=
   Kernel.IndepFun.of_prod_left h
 
-lemma CondIndepFun.prod_right [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
-    [StandardBorelSpace γ] [Nonempty γ] [StandardBorelSpace δ] [Nonempty δ] [IsFiniteMeasure μ]
-    {X : α → β} {Y : α → γ} {Z : α → δ}
-    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
-    (h : X ⟂ᵢ[Z, hZ; μ] Y) :
-    X ⟂ᵢ[Z, hZ; μ] (fun ω ↦ (Y ω, Z ω)) := by
-  sorry
-
 end IndepFun
 
 section CondDistrib
@@ -94,6 +86,77 @@ lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
   rw [← Measure.compProd_assoc', compProd_map_condDistrib hX, compProd_map_condDistrib hY,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [StandardBorelSpace γ]
+    [Nonempty γ]
+    (hX : AEMeasurable X μ) (hT : AEMeasurable T μ) :
+    condDistrib (fun ω ↦ (X ω, T ω)) T μ =ᵐ[μ.map T] condDistrib X T μ ×ₖ Kernel.id := by
+  have h_prod := condDistrib_prod_left hX hT hT (μ := μ)
+  have h_fst := condDistrib_comp_self (μ := μ) (fun ω ↦ (T ω, X ω)) (f := Prod.fst) (by fun_prop)
+  rw [(compProd_map_condDistrib hX).symm] at h_fst
+  have h_fst' := (Measure.ae_compProd_iff (Kernel.measurableSet_eq _ _)).mp h_fst
+  filter_upwards [h_prod, h_fst'] with z hz1 hz2
+  rw [hz1]
+  ext t ht
+  rw [Kernel.compProd_apply ht]
+  have hz2' : ∀ᵐ y ∂(condDistrib X T μ z),
+      condDistrib T (fun ω ↦ (T ω, X ω)) μ (z, y) = Measure.dirac z := by
+    filter_upwards [hz2] with y hy; convert hy using 2
+  calc ∫⁻ y, condDistrib T (fun ω ↦ (T ω, X ω)) μ (z, y) (Prod.mk y ⁻¹' t) ∂condDistrib X T μ z
+  _ = ∫⁻ y, (Measure.dirac z) (Prod.mk y ⁻¹' t) ∂condDistrib X T μ z :=
+    lintegral_congr_ae (hz2'.mono fun y hy ↦ by simp only [hy])
+  _ = ∫⁻ y, (Prod.mk y ⁻¹' t).indicator 1 z ∂condDistrib X T μ z :=
+    lintegral_congr fun y ↦ Measure.dirac_apply' _ (ht.preimage (by fun_prop))
+  _ = (condDistrib X T μ z) ((fun y ↦ (y, z)) ⁻¹' t) := by
+    rw [← lintegral_indicator_one (ht.preimage (by fun_prop : Measurable fun y ↦ (y, z)))]
+    exact lintegral_congr fun _ ↦ rfl
+  _ = ((condDistrib X T μ ×ₖ Kernel.id) z) t := by
+    rw [Kernel.prod_apply, Kernel.id_apply, Measure.prod_apply_symm ht, lintegral_dirac]
+
+-- proved by Claude, then modified
+lemma CondIndepFun.prod_right [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
+    [StandardBorelSpace γ] [Nonempty γ] [StandardBorelSpace δ] [Nonempty δ]
+    {X : α → β} {Y : α → γ} {Z : α → δ}
+    (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
+    (h : X ⟂ᵢ[Z, hZ; μ] Y) :
+    X ⟂ᵢ[Z, hZ; μ] (fun ω ↦ (Y ω, Z ω)) := by
+  rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkRight hY hX hZ,
+    condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h
+  rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkRight (by fun_prop) hX hZ,
+    condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
+  -- Key: condDistrib (Y, Z) Z μ z = (condDistrib Y Z μ z).map (y ↦ (y, z))
+  have h_cond : condDistrib (fun ω ↦ (Y ω, Z ω)) Z μ =ᵐ[μ.map Z]
+      fun z ↦ (condDistrib Y Z μ z).map (fun y ↦ (y, z)) := by
+    suffices condDistrib (fun ω ↦ (Y ω, Z ω)) Z μ =ᵐ[μ.map Z]
+        (condDistrib Y Z μ) ×ₖ Kernel.id by
+      refine this.trans (ae_of_all _ fun x ↦ ?_)
+      simp only
+      rw [Kernel.prod_apply, Kernel.id_apply]
+      ext s hs
+      rw [Measure.map_apply (by fun_prop) hs, Measure.prod_apply_symm hs, lintegral_dirac]
+    exact condDistrib_prod_self_left hY.aemeasurable hZ.aemeasurable
+  -- Main calculation
+  calc μ.map (fun x ↦ ((Z x, X x), (Y x, Z x)))
+  _ = (μ.map (fun x ↦ ((Z x, X x), Y x))).map (fun p ↦ (p.1, (p.2, p.1.1))) := by
+      rw [Measure.map_map (by fun_prop) (by fun_prop)]; rfl
+  _ = (μ.map (fun ω ↦ (Z ω, X ω)) ⊗ₘ (condDistrib Y Z μ).prodMkRight β).map
+        (fun p ↦ (p.1, (p.2, p.1.1))) := by rw [h]
+  _ = μ.map (fun ω ↦ (Z ω, X ω)) ⊗ₘ (condDistrib (fun ω ↦ (Y ω, Z ω)) Z μ).prodMkRight β := by
+    ext s hs
+    rw [Measure.map_apply (by fun_prop) hs,
+      Measure.compProd_apply (hs.preimage (by fun_prop)), Measure.compProd_apply hs]
+    have h_cond' : ∀ᵐ p ∂(μ.map (fun ω ↦ (Z ω, X ω))),
+        condDistrib (fun ω ↦ (Y ω, Z ω)) Z μ p.1 =
+          (condDistrib Y Z μ p.1).map (fun y ↦ (y, p.1)) := by
+      have h_fst : (μ.map (fun ω ↦ (Z ω, X ω))).map Prod.fst = μ.map Z := by
+        rw [Measure.map_map (by fun_prop) (by fun_prop)]; rfl
+      rw [← h_fst] at h_cond
+      exact mem_ae_of_mem_ae_map (by fun_prop) h_cond
+    refine lintegral_congr_ae (h_cond'.mono fun ⟨z, x⟩ hzx ↦ ?_)
+    simp only [Kernel.prodMkRight_apply, hzx,
+      Measure.map_apply (by fun_prop : Measurable fun y ↦ (y, z))
+        (hs.preimage (by fun_prop : Measurable (Prod.mk (z, x))))]
+    congr 1
 
 lemma fst_condDistrib_prod [StandardBorelSpace β] [Nonempty β]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :

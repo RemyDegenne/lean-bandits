@@ -87,46 +87,30 @@ local notation "𝔓" => trajMeasure alg (stationaryEnv ν)
 
 /-- The conditional distribution of the reward at time `n` given the action at time `n` is `ν`. -/
 lemma condDistrib_reward_stationaryEnv (n : ℕ) :
-    condDistrib (IT.reward n) (IT.action n) 𝔓 =ᵐ[(𝔓).map (IT.action n)] ν := by
-  cases n with
-  | zero =>
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
-    change (𝔓).map (IT.step 0) = (𝔓).map (IT.action 0) ⊗ₘ ν
-    rw [(IT.hasLaw_action_zero alg (stationaryEnv ν)).map_eq,
-      (IT.hasLaw_step_zero alg (stationaryEnv ν)).map_eq, stationaryEnv_ν0]
-  | succ n =>
-    have h_eq := IT.condDistrib_reward alg (stationaryEnv ν) n
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
-    have : (𝔓).map (IT.action (n + 1)) =
-        ((𝔓).map (fun x ↦ (IT.hist n x, IT.action (n + 1) x))).snd := by
-      rw [Measure.snd_map_prodMk (by fun_prop)]
-    simp only [stationaryEnv_feedback] at h_eq
-    rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
-      Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
-    congr
+    condDistrib (IT.reward n) (IT.action n) 𝔓 =ᵐ[(𝔓).map (IT.action n)] ν :=
+  IsAlgEnvSeq.condDistrib_reward_stationaryEnv
+    (IT.isAlgEnvSeq_trajMeasure alg (stationaryEnv ν)) n
 
 /-- The reward at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
 lemma condIndepFun_reward_hist_action (n : ℕ) :
     IT.reward (n + 1) ⟂ᵢ[IT.action (n + 1), IT.measurable_action _ ; 𝔓] IT.hist n :=
-  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
-    (by fun_prop) (by fun_prop) (by fun_prop) (IT.condDistrib_reward alg (stationaryEnv ν) n)
+  IsAlgEnvSeq.condIndepFun_reward_hist_action
+    (IT.isAlgEnvSeq_trajMeasure alg (stationaryEnv ν)) n
 
 lemma condIndepFun_reward_hist_action_action
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) :
     reward (n + 1) ⟂ᵢ[action (n + 1), measurable_action (n + 1); trajMeasure alg (stationaryEnv ν)]
-      (fun ω ↦ (hist n ω, action (n + 1) ω)) := by
-  have h_indep : reward (n + 1) ⟂ᵢ[action (n + 1), measurable_action (n + 1);
-      trajMeasure alg (stationaryEnv ν)] hist n := by
-    convert condIndepFun_reward_hist_action (alg := alg) (ν := ν) n
-  exact h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
+      (fun ω ↦ (hist n ω, action (n + 1) ω)) :=
+  IsAlgEnvSeq.condIndepFun_reward_hist_action_action
+    (IT.isAlgEnvSeq_trajMeasure alg (stationaryEnv ν)) n
 
 lemma condIndepFun_reward_hist_action_action'
     {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν] (n : ℕ) (hn : n ≠ 0) :
     reward n ⟂ᵢ[action n, measurable_action n; trajMeasure alg (stationaryEnv ν)]
-      (fun ω ↦ (hist (n - 1) ω, action n ω)) := by
-  have := condIndepFun_reward_hist_action_action (alg := alg) (ν := ν) (n - 1)
-  grind
+      (fun ω ↦ (hist (n - 1) ω, action n ω)) :=
+  IsAlgEnvSeq.condIndepFun_reward_hist_action_action'
+    (IT.isAlgEnvSeq_trajMeasure alg (stationaryEnv ν)) n hn
 
 end IT
 

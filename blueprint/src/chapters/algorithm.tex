@@ -1,12 +1,19 @@
 \chapter{Iterative stochastic algorithms}
 
 
+Warning: all times start at zero.
+
+TODO: notations
+
+All measurable spaces are assumed to be standard Borel.
+
+
 \begin{definition}[Algorithm]\label{def:algorithm}
   \leanok
   \lean{Learning.Algorithm}
 A sequential, stochastic algorithm with actions in a measurable space $\mathcal{A}$ and observations in a measurable space $\mathcal{R}$ is described by the following data:
 \begin{itemize}
-  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the action of the algorithm at time $t+1$ given the history of previous pulls and observations,
+  \item for all $t \in \mathbb{N}$, a policy $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$, a Markov kernel which gives the distribution of the action of the algorithm at time $t+1$ given the history of previous actions and observations,
   \item $P_0 \in \mathcal{P}(\mathcal{A})$, a probability measure that gives the distribution of the first action.
 \end{itemize}
 \end{definition}
@@ -40,10 +47,7 @@ An algorithm is deterministic if its initial probability measure $P_0$ is a Dira
 An environment is stationary if there exists a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathcal{R}$ such that $\nu'_0 = \nu$ and for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = \nu(a)$.
 \end{definition}
 
-
-\begin{remark}[Lean remark: properties vs constructors]
-There are several ways to implement the last two definitions in Lean. We could write them as properties of algorithms and environments, or we can implement constructors that create algorithms and environments from the data in the definitions. We chose the latter option. Time will tell if it was a good choice.
-\end{remark}
+TODO: possibly change the ``stationary'' name.
 
 
 Let's detail four examples of interactions between an algorithm and an environment.
@@ -64,17 +68,121 @@ Let's detail four examples of interactions between an algorithm and an environme
 \end{enumerate}
 
 
-
-
-\section{Probability space: Ionescu-Tulcea theorem}
-
-If we group together the policy of the algorithm and the kernel of the environment at each time step, we get a sequence of Markov kernels $(\kappa_t)_{t \in \mathbb{N}}$, with $\kappa_t : (\mathcal{A} \times \mathcal{R})^{t+1}  \rightsquigarrow (\mathcal{A} \times \mathcal{R})$.
 We will want to make global probabilistic statements about the whole sequence of actions and observations.
 For example, we may want to prove that an optimization algorithm converges to the minimum of a function almost surely.
 For such a statement to make sense, we need a probability space on which the whole sequence of actions and observations is defined as a random variable.
 
+We denote by $P[X \mid Y]$ the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
+
+
+\begin{definition}[Algorithm-environment interaction]\label{def:IsAlgEnvSeq}
+  \uses{def:algorithm, def:environment}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq}
+Let $\mathfrak{A}$ be an algorithm as in Definition~\ref{def:algorithm} and $\mathfrak{E}$ be an environment as in Definition~\ref{def:environment}.
+A probability space $(\Omega, P)$ and two sequences of random variables $A : \mathbb{N} \to \Omega \to \mathcal{A}$ and $R : \mathbb{N} \to \Omega \to \mathcal{R}$ form an algorithm-environment interaction for $\mathfrak{A}$ and $\mathfrak{E}$ if the following conditions hold:
+\begin{enumerate}
+  \item The law of $A_0$ is $P_0$.
+  \item $P \left[ R_0 \mid A_0 \right] = \nu'_0$.
+  \item For all $t \in \mathbb{N}$, $P\left[A_{t+1} \mid A_0, R_0, \ldots, A_t, R_t \right] = \pi_t$.
+  \item For all $t \in \mathbb{N}$, $P\left[R_{t+1} \mid A_0, R_0, \ldots, A_t, R_t, A_{t+1}\right] = \nu_t$.
+\end{enumerate}
+\end{definition}
+
+
+\begin{definition}[History]\label{def:history}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq.hist, Learning.IsAlgEnvSeq.step}
+For two sequences of random variables $A : \mathbb{N} \to \Omega \to \mathcal{A}$ and $R : \mathbb{N} \to \Omega \to \mathcal{R}$ (actions and observations), we call step of the interaction at time $t$ the random variable $X_t : \Omega \to \mathcal{A} \times \mathcal{R}$ defined by $X_t(\omega) = (A_t(\omega), R_t(\omega))$.
+We call history up to time $t$ the random variable $H_t : \Omega \to (\mathcal{A} \times \mathcal{R})^{t+1}$ defined by $H_t(\omega) = (X_0(\omega), \ldots, X_t(\omega))$.
+\end{definition}
+
+
+\begin{lemma}\label{lem:law_step}
+  \uses{def:IsAlgEnvSeq, def:history}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq.hasLaw_step_zero, Learning.IsAlgEnvSeq.hasCondDistrib_step}
+In an algorithm-environment interaction $(A, R, P)$ as in Definition~\ref{def:IsAlgEnvSeq},
+\begin{itemize}
+  \item the law of the initial step $X_0$ is $P_0 \otimes \nu'_0$,
+  \item for all $t \in \mathbb{N}$, $P \left[ X_{t+1} \mid H_t \right] = \pi_t \otimes \nu_t$.
+\end{itemize}
+\end{lemma}
+
+\begin{proof}\leanok
+Immediate from the properties of an algorithm-environment interaction.
+\end{proof}
+
+
+\begin{definition}\label{def:IsAlgEnvSeq.filtration}
+  \uses{def:IsAlgEnvSeq, def:history}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq.filtration, Learning.IsAlgEnvSeq.filtrationAction}
+For an algorithm-environment interaction $(A, R, P)$ as in Definition~\ref{def:IsAlgEnvSeq}, we denote by $\mathcal{F}_t$ the sigma-algebra generated by the history up to time $t$: $\mathcal{F}_t = \sigma(H_t)$.
+We denote by $\mathcal{F}^A_t$ the sigma-algebra generated by the history up to time $t-1$ and the action at time $t$: $\mathcal{F}^A_t = \sigma(H_{t-1}, A_t)$.
+\end{definition}
+
+
+\begin{theorem}[\cite{lattimore2020bandit}, Proposition 4.8]\label{thm:isAlgEnvSeq_unique}
+  \uses{def:IsAlgEnvSeq}
+  \leanok
+  \lean{Learning.isAlgEnvSeq_unique}
+If $(A, R, P)$ and $(A', R', P')$ are two algorithm-environment interactions for the same algorithm $\mathfrak{A}$ and environment $\mathfrak{E}$, then the joint distributions of the sequences of actions and observations are equal: the law of $(A_i, R_i)_{i \in \mathbb{N}}$ under $P$ is equal to the law of $(A'_i, R'_i)_{i \in \mathbb{N}}$ under $P'$.
+\end{theorem}
+
+\begin{proof}\leanok
+
+\end{proof}
+
+
+
+\section{Stationary environment}
+
+Recall that in a stationary environment, there exists a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathcal{R}$ such that $\nu'_0 = \nu$ and for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = \nu(a)$.
+
+Let $(A, R, P)$ be an algorithm-environment interaction in a stationary environment with kernel $\nu$.
+
+\begin{lemma}\label{lem:condDistrib_reward_stationaryEnv}
+  \uses{def:IsAlgEnvSeq, def:stationaryEnv}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq.condDistrib_reward_stationaryEnv}
+In a stationary environment, for any $t \in \mathbb{N}$, the conditional distribution $P\left[R_t \mid A_t\right]$ is $(A_{t*} P_{\mathcal{T}})$-almost surely equal to $\nu$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:law_step, def:stationaryEnv}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:condIndepFun_reward_hist_action}
+  \uses{def:IsAlgEnvSeq, def:stationaryEnv}
+  \leanok
+  \lean{Learning.IsAlgEnvSeq.condIndepFun_reward_hist_action}
+In a stationary environment, for any $t \in \mathbb{N}$, the reward $R_{t+1}$ is conditionally independent of the history $H_t$ given the action $A_{t+1}$ (more succinctly, $R_{t+1} \ind H_t \mid A_{t+1}$).
+\end{lemma}
+
+\begin{proof}\leanok
+
+\end{proof}
+
+
+
+\section{Probability space: Ionescu-Tulcea theorem}
+
+In Theorem~\ref{thm:isAlgEnvSeq_unique}, we saw that the distribution of the sequence of actions and observations in a suitable probability space is uniquely determined by the algorithm and the environment.
+We now show that such a probability space actually exists: for any algorithm and environment, we build an algorithm-environment interaction as in Definition~\ref{def:IsAlgEnvSeq}.
+
+
+
+\subsection{Ionescu-Tulcea theorem}
+
+If we group together the policy of the algorithm and the kernel of the environment at each time step, we get a sequence of Markov kernels $(\kappa_t)_{t \in \mathbb{N}}$, with $\kappa_t : (\mathcal{A} \times \mathcal{R})^{t+1}  \rightsquigarrow (\mathcal{A} \times \mathcal{R})$.
+
+
 We now abstract that situation and consider a sequence of measurable spaces $(\Omega_t)_{t \in \mathbb{N}}$, a probability measure $\mu$ on $\Omega_0$ and a sequence of Markov kernels $\kappa_t : \prod_{s=0}^t \Omega_s \rightsquigarrow \Omega_{t+1}$.
 The Ionescu-Tulcea theorem builds a probability space from the sequence of kernels and the initial measure.
+
 
 \begin{theorem}[Ionescu-Tulcea]\label{thm:ionescu-tulcea}
   \mathlibok
@@ -100,7 +208,7 @@ The $\mathcal{T}$ subscript stands for ``trajectory''.
 \end{definition}
 
 
-\begin{definition}[Step and history]\label{def:history}
+\begin{definition}[Step and history]\label{def:IT.history}
   \leanok
   \lean{Learning.IT.step, Learning.IT.hist}
 For $t \in \mathbb{N}$, we denote by $X_t \in \Omega_t$ the random variable describing the time step $t$, and by $H_t \in \prod_{s=0}^t \Omega_s$ the history up to time $t$.
@@ -110,8 +218,8 @@ Formally, these are measurable functions on $\Omega_{\mathcal{T}}$, defined by $
 Note: $(X_t)_{t \in \mathbb{N}}$ is the canonical process on $\Omega_{\mathcal{T}}$. $H_t$ is equal to $\pi_{[0,t]}$.
 
 
-\begin{definition}[Filtration]\label{def:filtration}
-  \uses{def:history}
+\begin{definition}[Filtration]\label{def:IT.filtration}
+  \uses{def:IT.history}
   \leanok
   \lean{Learning.IT.filtration}
 For $t \in \mathbb{N}$, we denote by $\mathcal{F}_t$ the sigma-algebra generated by the history up to time $t$: $\mathcal{F}_t = \sigma(H_t)$.
@@ -122,7 +230,7 @@ $(\mathcal{F}_t)_{t \in \mathbb{N}}$ is the canonical filtration on $\Omega_{\ma
 
 
 \begin{lemma}\label{lem:adapted_history}
-  \uses{def:history, def:filtration}
+  \uses{def:IT.history, def:IT.filtration}
   \leanok
   \lean{Learning.IT.adapted_step, Learning.IT.adapted_hist}
 The random variables $X_t$ and $H_t$ are $\mathcal{F}_t$-measurable.
@@ -134,11 +242,8 @@ Said differently, the processes $(X_t)_{t \in \mathbb{N}}$ and $(H_t)_{t \in \ma
 \end{proof}
 
 
-We now list properties of those random variables that follow from the construction of the trajectory measure.
-We write $P[X \mid Y]$ for the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
-
 \begin{lemma}\label{lem:condDistrib_X_add_one}
-  \uses{def:history, def:trajMeasure}
+  \uses{def:IT.history, def:trajMeasure}
   \leanok
   \lean{ProbabilityTheory.Kernel.condDistrib_trajMeasure}
 For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
@@ -152,7 +257,7 @@ TODO: complete proof.
 
 
 \begin{lemma}\label{lem:law_X_zero}
-  \uses{def:history, def:trajMeasure}
+  \uses{def:IT.history, def:trajMeasure}
   \leanok
   \lean{Learning.IsAlgEnvSeq.hasLaw_step_zero}
 The law of $X_0$ under $P_{\mathcal{T}}$ is $\mu$.
@@ -163,26 +268,26 @@ The law of $X_0$ under $P_{\mathcal{T}}$ is $\mu$.
 \end{proof}
 
 
-\paragraph{Case of an algorithm-environment interaction.}
 
-We suppose now that, as in the algorithm-environment interaction, $\Omega_t = \mathcal{A}_t \times \mathcal{R}_t$ for some measurable spaces $\mathcal{A}_t$ and $\mathcal{R}_t$, and that for all $t \in \mathbb{N}$, $\kappa_t = \pi_t \otimes \nu_t$ for policy kernels $\pi_t : \prod_{s=0}^t(\mathcal{A}_s \times \mathcal{R}_s) \rightsquigarrow \mathcal{A}$ and feedback kernels $\nu_t : \prod_{s=0}^t(\mathcal{A}_s \times \mathcal{R}_s) \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
-Likewise, $\mu = \alpha_0 \otimes \nu'_0$ for a probability measure $\alpha_0$ on $\mathcal{A}_0$ and a Markov kernel $\nu'_0 : \mathcal{A}_0 \rightsquigarrow \mathcal{R}_0$.
-The step random variable $X_t$ takes values in $\mathcal{A}_t \times \mathcal{R}_t$.
 
-TODO: the code does not have $\mathcal{A}_t$ but a unique $\mathcal{A}$, same for $\mathcal{R}$.
+\subsection{Case of an algorithm-environment interaction}
 
-\begin{definition}\label{def:actionReward}
-  \uses{def:history}
+We now go back to the setting of an algorithm interacting with an environment and suppose that $\Omega_t = \mathcal{A} \times \mathcal{R}$ for some measurable spaces $\mathcal{A}$ and $\mathcal{R}$, and that for all $t \in \mathbb{N}$, $\kappa_t = \pi_t \otimes \nu_t$ for policy kernels $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$ and feedback kernels $\nu_t : (\mathcal{A} \times \mathcal{R})^{t+1} \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
+Likewise, $\mu = P_0 \otimes \nu'_0$ for a probability measure $P_0$ on $\mathcal{A}$ and a Markov kernel $\nu'_0 : \mathcal{A}_\rightsquigarrow \mathcal{R}$.
+The step random variable $X_t$ takes values in $\mathcal{A} \times \mathcal{R}$.
+
+\begin{definition}\label{def:IT.actionReward}
+  \uses{def:IT.history}
   \leanok
   \lean{Learning.IT.action, Learning.IT.reward}
-We write $A_t$ and $R_t$ for the projections of $X_t$ on $\mathcal{A}_t$ and $\mathcal{R}_t$ respectively.
+We write $A_t$ and $R_t$ for the projections of $X_t$ on $\mathcal{A}$ and $\mathcal{R}$ respectively.
 $A_t$ is the action taken at time $t$ and $R_t$ is the reward received at time $t$.
-Formally, $A_t(\omega) = \omega_{t,1}$ and $R_t(\omega) = \omega_{t,2}$ for $\omega = \prod_{t=0}^{+\infty}(\omega_{t,1}, \omega_{t,2}) \in \prod_{t=0}^{+\infty} \mathcal{A}_t \times \mathcal{R}_t$.
+Formally, $A_t(\omega) = \omega_{t,1}$ and $R_t(\omega) = \omega_{t,2}$ for $\omega = \prod_{t=0}^{+\infty}(\omega_{t,1}, \omega_{t,2}) \in \Omega_{\mathcal{T}} = \prod_{t=0}^{+\infty} \mathcal{A} \times \mathcal{R}$.
 \end{definition}
 
 
 \begin{lemma}\label{lem:adapted_action_reward}
-  \uses{def:actionReward, def:filtration}
+  \uses{def:IT.actionReward, def:IT.filtration}
   \leanok
   \lean{Learning.IT.adapted_action, Learning.IT.adapted_reward}
 The random variables $A_t$ and $R_t$ are $\mathcal{F}_t$-measurable.
@@ -198,9 +303,9 @@ Said differently, the processes $(A_t)_{t \in \mathbb{N}}$ and $(R_t)_{t \in \ma
 We need to check that the random variables $A_t$ and $R_t$ have the expected conditional distributions.
 
 \begin{lemma}\label{lem:condDistrib_A_add_one}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:environment}
+  \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
-  \lean{Learning.IsAlgEnvSeq.hasCondDistrib_action}
+  \lean{Learning.IT.condDistrib_action}
 For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\pi_t$.
 \end{lemma}
 
@@ -212,9 +317,9 @@ Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\math
 
 
 \begin{lemma}\label{lem:condDistrib_R_add_one}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:environment}
+  \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
-  \lean{Learning.IsAlgEnvSeq.hasCondDistrib_reward}
+  \lean{Learning.IT.condDistrib_reward}
 For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right]$ is $((H_t, A_{t+1})_* P_{\mathcal{T}})$-almost surely equal to $\nu_t$.
 \end{lemma}
 
@@ -231,9 +336,9 @@ By Lemma~\ref{lem:condDistrib_A_add_one}, $(H_t, A_{t+1})_* P_{\mathcal{T}} = (H
 
 
 \begin{lemma}\label{lem:law_A_zero}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:environment}
+  \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
-  \lean{Learning.IsAlgEnvSeq.hasLaw_action_zero}
+  \lean{Learning.IT.hasLaw_action_zero}
 The law of $A_0$ under $P_{\mathcal{T}}$ is $\alpha_0$.
 \end{lemma}
 
@@ -244,9 +349,9 @@ $X_0$ has law $\mu = \alpha_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ 
 
 
 \begin{lemma}\label{lem:condDistrib_R_zero}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:environment}
+  \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
-  \lean{Learning.IsAlgEnvSeq.hasCondDistrib_reward_zero}
+  \lean{Learning.IT.condDistrib_reward_zero}
 The conditional distribution $P_{\mathcal{T}}\left[R_0 \mid A_0\right]$ is $(A_{0*} P_{\mathcal{T}})$-almost surely equal to $\nu'_0$.
 \end{lemma}
 
@@ -260,34 +365,16 @@ Thus the two sides are equal.
 \end{proof}
 
 
-
-\section{Stationary environment}
-
-Recall that in a stationary environment, there exists a Markov kernel $\nu : \mathcal{A} \rightsquigarrow \mathcal{R}$ such that $\nu'_0 = \nu$ and for all $t \in \mathbb{N}$, for all $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) = \nu(a)$.
-
-
-\begin{lemma}\label{lem:condDistrib_reward_stationaryEnv}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:stationaryEnv}
+\begin{theorem}\label{thm:isAlgEnvSeq_trajMeasure}
+  \uses{def:IsAlgEnvSeq, def:trajMeasure}
   \leanok
-  \lean{Learning.IsAlgEnvSeq.condDistrib_reward_stationaryEnv}
-In a stationary environment, for any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[R_t \mid A_t\right]$ is $(A_{t*} P_{\mathcal{T}})$-almost surely equal to $\nu$.
-\end{lemma}
+  \lean{Learning.IT.isAlgEnvSeq_trajMeasure}
+In the probability space $(\Omega_{\mathcal{T}}, P_{\mathcal{T}})$ constructed from an algorithm $\mathfrak{A}$ and an environment $\mathfrak{E}$ as above, the sequences of random variables $A : \mathbb{N} \to \Omega_{\mathcal{T}} \to \mathcal{A}$ and $R : \mathbb{N} \to \Omega_{\mathcal{T}} \to \mathcal{R}$ form an algorithm-environment interaction for $\mathfrak{A}$ and $\mathfrak{E}$.
+\end{theorem}
 
 \begin{proof}\leanok
-  \uses{lem:condDistrib_R_add_one, def:stationaryEnv}
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:condIndepFun_reward_hist_action}
-  \uses{def:actionReward, def:trajMeasure, def:algorithm, def:stationaryEnv}
-  \leanok
-  \lean{Learning.IsAlgEnvSeq.condIndepFun_reward_hist_action}
-In a stationary environment, for any $t \in \mathbb{N}$, the reward $R_{t+1}$ is conditionally independent of the history $H_t$ given the action $A_{t+1}$ (more succinctly, $R_{t+1} \ind H_t \mid A_{t+1}$).
-\end{lemma}
-
-\begin{proof}\leanok
-
+  \uses{lem:law_A_zero, lem:condDistrib_R_zero, lem:condDistrib_A_add_one, lem:condDistrib_R_add_one}
+The four conditions of Definition~\ref{def:IsAlgEnvSeq} are exactly the statements of Lemmas~\ref{lem:law_A_zero}, \ref{lem:condDistrib_R_zero}, \ref{lem:condDistrib_A_add_one} and \ref{lem:condDistrib_R_add_one}.
 \end{proof}
 
 
@@ -298,7 +385,7 @@ When the number of actions is finite, it makes sense to count how many times eac
 We can also define the time step at which an action was chosen a certain number of times, and the value of the reward obtained when pulling an action for the $m$-th time.
 
 \begin{definition}[Pull counts]\label{def:pullCount}
-  \uses{def:actionReward}
+  \uses{def:IT.actionReward}
   \leanok
   \lean{Learning.pullCount}
 For an action $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by $N_{t,a}$ the number of times that action $a$ has been chosen before time $t$, that is $N_{t,a} = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$.
@@ -312,15 +399,15 @@ When we describe an algorithm, we give the data of the policies $\pi_t$, which a
 That means that any tool used to define a policy must be a function defined on $(\mathcal{A} \times \mathcal{R})^{t+1}$.
 For example a definition of the empirical mean of an action must be a function $t : \mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{t+1} \to \mathbb{R}$.
 
-When we analyze an algorithm, we work on the other hand on the bandit probability space $(\Omega, \mathbb{P})$, in which $\Omega = (\mathcal{A} \times \mathcal{R})^{\mathbb{N}}$ is the full history, which describes the whole sequence of actions and rewards.
+When we analyze an algorithm, we work on the other hand on a probability space $(\Omega, P)$, in which $\Omega$ could be for example $(\mathcal{A} \times \mathcal{R})^{\mathbb{N}}$, the full history, which describes the whole sequence of actions and rewards.
 As a stochastic process, the empirical mean of an action is a function $\mathbb{N} \to (\mathcal{A} \times \mathcal{R})^{\mathbb{N}} \to \mathbb{R}$.
 
-Thus there are two similar but still distinct types of objects: those defined on the partial history, which are used to build algorithms, and those defined on the full history, which are used to analyze algorithms.
+Thus there are two similar but still distinct types of objects: those defined on the partial history, which are used to build algorithms, and those defined on a generic probability space (the full history in the Ionescu-Tulcea construction), which are used to analyze algorithms.
 \end{remark}
 
 
 \begin{lemma}\label{lem:pullCount_basic}
-  \uses{def:pullCount, def:actionReward}
+  \uses{def:pullCount, def:IT.actionReward}
   \leanok
   \lean{Learning.pullCount_zero, Learning.pullCount_mono, Learning.pullCount_add_one, Learning.pullCount_le, Learning.pullCount_congr}
 We note the following basic properties of $N_{t,a}$:
@@ -339,10 +426,10 @@ We note the following basic properties of $N_{t,a}$:
 
 
 \begin{lemma}\label{lem:predictable_pullCount}
-  \uses{def:filtration, def:pullCount}
+  \uses{def:IsAlgEnvSeq.filtration, def:pullCount}
   \leanok
   \lean{Learning.isPredictable_pullCount}
-Let $a \in \mathcal{A}$. The process $(N_{t,a})_{t \in \mathbb{N}}$ is predictable with respect to the filtration $\mathcal{F}$.
+Let $a \in \mathcal{A}$. The process $(N_{t,a})_{t \in \mathbb{N}}$ is predictable with respect to the filtration $\mathcal{F}$ of the algorithm-environment interaction.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -384,7 +471,7 @@ We note the following basic properties of $T_{n,a}$:
 
 
 \begin{lemma}\label{lem:isStoppingTime_stepsUntil}
-  \uses{def:filtration, def:stepsUntil}
+  \uses{def:IsAlgEnvSeq.filtration, def:stepsUntil}
   \leanok
   \lean{Learning.isStoppingTime_stepsUntil}
 Let $a \in \mathcal{A}$. For any $n > 0$, the random variable $T_{n,a}$ is a stopping time with respect to the filtration $\mathcal{F}$.
@@ -441,7 +528,7 @@ We now focus on the case where the reward space is $\mathcal{R} = \mathbb{R}$.
 
 
 \begin{definition}[Sum of rewards]\label{def:sumRewards}
-  \uses{def:actionReward}
+  \uses{def:IT.actionReward}
   \leanok
   \lean{Learning.sumRewards}
 Let $S_{t, a} = \sum_{s=0}^{t-1} R_s \mathbb{I}\{A_s = a\}$ be the sum of the rewards obtained by chosing action $a$ before time $t$.

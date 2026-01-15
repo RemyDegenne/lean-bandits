@@ -205,8 +205,6 @@ By the contraction property of conditional independence (Lemma~\ref{lem:indepFun
 
 \begin{lemma}\label{lem:iIndepFun_rewardByCount}
   \uses{def:rewardByCount}
-  \leanok
-  \lean{Bandits.iIndepFun_rewardByCount'}
 The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent.
 \end{lemma}
 
@@ -235,12 +233,10 @@ For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb
 
 \begin{lemma}\label{lem:identDistrib_rewardByCount_stream}
   \uses{def:rewardByCount}
-  \leanok
-  \lean{Bandits.identDistrib_rewardByCount_stream}
 The random sequences $(Y_{n+1,a})_{n \in \mathbb{N}}$ and $(Z_{n,a})_{n \in \mathbb{N}}$ are identically distributed.
 \end{lemma}
 
-\begin{proof}\leanok
+\begin{proof}
   \uses{lem:hasLaw_rewardByCount, lem:iIndepFun_rewardByCount}
 
 \end{proof}
@@ -248,12 +244,10 @@ The random sequences $(Y_{n+1,a})_{n \in \mathbb{N}}$ and $(Z_{n,a})_{n \in \mat
 
 \begin{lemma}\label{lem:identDistrib_sum_Icc_rewardByCount}
   \uses{def:rewardByCount}
-  \leanok
-  \lean{Bandits.identDistrib_sum_Icc_rewardByCount}
 The random variables $\sum_{i=1}^n Y_{i,a}$ and $\sum_{i=0}^{n-1} Z_{i,a}$ are identically distributed.
 \end{lemma}
 
-\begin{proof}\leanok
+\begin{proof}
   \uses{lem:identDistrib_rewardByCount_stream}
 Immediate consequence of Lemma~\ref{lem:identDistrib_rewardByCount_stream}.
 \end{proof}

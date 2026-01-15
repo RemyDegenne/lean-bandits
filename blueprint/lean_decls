@@ -50,9 +50,6 @@ Bandits.reward_cond_stepsUntil
 ProbabilityTheory.condDistrib_ae_eq_cond
 Bandits.condDistrib_rewardByCount_stepsUntil
 Bandits.hasLaw_rewardByCount
-Bandits.iIndepFun_rewardByCount'
-Bandits.identDistrib_rewardByCount_stream
-Bandits.identDistrib_sum_Icc_rewardByCount
 Bandits.regret
 Bandits.gap
 Learning.sum_pullCount_mul

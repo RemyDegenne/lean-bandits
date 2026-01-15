@@ -9,6 +9,35 @@ variable {α Ω Ω' E ι : Type*} [Countable ι] {mα : MeasurableSpace α}
   {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {mE : MeasurableSpace E} {μ ν : Measure Ω}
 
+@[simp]
+lemma indepFun_zero_measure {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {mγ : MeasurableSpace γ} (X : α → β) (Y : α → γ) :
+    X ⟂ᵢ[(0 : Measure α)] Y := by
+  simp [indepFun_iff_measure_inter_preimage_eq_mul]
+
+lemma indepFun_cond_of_indepFun {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {mγ : MeasurableSpace γ} {μ : Measure α}
+    {X : α → β} {Y : α → γ} (hXY : X ⟂ᵢ[μ] Y) (hY : Measurable Y) {s : Set γ}
+    (hs : MeasurableSet s) :
+    X ⟂ᵢ[μ[|Y ⁻¹' s]] Y := by
+  by_cases h_zero : μ[|Y ⁻¹' s] = 0
+  · simp [h_zero]
+  rw [cond_eq_zero] at h_zero
+  push_neg at h_zero -- `h_zero : μ (Y ⁻¹' s) ≠ ⊤ ∧ μ (Y ⁻¹' s) ≠ 0`
+  rw [indepFun_iff_measure_inter_preimage_eq_mul] at hXY ⊢
+  intro u t hu ht
+  rw [cond_apply (hs.preimage hY), cond_apply (hs.preimage hY), cond_apply (hs.preimage hY)]
+  have h_eq : Y ⁻¹' s ∩ (X ⁻¹' u ∩ Y ⁻¹' t) = X ⁻¹' u ∩ Y ⁻¹' (s ∩ t) := by grind
+  have hsu : μ (X ⁻¹' u ∩ Y ⁻¹' s) = μ (X ⁻¹' u) * μ (Y ⁻¹' s) := hXY u s hu hs
+  rw [Set.inter_comm] at hsu
+  have hust : μ (X ⁻¹' u ∩ Y ⁻¹' (s ∩ t)) = μ (X ⁻¹' u) * μ (Y ⁻¹' (s ∩ t)) :=
+    hXY u (s ∩ t) hu (hs.inter ht)
+  rw [hsu, h_eq, hust]
+  simp_rw [mul_assoc]
+  congr 1
+  rw [← mul_assoc (μ (Y ⁻¹' s)), ENNReal.mul_inv_cancel h_zero.2 h_zero.1, one_mul]
+  congr
+
 lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → Ω → E}
     (hX : ∀ n, AEMeasurable (X n) μ) :
     iIndepFun X μ ↔ ∀ n, X (n + 1) ⟂ᵢ[μ] fun ω (i : Iic n) ↦ X i ω := by

@@ -109,7 +109,7 @@ The function $\mathbb{I}\{T_{n,a} = t\} : \Omega \to \{0, 1\}$ is measurable wit
 
 
 \begin{lemma}\label{lem:condIndepFun_reward_stepsUntil_arm}
-  \uses{def:stepsUntil, def:actionReward, def:Bandit.measure}
+  \uses{def:stepsUntil, def:IT.actionReward, def:Bandit.measure}
   \leanok
   \lean{Bandits.condIndepFun_reward_stepsUntil_action}
 For $t > 0$, $R_t \ind \mathbb{I}\{T_{n, a} = t\} \mid A_t$.
@@ -312,7 +312,7 @@ We denote by $\mu^*$ the mean of the best arm, that is $\mu^* = \max_{a \in \mat
 
 
 \begin{definition}[Regret]\label{def:regret}
-  \uses{def:armMean, def:actionReward}
+  \uses{def:armMean, def:IT.actionReward}
   \leanok
   \lean{Bandits.regret}
 The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is the difference between the cumulative reward of always playing the best arm and the cumulative reward of the sequence:

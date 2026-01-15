@@ -418,18 +418,14 @@ The four conditions of Definition~\ref{def:IsAlgEnvSeq} are satisfied by Lemmas~
 \end{proof}
 
 
-\section{Alternative models: rewards indexed by time or pull count}\label{sec:alt_model}
 
-The description of the bandit model above considers that at time $t$, a reward $R_t$ is generated, depending on the arm $A_t$ pulled at that time.
-An alternative way to talk about that process is to imagine that there is a stream of rewards from each arm, and that the algorithm sees the first, then second, etc. reward from the arms at it pulls them.
-This uses the random variables $Y_{n, a}$ defined in Definition~\ref{def:rewardByCount}, which represent the $n^{th}$ reward obtained from arm $a$.
-We now describe the distribution of those rewards.
 
-The probability space $\Omega_{\mathcal{T}}$ has been augmented with $\Omega' = \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$, on which we put the product measure $\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a)$.
+\section{Law of the n\textsuperscript{th} pull}\label{sec:alt_model}
+
+This section describes the law of $Y_{n, a}$ the $n^{th}$ reward obtained from an arm $a \in \mathcal{A}$ (Definition~\ref{def:rewardByCount}).
+
+We augment the probability space $\Omega$ on which we have an algorithm-environment sequence with $\Omega' = \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$, on which we put the product measure $\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a)$.
 With that measure, the law of $Z_{n,a}$ is $\nu(a)$.
-
-Our main goal in this section is to prove that $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ and $(Z_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ are identically distributed.
-This can be done by proving that for each $n$ and $a$, $Y_{n,a}$ and $Z_{n,a}$ are identically distributed (with law $\nu(a)$), and that the family $(Y_{n,a})_{n \in \mathbb{N}, a \in \mathcal{A}}$ is independent.
 
 
 \begin{lemma}\label{lem:measurable_comap_indicator_stepsUntil_eq}
@@ -525,116 +521,116 @@ Thus the composition is just $\nu(a)$.
 \end{proof}
 
 
-\begin{lemma}\label{lem:indepFun_rewardByCount_stepsUntil}
-  \uses{def:stepsUntil, def:rewardByCount, def:Bandit.measure}
-For $n > 0$, $Y_{n, a} \ind T_{n,a}$.
-\end{lemma}
+% \begin{lemma}\label{lem:indepFun_rewardByCount_stepsUntil}
+%   \uses{def:stepsUntil, def:rewardByCount, def:Bandit.measure}
+% For $n > 0$, $Y_{n, a} \ind T_{n,a}$.
+% \end{lemma}
 
-\begin{proof}
-  \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:hasLaw_rewardByCount}
-It suffices to prove that $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \mathcal{L}(Y_{n,a})$.
+% \begin{proof}
+%   \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:hasLaw_rewardByCount}
+% It suffices to prove that $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \mathcal{L}(Y_{n,a})$.
 
-By Lemma~\ref{lem:hasLaw_rewardByCount}, $\mathcal{L}(Y_{n,a}) = \nu(a)$.
-By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
-\end{proof}
-
-
-\begin{lemma}\label{lem:condIndepFun_rewardByCount_hist}
-  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
-For $n > 0$, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$, in which $H_{\infty}$ is interpreted as the whole history.
-\end{lemma}
-
-\begin{proof}
-  \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:condIndepFun_reward_hist_action}
-By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
-We need to prove that $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a}) = \nu(a)$.
-By Lemma~\ref{lem:stepsUntil_basic}, if $T_{n,a} = t \in \mathbb{N}$, then $A_t = a$.
-We get
-\begin{align*}
-  \mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = t)
-  &= \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
-  \: .
-\end{align*}
-Then, $\mathbb{I}\{T_{n,a} = t\}$ is a function of $(H_{t-1}, A_t)$ by Lemma~\ref{lem:measurable_comap_indicator_stepsUntil_eq}, such that
-
-\begin{align*}
-  \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
-  &= \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
-  \: .
-\end{align*}
-Thus, using Lemma~\ref{lem:condIndepFun_reward_hist_action}, we have
-\begin{align*}
-  \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
-  = \nu(a)
-  \: .
-\end{align*}
-
-If $T_{n,a} = \infty$, then $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = \infty) = \mathcal{L}(Z_{n,a} \mid H_{\infty}, T_{n,a} = \infty) = \nu(a)$ by independence of $Z_{n,a}$ from the history and $T_{n,a}$.
-
-\end{proof}
+% By Lemma~\ref{lem:hasLaw_rewardByCount}, $\mathcal{L}(Y_{n,a}) = \nu(a)$.
+% By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
+% \end{proof}
 
 
-\begin{lemma}\label{lem:indepFun_rewardByCount_hist_stepsUntil}
-  \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
-For $n > 0$, $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
-\end{lemma}
+% \begin{lemma}\label{lem:condIndepFun_rewardByCount_hist}
+%   \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+% For $n > 0$, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$, in which $H_{\infty}$ is interpreted as the whole history.
+% \end{lemma}
 
-\begin{proof}
-  \uses{lem:condIndepFun_rewardByCount_hist}
-By Lemma~\ref{lem:condIndepFun_rewardByCount_hist}, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$.
-By Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}, $Y_{n, a} \ind T_{n,a}$.
-By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), we have $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
-\end{proof}
+% \begin{proof}
+%   \uses{lem:condDistrib_rewardByCount_stepsUntil, lem:condIndepFun_reward_hist_action}
+% By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$.
+% We need to prove that $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a}) = \nu(a)$.
+% By Lemma~\ref{lem:stepsUntil_basic}, if $T_{n,a} = t \in \mathbb{N}$, then $A_t = a$.
+% We get
+% \begin{align*}
+%   \mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = t)
+%   &= \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
+%   \: .
+% \end{align*}
+% Then, $\mathbb{I}\{T_{n,a} = t\}$ is a function of $(H_{t-1}, A_t)$ by Lemma~\ref{lem:measurable_comap_indicator_stepsUntil_eq}, such that
 
+% \begin{align*}
+%   \mathcal{L}(R_t \mid H_{t-1}, T_{n,a} = t, A_t = a)
+%   &= \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+%   \: .
+% \end{align*}
+% Thus, using Lemma~\ref{lem:condIndepFun_reward_hist_action}, we have
+% \begin{align*}
+%   \mathcal{L}(R_t \mid H_{t-1}, A_t = a)
+%   = \nu(a)
+%   \: .
+% \end{align*}
 
-\begin{lemma}\label{lem:iIndepFun_rewardByCount}
-  \uses{def:rewardByCount}
-The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent.
-\end{lemma}
+% If $T_{n,a} = \infty$, then $\mathcal{L}(Y_{n,a} \mid H_{T_{n,a}-1}, T_{n,a} = \infty) = \mathcal{L}(Z_{n,a} \mid H_{\infty}, T_{n,a} = \infty) = \nu(a)$ by independence of $Z_{n,a}$ from the history and $T_{n,a}$.
 
-\begin{proof}
-  \uses{lem:iIndepFun_nat_iff_forall_indepFun, lem:indepFun_contraction, lem:indepFun_rewardByCount_stepsUntil}
-By Lemma~\ref{lem:iIndepFun_nat_iff_forall_indepFun}, it suffices to show that for all $n \in \mathbb{N}$, $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$.
-
-By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), it suffices to show that $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$ conditionally on $T_{n+1, a}$ and that $Y_{n+1, a}$ is independent of $T_{n+1, a}$.
-
-The fact that $Y_{n+1, a}$ is independent of $T_{n+1, a}$ is Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}.
-
-TODO
-
-\end{proof}
-
-
-\begin{lemma}\label{lem:independent_rewardByCount}
-  \uses{def:rewardByCount}
-For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb{R}^{\mathbb{N}}$ be the sequence of rewards obtained from pulling arm $a$. Then the sequences $(Y^{(a)})_{a \in \mathcal{A}}$ are independent.
-\end{lemma}
-
-\begin{proof}
-
-\end{proof}
+% \end{proof}
 
 
-\begin{lemma}\label{lem:identDistrib_rewardByCount_stream}
-  \uses{def:rewardByCount}
-The random sequences $(Y_{n+1,a})_{n \in \mathbb{N}}$ and $(Z_{n,a})_{n \in \mathbb{N}}$ are identically distributed.
-\end{lemma}
+% \begin{lemma}\label{lem:indepFun_rewardByCount_hist_stepsUntil}
+%   \uses{def:rewardByCount, def:stepsUntil, def:Bandit.measure}
+% For $n > 0$, $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
+% \end{lemma}
 
-\begin{proof}
-  \uses{lem:hasLaw_rewardByCount, lem:iIndepFun_rewardByCount}
+% \begin{proof}
+%   \uses{lem:condIndepFun_rewardByCount_hist}
+% By Lemma~\ref{lem:condIndepFun_rewardByCount_hist}, $Y_{n, a} \ind H_{T_{n,a}-1} \mid T_{n,a}$.
+% By Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}, $Y_{n, a} \ind T_{n,a}$.
+% By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), we have $Y_{n, a} \ind (H_{T_{n,a}-1}, T_{n,a})$.
+% \end{proof}
 
-\end{proof}
+
+% \begin{lemma}\label{lem:iIndepFun_rewardByCount}
+%   \uses{def:rewardByCount}
+% The rewards $(Y_{n,a})_{n \in \mathbb{N}}$ are independent.
+% \end{lemma}
+
+% \begin{proof}
+%   \uses{lem:iIndepFun_nat_iff_forall_indepFun, lem:indepFun_contraction, lem:indepFun_rewardByCount_stepsUntil}
+% By Lemma~\ref{lem:iIndepFun_nat_iff_forall_indepFun}, it suffices to show that for all $n \in \mathbb{N}$, $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$.
+
+% By the contraction property of conditional independence (Lemma~\ref{lem:indepFun_contraction}), it suffices to show that $Y_{n+1, a}$ is independent of $(Y_{1,a}, \ldots, Y_{n,a})$ conditionally on $T_{n+1, a}$ and that $Y_{n+1, a}$ is independent of $T_{n+1, a}$.
+
+% The fact that $Y_{n+1, a}$ is independent of $T_{n+1, a}$ is Lemma~\ref{lem:indepFun_rewardByCount_stepsUntil}.
+
+% TODO
+
+% \end{proof}
 
 
-\begin{lemma}\label{lem:identDistrib_sum_Icc_rewardByCount}
-  \uses{def:rewardByCount}
-The random variables $\sum_{i=1}^n Y_{i,a}$ and $\sum_{i=0}^{n-1} Z_{i,a}$ are identically distributed.
-\end{lemma}
+% \begin{lemma}\label{lem:independent_rewardByCount}
+%   \uses{def:rewardByCount}
+% For $a \in \mathcal{A}$, let $Y^{(a)} = (Y_{n,a})_{n \in \mathbb{N}} \in \mathbb{R}^{\mathbb{N}}$ be the sequence of rewards obtained from pulling arm $a$. Then the sequences $(Y^{(a)})_{a \in \mathcal{A}}$ are independent.
+% \end{lemma}
 
-\begin{proof}
-  \uses{lem:identDistrib_rewardByCount_stream}
-Immediate consequence of Lemma~\ref{lem:identDistrib_rewardByCount_stream}.
-\end{proof}
+% \begin{proof}
+
+% \end{proof}
+
+
+% \begin{lemma}\label{lem:identDistrib_rewardByCount_stream}
+%   \uses{def:rewardByCount}
+% The random sequences $(Y_{n+1,a})_{n \in \mathbb{N}}$ and $(Z_{n,a})_{n \in \mathbb{N}}$ are identically distributed.
+% \end{lemma}
+
+% \begin{proof}
+%   \uses{lem:hasLaw_rewardByCount, lem:iIndepFun_rewardByCount}
+
+% \end{proof}
+
+
+% \begin{lemma}\label{lem:identDistrib_sum_Icc_rewardByCount}
+%   \uses{def:rewardByCount}
+% The random variables $\sum_{i=1}^n Y_{i,a}$ and $\sum_{i=0}^{n-1} Z_{i,a}$ are identically distributed.
+% \end{lemma}
+
+% \begin{proof}
+%   \uses{lem:identDistrib_rewardByCount_stream}
+% Immediate consequence of Lemma~\ref{lem:identDistrib_rewardByCount_stream}.
+% \end{proof}
 
 
 \section{Regret and other bandit quantities}

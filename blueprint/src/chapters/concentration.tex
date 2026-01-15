@@ -1,5 +1,8 @@
 \chapter{Concentration inequalities}
 
+
+\section{Sub-Gaussian random variables}
+
 \begin{definition}[Sub-Gaussian]\label{def:subGaussian}
   \mathlibok
   \lean{ProbabilityTheory.HasSubgaussianMGF}
@@ -77,5 +80,118 @@ Then
 
 \begin{proof}\leanok
   \uses{lem:subGaussian_add_of_indepFun, thm:hoeffding}
+
+\end{proof}
+
+
+
+
+\section{Laws of sums of rewards}
+
+
+\begin{lemma}\label{lem:AM.identDistrib_pullCount_prod_sumRewards}
+  \uses{def:rewardByCount, def:sumRewards, def:pullCount, def:AM.history}
+  \leanok
+  \lean{Bandits.ArrayModel.identDistrib_pullCount_prod_sumRewards}
+In the array model, for $t \in \mathbb{N}$, the random variable $(N_{t,a}, S_{t, a})_{a \in \mathcal{A}}$ has the same distribution as $(N_{t,a}, \sum_{s=0}^{N_{t,a}-1} \omega_{2, s, a})_{a \in \mathcal{A}}$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{def:AM.history, lem:AM.measurable_hist, lem:sum_rewardByCount}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:AM.identDistrib_sum_range_snd}
+  \uses{def:AM.history}
+  \leanok
+  \lean{Bandits.ArrayModel.identDistrib_sum_range_snd}
+In the array model, for $k \in \mathbb{N}$, the random variable $\sum_{s=0}^{k-1} \omega_{2, s, a}$ has the same distribution as a sum of $k$ i.i.d. random variables with law $\nu(a)$.
+\end{lemma}
+
+\begin{proof}\leanok
+By definition of $P_{\mathcal{A}}$ (Definition~\ref{def:arrayMeasure}).
+\end{proof}
+
+
+\begin{lemma}\label{lem:prob_pullCount_prod_sumRewards_mem_le}
+  \uses{def:sumRewards, def:pullCount, def:AM.history}
+  \leanok
+  \lean{Bandits.ArrayModel.prob_pullCount_prod_sumRewards_mem_le, Bandits.prob_pullCount_prod_sumRewards_mem_le}
+In the array model, for $t \in \mathbb{N}$, $a \in \mathcal{A}$, and a measurable set $B \subseteq \mathbb{N} \times \mathbb{R}$,
+\begin{align*}
+  P_{\mathcal{A}}\left((N_{t,a}, S_{t, a}) \in B\right)
+  &\le \sum_{k < t, \exists r, (k, r) \in B} \nu(a)^{\otimes \mathbb{N}} \left(\sum_{s=0}^{k-1} \omega_{s} \in \{x \mid \exists n, (n, x) \in B\}\right)
+  \: .
+\end{align*}
+As a consequence, this also holds for any algorithm-environment sequence.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:AM.identDistrib_pullCount_prod_sumRewards, lem:AM.identDistrib_sum_range_snd, thm:isAlgEnvSeq_unique, thm:isAlgEnvSeq_arrayMeasure}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:prob_sumRewards_le_sumRewards_le}
+  \uses{def:sumRewards, def:pullCount, def:AM.history}
+  \leanok
+  \lean{Bandits.ArrayModel.prob_sumRewards_le_sumRewards_le, Bandits.probReal_sumRewards_le_sumRewards_le}
+In the array model,
+\begin{align*}
+  P_{\mathcal{A}}\left( N_{t, a^*} = m_1 \wedge N_{t, a} = m_2 \wedge S_{t, a^*} \le S_{t, a}\right)
+  &\le (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m_1-1} \omega_{s, a^*} \le \sum_{s=0}^{m_2-1} \omega_{s, a} \right)
+  \: .
+\end{align*}
+As a consequence, this also holds for any algorithm-environment sequence.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:AM.identDistrib_pullCount_prod_sumRewards, lem:AM.identDistrib_sum_range_snd, thm:isAlgEnvSeq_unique,thm:isAlgEnvSeq_arrayMeasure}
+
+\end{proof}
+
+
+
+\subsection{Sub-Gaussian rewards}
+
+
+\begin{lemma}\label{lem:probReal_sum_le_sum_streamMeasure}
+  \leanok
+  \lean{Bandits.probReal_sum_le_sum_streamMeasure}
+Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
+\begin{align*}
+  (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le \sum_{s=0}^{m-1} \omega_{s, a} \right)
+  &\le \exp\left( -m \frac{\Delta_a^2}{4 \sigma^2} \right)
+\end{align*}
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:measure_sum_le_sum_le'}
+
+\end{proof}
+
+
+\begin{lemma}\label{lem:prob_sum_le_sqrt_log}
+  \leanok
+  \lean{Bandits.prob_sum_le_sqrt_log, Bandits.prob_sum_ge_sqrt_log}
+Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
+Let $c \ge 0$ be a real number and $k$ a positive natural number.
+Then
+\begin{align*}
+  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \le - \sqrt{c k \log(n + 1)} \right)
+  &\le \frac{1}{(n + 1)^{c / 2}}
+  \: .
+\end{align*}
+The same upper bound holds for the upper tail:
+\begin{align*}
+  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \ge \sqrt{c k \log(n + 1)} \right)
+  &\le \frac{1}{(n + 1)^{c / 2}}
+  \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{thm:hoeffding}
 
 \end{proof}

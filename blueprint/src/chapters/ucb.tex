@@ -1,7 +1,5 @@
 \section{UCB}
 
-TODO: update this chapter to reflect the changes in the formalization.
-
 \begin{definition}[UCB algorithm]\label{def:ucbAlgorithm}
   \uses{def:IT.actionReward, def:pullCount, def:empMean}
   \leanok
@@ -64,33 +62,6 @@ Note that the third condition is always satisfied for UCB by Lemma~\ref{lem:ucbI
 \end{proof}
 
 
-%todo: move to concentration section?
-\begin{lemma}\label{lem:todo}
-  \uses{def:rewardByCount}
-  \leanok
-  \lean{Bandits.UCB.todo, Bandits.UCB.todo'}
-Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
-Let $c \ge 0$ be a real number and $k$ a positive natural number.
-Then
-\begin{align*}
-  P\left(\frac{1}{k} \sum_{m=1}^k Y_{m, a} + \sqrt{\frac{c \log(n + 1)}{k}} \le \mu_a\right)
-  &\le \frac{1}{(n + 1)^{c / 2}}
-  \: .
-\end{align*}
-And also,
-\begin{align*}
-  P\left(\frac{1}{k} \sum_{m=1}^k Y_{m, a} - \sqrt{\frac{c \log(n + 1)}{k}} \ge \mu_a\right)
-  &\le \frac{1}{(n + 1)^{c / 2}}
-  \: .
-\end{align*}
-\end{lemma}
-
-\begin{proof}\leanok
-  \uses{lem:identDistrib_sum_Icc_rewardByCount, thm:hoeffding}
-
-\end{proof}
-
-
 \begin{lemma}\label{lem:prob_ucbIndex_le}
   \uses{def:empMean, def:pullCount}
   \leanok
@@ -112,10 +83,8 @@ And also,
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:todo, lem:pullCount_basic}
-Since $N_{n,a} \le n$ (Lemma~\ref{lem:pullCount_basic}), there exists $k \in [1, n]$ such that $N_{n,a} = k$ and $\hat{\mu}_{n,a} = \frac{1}{k} \sum_{m=1}^k Y_{m,a}$.
+  \uses{lem:prob_pullCount_prod_sumRewards_mem_le, lem:prob_sum_le_sqrt_log, lem:pullCount_basic}
 
-Then apply a union bound over $k \in [1, n]$ and use Lemma~\ref{lem:todo}.
 \end{proof}
 
 

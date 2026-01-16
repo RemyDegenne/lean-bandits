@@ -120,8 +120,6 @@ Bandits.ucbAlgorithm
 Bandits.UCB.ucbIndex_le_ucbIndex_arm
 Bandits.UCB.gap_arm_le_two_mul_ucbWidth
 Bandits.UCB.pullCount_arm_le
-Bandits.UCB.todo
-Bandits.UCB.todo'
 Bandits.UCB.prob_ucbIndex_le
 Bandits.UCB.prob_ucbIndex_ge
 Bandits.UCB.pullCount_le_add_three

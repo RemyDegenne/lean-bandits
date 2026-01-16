@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
 /-!
@@ -18,7 +19,11 @@ namespace Learning
 variable {α R : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R}
 
 /-- A deterministic algorithm, which chooses the action given by the function `nextAction`. -/
-@[simps]
+@[simps, blueprint
+  "def:detAlgorithm"
+  (title := "Deterministic algorithm")
+  (statement := /-- An algorithm is deterministic if its initial probability measure $P_0$ is a
+    Dirac measure and if all its policies $\pi_t$ are deterministic kernels. -/)]
 noncomputable
 def detAlgorithm (nextAction : (n : ℕ) → (Iic n → α × R) → α)
     (h_next : ∀ n, Measurable (nextAction n)) (action0 : α) :

@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
+import Architect
 import LeanBandits.SequentialLearning.Algorithm
 import Mathlib.Order.CompletePartialOrder
 import Mathlib.Probability.Martingale.BorelCantelli
@@ -34,6 +35,12 @@ variable {α R Ω : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R} {
 section PullCount
 
 /-- Number of times action `a` was chosen up to time `t` (excluding `t`). -/
+@[blueprint
+  "def:pullCount"
+  (title := "Pull counts")
+  (statement := /-- For an action $a \in \mathcal{A}$ and a time $t \in \mathbb{N}$, we denote by
+    $N_{t,a}$ the number of times that action $a$ has been chosen before time $t$, that is $N_{t,a}
+    = \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\}$. -/)]
 noncomputable
 def pullCount (A : ℕ → Ω → α) (a : α) (t : ℕ) (ω : Ω) : ℕ :=
   #(filter (fun s ↦ A s ω = a) (range t))
@@ -43,7 +50,18 @@ This is the number of entries in `h` in which the arm is `a`. -/
 noncomputable
 def pullCount' (n : ℕ) (h : Iic n → α × R) (a : α) := #{s | (h s).1 = a}
 
-@[simp]
+@[simp, blueprint
+  "lem:pullCount_basic"
+  (statement := /-- We note the following basic properties of $N_{t,a}$:
+    \begin{itemize}
+      \item $N_{0,a} = 0$.
+      \item $N_{t,a}$ is non-decreasing in $t$.
+      \item $N_{t + 1, A_t} = N_{t, A_t} + 1$ and for $a \ne A_t$, $N_{t + 1, a} = N_{t, a}$.
+      \item $N_{t, a} \le t$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $N_{t+1, a}(\omega) = N_{t+1,
+      a}(\omega')$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_zero (a : α) : pullCount A a 0 = 0 := by ext; simp [pullCount]
 
 lemma pullCount_zero_apply (a : α) (ω : Ω) : pullCount A a 0 ω = 0 := by simp
@@ -58,7 +76,18 @@ lemma pullCount_one : pullCount A a 1 ω = if A 0 ω = a then 1 else 0 := by
 lemma monotone_pullCount (a : α) (ω : Ω) : Monotone (pullCount A a · ω) :=
   fun _ _ _ ↦ card_le_card (filter_subset_filter _ (by simpa))
 
-@[mono, gcongr]
+@[mono, gcongr, blueprint
+  "lem:pullCount_basic"
+  (statement := /-- We note the following basic properties of $N_{t,a}$:
+    \begin{itemize}
+      \item $N_{0,a} = 0$.
+      \item $N_{t,a}$ is non-decreasing in $t$.
+      \item $N_{t + 1, A_t} = N_{t, A_t} + 1$ and for $a \ne A_t$, $N_{t + 1, a} = N_{t, a}$.
+      \item $N_{t, a} \le t$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $N_{t+1, a}(\omega) = N_{t+1,
+      a}(\omega')$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_mono (a : α) {n m : ℕ} (hnm : n ≤ m) (ω : Ω) :
     pullCount A a n ω ≤ pullCount A a m ω :=
   monotone_pullCount a ω hnm
@@ -71,6 +100,18 @@ lemma pullCount_eq_pullCount_of_action_ne (ha : A t ω ≠ a) :
     pullCount A a (t + 1) ω = pullCount A a t ω := by
   simp [pullCount, range_add_one, filter_insert, ha]
 
+@[blueprint
+  "lem:pullCount_basic"
+  (statement := /-- We note the following basic properties of $N_{t,a}$:
+    \begin{itemize}
+      \item $N_{0,a} = 0$.
+      \item $N_{t,a}$ is non-decreasing in $t$.
+      \item $N_{t + 1, A_t} = N_{t, A_t} + 1$ and for $a \ne A_t$, $N_{t + 1, a} = N_{t, a}$.
+      \item $N_{t, a} \le t$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $N_{t+1, a}(\omega) = N_{t+1,
+      a}(\omega')$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_add_one :
     pullCount A a (t + 1) ω = pullCount A a t ω + if A t ω = a then 1 else 0 := by
   split_ifs with h
@@ -105,9 +146,33 @@ lemma pullCount'_mono {n m : ℕ} (hnm : n ≤ m) :
   rw [← pullCount_add_one_eq_pullCount', ← pullCount_add_one_eq_pullCount']
   exact pullCount_mono a (by lia) _
 
+@[blueprint
+  "lem:pullCount_basic"
+  (statement := /-- We note the following basic properties of $N_{t,a}$:
+    \begin{itemize}
+      \item $N_{0,a} = 0$.
+      \item $N_{t,a}$ is non-decreasing in $t$.
+      \item $N_{t + 1, A_t} = N_{t, A_t} + 1$ and for $a \ne A_t$, $N_{t + 1, a} = N_{t, a}$.
+      \item $N_{t, a} \le t$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $N_{t+1, a}(\omega) = N_{t+1,
+      a}(\omega')$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_le (a : α) (t : ℕ) (ω : Ω) : pullCount A a t ω ≤ t :=
   (card_filter_le _ _).trans_eq (by simp)
 
+@[blueprint
+  "lem:pullCount_basic"
+  (statement := /-- We note the following basic properties of $N_{t,a}$:
+    \begin{itemize}
+      \item $N_{0,a} = 0$.
+      \item $N_{t,a}$ is non-decreasing in $t$.
+      \item $N_{t + 1, A_t} = N_{t, A_t} + 1$ and for $a \ne A_t$, $N_{t + 1, a} = N_{t, a}$.
+      \item $N_{t, a} \le t$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $N_{t+1, a}(\omega) = N_{t+1,
+      a}(\omega')$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_congr {ω' : Ω} (h_eq : ∀ i ≤ n, A i ω = A i ω') :
     pullCount A a (n + 1) ω = pullCount A a (n + 1) ω' := by
   unfold pullCount
@@ -222,6 +287,12 @@ lemma adapted_pullCount_add_one [MeasurableSingletonClass α]
     Adapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) :=
   fun n ↦ Measurable.stronglyMeasurable <| adapted_pullCount_add_one' hA hR' a n
 
+@[blueprint
+  "lem:predictable_pullCount"
+  (statement := /-- Let $a \in \mathcal{A}$. The process $(N_{t,a})_{t \in \mathbb{N}}$ is
+    predictable with respect to the filtration $\mathcal{F}$ of the algorithm-environment
+    interaction. -/)
+  (latexEnv := "lemma")]
 lemma isPredictable_pullCount [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) :
     IsPredictable (IsAlgEnvSeq.filtration hA hR') (pullCount A a) := by
@@ -246,6 +317,12 @@ section StepsUntil
 
 -- TODO: replace this by leastGE, once leastGE is generalized
 /-- Number of steps until action `a` was pulled exactly `m` times. -/
+@[blueprint
+  "def:stepsUntil"
+  (statement := /-- For an action $a \in \mathcal{A}$ and a time $n \in \mathbb{N}$, we denote by
+    $T_{n,a} \in \mathbb{N} \cup \{+\infty\}$ the time at which action $a$ was chosen for the $n$-th
+    time, that is $T_{n,a} = \min\{s \in \mathbb{N} \mid N_{s+1,a} = n\}$.
+    Note that $T_{n, a}$ can be infinite if the action is not chosen $n$ times. -/)]
 noncomputable
 def stepsUntil (A : ℕ → Ω → α) (a : α) (m : ℕ) (ω : Ω) : ℕ∞ :=
   sInf ((↑) '' {s | pullCount A a (s + 1) ω = m})
@@ -262,6 +339,20 @@ lemma exists_pullCount_eq (h' : stepsUntil A a m ω ≠ ⊤) :
   rw [← stepsUntil_eq_top_iff] at h_contra
   simp [h_contra] at h'
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma stepsUntil_zero_of_ne (hka : A 0 ω ≠ a) : stepsUntil A a 0 ω = 0 := by
   unfold stepsUntil
   simp_rw [← bot_eq_zero, sInf_eq_bot, bot_eq_zero]
@@ -271,6 +362,20 @@ lemma stepsUntil_zero_of_ne (hka : A 0 ω ≠ a) : stepsUntil A a 0 ω = 0 := by
   rw [← zero_add 1, pullCount_eq_pullCount_of_action_ne hka]
   simp
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma stepsUntil_zero_of_eq (hka : A 0 ω = a) : stepsUntil A a 0 ω = ⊤ := by
   rw [stepsUntil_eq_top_iff]
   suffices 0 < pullCount A a 1 ω by
@@ -338,11 +443,39 @@ lemma stepsUntil_mono (a : α) (ω : Ω) {n m : ℕ} (hn : n ≠ 0) (hnm : n ≤
     exact mod_cast hnm
   exact hittingAfter_anti (fun n ω ↦ (pullCount A a (n + 1) ω : ℝ)) 0 h_Ici_subset ω
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma stepsUntil_pullCount_le (ω : Ω) (a : α) (t : ℕ) :
     stepsUntil A a (pullCount A a (t + 1) ω) ω ≤ t := by
   rw [stepsUntil]
   exact csInf_le (OrderBot.bddBelow _) ⟨t, rfl, rfl⟩
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma stepsUntil_pullCount_eq (ω : Ω) (t : ℕ) :
     stepsUntil A (A t ω) (pullCount A (A t ω) (t + 1) ω) ω = t := by
   apply le_antisymm (stepsUntil_pullCount_le ω (A t ω) t)
@@ -378,6 +511,20 @@ lemma stepsUntil_eq_zero_iff :
     rw [h.1]
     exact stepsUntil_one_of_eq h.2
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma action_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount A a (s + 1) ω = m) :
     A (stepsUntil A a m ω).toNat ω = a := by
   classical
@@ -405,6 +552,20 @@ lemma action_eq_of_stepsUntil_eq_coe (hm : m ≠ 0) (h : stepsUntil A a m ω = n
   have h_exists : ∃ s, pullCount A a (s + 1) ω = m := exists_pullCount_eq (by simp [h])
   exact action_stepsUntil hm h_exists
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount A a (s + 1) ω = m) :
     pullCount A a (stepsUntil A a m ω + 1).toNat ω = m := by
   classical
@@ -416,6 +577,20 @@ lemma pullCount_stepsUntil_add_one (h_exists : ∃ s, pullCount A a (s + 1) ω =
   simp only [ENat.toNat_coe, ENat.toNat_one]
   exact h'
 
+@[blueprint
+  "lem:stepsUntil_basic"
+  (statement := /-- We note the following basic properties of $T_{n,a}$:
+    \begin{itemize}
+      \item $T_{0,a} = 0$ for $a \ne A_0$. $T_{0,A_0} = \infty$.
+      \item $T_{N_{t+1, a}, a} \le t$.
+      \item $T_{N_{t + 1, A_t}, A_t} = t$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $A_{T_{n, a}} = a$.
+      \item If $T_{n, a} \ne \infty$, then $N_{T_{n, a} + 1, a} = n$.
+      \item If $T_{n, a} \ne \infty$ and $n > 0$, then $N_{T_{n, a}, a} = n - 1$.
+      \item If for all $s \le t$, $A_s(\omega) = A_s(\omega')$, then $T_{n, a}(\omega) = t \iff
+      T_{n, a}(\omega') = t$.
+    \end{itemize} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount A a (s + 1) ω = m) :
     pullCount A a (stepsUntil A a m ω).toNat ω = m - 1 := by
   have h_action := action_eq_of_stepsUntil_eq_coe (A := A) (n := (stepsUntil A a m ω).toNat)
@@ -507,6 +682,12 @@ lemma stepsUntil_eq_congr {ω' : Ω} (h_eq : ∀ i ≤ n, A i ω = A i ω') :
 
 section Measurability
 
+@[blueprint
+  "lem:isStoppingTime_stepsUntil"
+  (statement := /-- Let $a \in \mathcal{A}$. For any $n > 0$, the random variable $T_{n,a}$ is a
+    stopping time with respect to the filtration $\mathcal{F}$. -/)
+  (proof := /-- A hitting time of a set by an adapted process is a stopping time. -/)
+  (latexEnv := "lemma")]
 lemma isStoppingTime_stepsUntil [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (hm : m ≠ 0) :
     IsStoppingTime (IsAlgEnvSeq.filtration hA hR') (stepsUntil A a m) := by
@@ -555,6 +736,11 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass α]
     Measurable (fun ω : Ω × (ℕ → α → R) ↦ stepsUntil A a m ω.1) :=
   (measurable_stepsUntil hA a m).comp measurable_fst
 
+@[blueprint
+  "lem:measurable_comap_indicator_stepsUntil_eq"
+  (statement := /-- The function $\mathbb{I}\{T_{n,a} = t\} : \Omega \to \{0, 1\}$ is measurable
+    with respect to the sigma-algebra generated by $(H_{t-1}, A_t)$. -/)
+  (latexEnv := "lemma")]
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
@@ -658,6 +844,14 @@ section RewardByCount
 /-- Reward obtained when pulling action `a` for the `m`-th time.
 If it is never pulled `m` times, the reward is given by the second component of `ω`, which in
 applications will be indepedent with same law. -/
+@[blueprint
+  "def:rewardByCount"
+  (title := "n\\textsuperscript{th} reward")
+  (statement := /-- We define $Y_{n, a} = R_{T_{n,a}} \mathbb{I}\{T_{n, a} < \infty\} + Z_{n,a}
+    \mathbb{I}\{T_{n, a} = \infty\}$, the reward received when choosing action $a$ for the $n$-th
+    time if that time is finite, and equal to $Z_{n,a}$ otherwise.
+    In that expression, we see $R_{T_{n,a}}$ and $T_{n, a}$ as random variables on $\Omega$ instead
+    of $\Omega_{\mathcal{T}}$. -/)]
 noncomputable
 def rewardByCount (A : ℕ → Ω → α) (R' : ℕ → Ω → R) (a : α) (m : ℕ) (ω : Ω × (ℕ → α → R)) : R :=
   match (stepsUntil A a m ω.1) with
@@ -708,6 +902,16 @@ lemma rewardByCount_zero (a : α) (ω : Ω × (ℕ → α → R)) :
   · simp [ha, stepsUntil_zero_of_eq]
   · simp [stepsUntil_zero_of_ne, ha]
 
+@[blueprint
+  "lem:rewardByCount_pullCount"
+  (statement := /-- $Y_{N_{t, A_t} + 1, A_t} = R_t$. -/)
+  (proof := /-- This is perhaps hard to parse at first sight, but it follows directly from the
+    definitions.
+    At time $t$, the action chosen is $A_t$ and we see a reward $R_t$.
+    That action had already been chosen $N_{t, A_t}$ times before time $t$, so the reward $R_t$ is
+    the reward received when choosing action $A_t$ for the $(N_{t, A_t} + 1)$-th time, which is
+    $Y_{N_{t, A_t} + 1, A_t}$ by definition. -/)
+  (latexEnv := "lemma")]
 lemma rewardByCount_pullCount_add_one_eq_reward (t : ℕ) (ω : Ω × (ℕ → α → R)) :
     rewardByCount A R' (A t ω.1) (pullCount A (A t ω.1) t ω.1 + 1) ω = R' t ω.1 := by
   rw [rewardByCount, ← pullCount_action_eq_pullCount_add_one, stepsUntil_pullCount_eq]
@@ -731,6 +935,23 @@ lemma measurable_rewardByCount [MeasurableSingletonClass α]
 
 end RewardByCount
 
+@[blueprint
+  "lem:sum_pullCount_mul"
+  (statement := /-- Let $f : \mathcal{A} \to \mathbb{R}$ be a function on the arms. For all $t \in
+    \mathbb{N}$,
+    \begin{align*}
+      \sum_{a \in \mathcal{A}} N_{t,a} f(a) = \sum_{s=0}^{t-1} f(A_s) \: .
+    \end{align*} -/)
+  (proof := /-- \begin{align*}
+      \sum_{a \in \mathcal{A}} N_{t,a} f(a)
+      &= \sum_{a \in \mathcal{A}} \sum_{s=0}^{t-1} \mathbb{I}\{A_s = a\} f(a)
+      \\
+      &= \sum_{s=0}^{t-1} \sum_{a \in \mathcal{A}} \mathbb{I}\{A_s = a\} f(a)
+      \\
+      &= \sum_{s=0}^{t-1} f(A_s)
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma sum_pullCount_mul [Fintype α] [Semiring R] (ω : Ω) (f : α → R) (t : ℕ) :
     ∑ a, pullCount A a t ω * f a = ∑ s ∈ range t, f (A s ω) := by
   unfold pullCount
@@ -749,6 +970,11 @@ lemma sum_pullCount [Fintype α] {ω : Ω} : ∑ a, pullCount A a t ω = t := by
 section SumRewards
 
 /-- Sum of rewards obtained when pulling action `a` up to time `t` (exclusive). -/
+@[blueprint
+  "def:sumRewards"
+  (title := "Sum of rewards")
+  (statement := /-- Let $S_{t, a} = \sum_{s=0}^{t-1} R_s \mathbb{I}\{A_s = a\}$ be the sum of the
+    rewards obtained by chosing action $a$ before time $t$. -/)]
 def sumRewards (A : ℕ → Ω → α) (R' : ℕ → Ω → ℝ) (a : α) (t : ℕ) (ω : Ω) : ℝ :=
   ∑ s ∈ range t, if A s ω = a then R' s ω else 0
 
@@ -758,6 +984,13 @@ def sumRewards' (n : ℕ) (h : Iic n → α × ℝ) (a : α) :=
   ∑ s, if (h s).1 = a then (h s).2 else 0
 
 /-- Empirical mean reward obtained when pulling action `a` up to time `t` (exclusive). -/
+@[blueprint
+  "def:empMean"
+  (title := "Empirical mean")
+  (statement := /-- Let $\hat{\mu}_{t, a} = \frac{S_{t, a}}{N_{t, a}} = \frac{1}{N_{t,a}}
+    \sum_{s=0}^{t-1} R_s \mathbb{I}\{A_s = a\}$ if $N_{t, a} > 0$, and $\hat{\mu}_{t, a} = 0$
+    otherwise.
+    This is the empirical mean of the rewards obtained by choosing action $a$ before time $t$. -/)]
 noncomputable
 def empMean (A : ℕ → Ω → α) (R' : ℕ → Ω → ℝ) (a : α) (t : ℕ) (ω : Ω) : ℝ :=
   sumRewards A R' a t ω / pullCount A a t ω
@@ -771,6 +1004,15 @@ lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :
     sumRewards A R' a t ω = pullCount A a t ω * empMean A R' a t ω := by unfold empMean; field_simp
 
+@[blueprint
+  "lem:sum_rewardByCount"
+  (statement := /-- The sum of the first $N_{t, a}$ rewards received when choosing action $a$ is
+    equal to the sum of the rewards obtained by choosing action $a$ before time $t$:
+    \begin{align*}
+      \sum_{n=1}^{N_{t, a}} Y_{n, a} = S_{t,a}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma sum_rewardByCount_eq_sumRewards {R' : ℕ → Ω → ℝ} (a : α) (t : ℕ) (ω : Ω × (ℕ → α → ℝ)) :
     ∑ m ∈ Icc 1 (pullCount A a t ω.1), rewardByCount A R' a m ω = sumRewards A R' a t ω.1 := by
   induction t with

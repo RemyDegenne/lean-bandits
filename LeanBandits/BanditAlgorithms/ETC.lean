@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.ForMathlib.MeasurableArgMax
@@ -34,6 +35,18 @@ section AlgorithmDefinition
 For `n < K * m - 1`, this is arm `n % K`.
 For `n = K * m - 1`, this is the arm with the highest empirical mean after the exploration phase.
 For `n ≥ K * m`, this is the same arm as at time `n`. -/
+@[blueprint
+  "def:etcAlgorithm"
+  (title := "Explore-Then-Commit algorithm")
+  (statement := /-- The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is
+    defined as follows:
+    \begin{enumerate}
+      \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),
+      \item compute $\hat{A}_m^* = \arg\max_{a \in [K]} \hat{\mu}_a$, where $\hat{\mu}_a =
+      \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t$ is the empirical mean of the rewards
+      for arm $a$,
+      \item for $t \ge Km$, $A_t = \hat{A}_m^*$ (pull the empirical best arm).
+    \end{enumerate} -/)]
 noncomputable
 def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
@@ -55,6 +68,18 @@ lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m
 
 /-- The Explore-Then-Commit algorithm: deterministic algorithm that chooses the next arm according
 to `ETC.nextArm`. -/
+@[blueprint
+  "def:etcAlgorithm"
+  (title := "Explore-Then-Commit algorithm")
+  (statement := /-- The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is
+    defined as follows:
+    \begin{enumerate}
+      \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),
+      \item compute $\hat{A}_m^* = \arg\max_{a \in [K]} \hat{\mu}_a$, where $\hat{\mu}_a =
+      \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t$ is the empirical mean of the rewards
+      for arm $a$,
+      \item for $t \ge Km$, $A_t = \hat{A}_m^*$ (pull the empirical best arm).
+    \end{enumerate} -/)]
 noncomputable
 def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (ETC.nextArm hK m) (by fun_prop) ⟨0, hK⟩
@@ -155,6 +180,16 @@ lemma pullCount_add_one_of_ge [Nonempty (Fin K)]
 
 /-- For `n ≥ K * m`, the number of pulls of each arm `a` at time `n` is equal to `m` plus
 `n - K * m` if arm `a` is the best arm after the exploration phase. -/
+@[blueprint
+  "lem:pullCount_etcAlgorithm"
+  (statement := /-- For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in
+    [K]$ and any time $t \ge Km$, we have
+    \begin{align*}
+      N_{t,a}
+      &= m + (t - Km) \mathbb{I}\{\hat{A}_m^* = a\}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_of_ge [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
@@ -175,6 +210,10 @@ lemma pullCount_of_ge [Nonempty (Fin K)]
 
 /-- If at time `K * m` the algorithm chooses arm `a`, then the total reward obtained by pulling
 arm `a` is at least the total reward obtained by pulling the best arm. -/
+@[blueprint
+  "lem:sumRewards_bestArm_le_of_arm_mul_eq"
+  (statement := /-- If $\hat{A}_m^* = a$, then we have $S_{Km, a^*} \le S_{Km, a}$. -/)
+  (latexEnv := "lemma")]
 lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) (hm : m ≠ 0) :
     ∀ᵐ h ∂P, A (K * m) h = a → sumRewards A R (bestArm ν) (K * m) h ≤
@@ -210,6 +249,29 @@ lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
 
 /-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
 `exp(- m * Δ_a^2 / 4)`. -/
+@[blueprint
+  "lem:prob_etc_error_le_exp"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ with
+    $\Delta_a > 0$, we have $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m
+    \Delta_a^2}{4}\right)$. -/)
+  (proof := /-- By Lemma~\ref{lem:sumRewards_bestArm_le_of_arm_mul_eq},
+    \begin{align*}
+      \mathbb{P}(\hat{A}_m^* = a)
+      &\le \mathbb{P}(S_{Km, a} \ge S_{Km, a^*})
+      \: .
+    \end{align*}
+    By Lemma~\ref{lem:prob_sumRewards_le_sumRewards_le}, and then the concentration inequality of
+    Lemma~\ref{lem:probReal_sum_le_sum_streamMeasure} we have
+    \begin{align*}
+      P_{\mathcal{A}}\left(S_{Km, a^*} \le S_{Km, a}\right)
+      &\le (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le
+      \sum_{s=0}^{m-1} \omega_{s, a} \right)
+      \\
+      &\le \exp\left( -m \frac{\Delta_a^2}{4} \right)
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
@@ -256,6 +318,35 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
 /-- Regret bound for the ETC algorithm. -/
+@[blueprint
+  "thm:regret_etc_le"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regret after $T$
+    pulls with $T \ge Km$ is bounded by
+    \begin{align*}
+      \mathbb{E}[R_T]
+      &\le m \sum_{a=1}^K \Delta_a + (T - Km) \sum_{a=1}^K \Delta_a \exp\left(- \frac{m
+      \Delta_a^2}{4}\right)
+      \: .
+    \end{align*} -/)
+  (proof := /-- By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] =
+    \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
+    It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
+    It suffices to prove that
+    \begin{align*}
+      \mathbb{E}[N_{T,a}]
+      &\le m + (T - Km) \exp\left(- \frac{m \Delta_a^2}{4}\right)
+      \: .
+    \end{align*}
+    By Lemma~\ref{lem:pullCount_etcAlgorithm},
+    \begin{align*}
+      N_{T,a}
+      &= m + (T - Km) \mathbb{I}\{\hat{A}_m^* = a\}
+      \: .
+    \end{align*}
+    It thus suffices to prove the inequality $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m
+    \Delta_a^2}{4}\right)$ for $\Delta_a > 0$.
+    This is done in Lemma~\ref{lem:prob_etc_error_le_exp}. -/)]
 lemma regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)

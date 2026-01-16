@@ -1,3 +1,4 @@
+import Architect
 import Mathlib.Probability.IdentDistrib
 import Mathlib.Probability.Independence.InfinitePi
 
@@ -38,6 +39,11 @@ lemma indepFun_cond_of_indepFun {α β γ : Type*} {mα : MeasurableSpace α} {m
   rw [← mul_assoc (μ (Y ⁻¹' s)), ENNReal.mul_inv_cancel h_zero.2 h_zero.1, one_mul]
   congr
 
+@[blueprint
+  "lem:iIndepFun_nat_iff_forall_indepFun"
+  (statement := /-- A family of random variables $(X_i)_{i \in \mathbb{N}}$ is independent if and
+    only if for all $n \in \mathbb{N}$, $X_{n+1}$ is independent of $(X_0, \ldots, X_n)$. -/)
+  (latexEnv := "lemma")]
 lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → Ω → E}
     (hX : ∀ n, AEMeasurable (X n) μ) :
     iIndepFun X μ ↔ ∀ n, X (n + 1) ⟂ᵢ[μ] fun ω (i : Iic n) ↦ X i ω := by

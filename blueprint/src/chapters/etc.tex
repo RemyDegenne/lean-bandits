@@ -6,103 +6,24 @@ Note: times start at 0 to be consistent with Lean.
 
 Note: we will describe the algorithm by writing $A_t = ...$, but our formal bandit model needs a policy $\pi_t$ that gives the distribution of the arm to pull. What me mean is that $\pi_t$ is a Dirac distribution at that arm.
 
-\begin{definition}[Explore-Then-Commit algorithm]\label{def:etcAlgorithm}
-  \leanok
-  \lean{Bandits.ETC.nextArm, Bandits.etcAlgorithm}
-The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is defined as follows:
-\begin{enumerate}
-  \item for $t < Km$, $A_t = t \mod K$ (pull each arm $m$ times),
-  \item compute $\hat{A}_m^* = \arg\max_{a \in [K]} \hat{\mu}_a$, where $\hat{\mu}_a = \frac{1}{m} \sum_{t=0}^{Km-1} \mathbb{I}(A_t = a) X_t$ is the empirical mean of the rewards for arm $a$,
-  \item for $t \ge Km$, $A_t = \hat{A}_m^*$ (pull the empirical best arm).
-\end{enumerate}
-\end{definition}
+\inputleannode{def:etcAlgorithm}
 
 
-\begin{lemma}\label{lem:pullCount_etcAlgorithm}
-  \uses{def:etcAlgorithm, def:pullCount}
-  \leanok
-  \lean{Bandits.ETC.pullCount_of_ge}
-For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ and any time $t \ge Km$, we have
-\begin{align*}
-  N_{t,a}
-  &= m + (t - Km) \mathbb{I}\{\hat{A}_m^* = a\}
-  \: .
-\end{align*}
-\end{lemma}
-
-\begin{proof}\leanok
-
-\end{proof}
+\inputleannode{lem:pullCount_etcAlgorithm}
 
 
-\begin{lemma}\label{lem:sumRewards_bestArm_le_of_arm_mul_eq}
-  \uses{def:etcAlgorithm, def:sumRewards}
-  \leanok
-  \lean{Bandits.ETC.sumRewards_bestArm_le_of_arm_mul_eq}
-If $\hat{A}_m^* = a$, then we have $S_{Km, a^*} \le S_{Km, a}$.
-\end{lemma}
-
-\begin{proof}\leanok
-
-\end{proof}
 
 
-\begin{lemma}\label{lem:prob_etc_error_le_exp}
-  \uses{def:etcAlgorithm}
-  \leanok
-  \lean{Bandits.ETC.prob_arm_mul_eq_le}
-Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
-Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ with $\Delta_a > 0$, we have $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$.
-\end{lemma}
-
-\begin{proof}\leanok
-  \uses{lem:prob_sumRewards_le_sumRewards_le, lem:probReal_sum_le_sum_streamMeasure, lem:sumRewards_bestArm_le_of_arm_mul_eq}
-By Lemma~\ref{lem:sumRewards_bestArm_le_of_arm_mul_eq},
-\begin{align*}
-  \mathbb{P}(\hat{A}_m^* = a)
-  &\le \mathbb{P}(S_{Km, a} \ge S_{Km, a^*})
-  \: .
-\end{align*}
-By Lemma~\ref{lem:prob_sumRewards_le_sumRewards_le}, and then the concentration inequality of Lemma~\ref{lem:probReal_sum_le_sum_streamMeasure} we have
-\begin{align*}
-  P_{\mathcal{A}}\left(S_{Km, a^*} \le S_{Km, a}\right)
-  &\le (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le \sum_{s=0}^{m-1} \omega_{s, a} \right)
-  \\
-  &\le \exp\left( -m \frac{\Delta_a^2}{4} \right)
-  \: .
-\end{align*}
-\end{proof}
+\inputleannode{lem:sumRewards_bestArm_le_of_arm_mul_eq}
 
 
-\begin{theorem}\label{thm:regret_etc_le}
-  \uses{def:etcAlgorithm, def:regret}
-  \leanok
-  \lean{Bandits.ETC.regret_le}
-Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
-Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regret after $T$ pulls with $T \ge Km$ is bounded by
-\begin{align*}
-  \mathbb{E}[R_T]
-  &\le m \sum_{a=1}^K \Delta_a + (T - Km) \sum_{a=1}^K \Delta_a \exp\left(- \frac{m \Delta_a^2}{4}\right)
-  \: .
-\end{align*}
-\end{theorem}
 
-\begin{proof}\leanok
-  \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm, lem:prob_etc_error_le_exp}
-By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
-It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
-It suffices to prove that
-\begin{align*}
-  \mathbb{E}[N_{T,a}]
-  &\le m + (T - Km) \exp\left(- \frac{m \Delta_a^2}{4}\right)
-  \: .
-\end{align*}
-By Lemma~\ref{lem:pullCount_etcAlgorithm},
-\begin{align*}
-  N_{T,a}
-  &= m + (T - Km) \mathbb{I}\{\hat{A}_m^* = a\}
-  \: .
-\end{align*}
-It thus suffices to prove the inequality $\mathbb{P}(\hat{A}_m^* = a) \le \exp\left(- \frac{m \Delta_a^2}{4}\right)$ for $\Delta_a > 0$.
-This is done in Lemma~\ref{lem:prob_etc_error_le_exp}.
-\end{proof}
+
+\inputleannode{lem:prob_etc_error_le_exp}
+
+
+
+
+\inputleannode{thm:regret_etc_le}
+
+

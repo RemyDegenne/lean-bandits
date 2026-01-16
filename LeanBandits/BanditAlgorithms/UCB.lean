@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.ForMathlib.MeasurableArgMax
@@ -29,6 +30,16 @@ noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) (a 
 
 open Classical in
 /-- Arm pulled by the UCB algorithm at time `n + 1`. -/
+@[blueprint
+  "def:ucbAlgorithm"
+  (title := "UCB algorithm")
+  (statement := /-- The UCB algorithm with parameter $c \in \mathbb{R}_+$ is defined as follows:
+    \begin{enumerate}
+      \item for $t < K$, $A_t = t \mod K$ (pull each arm once),
+      \item for $t \ge K$, $A_t = \arg\max_{a \in [K]} \left( \hat{\mu}_{t,a} + \sqrt{\frac{c \log(t
+      + 1)}{N_{t,a}}} \right)$, where $\hat{\mu}_{t,a} = \frac{1}{N_{t,a}} \sum_{s=0}^{t-1}
+      \mathbb{I}(A_s = a) X_s$ is the empirical mean of the rewards for arm $a$.
+    \end{enumerate} -/)]
 noncomputable
 def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
@@ -44,6 +55,16 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
   fun_prop
 
 /-- The UCB algorithm. -/
+@[blueprint
+  "def:ucbAlgorithm"
+  (title := "UCB algorithm")
+  (statement := /-- The UCB algorithm with parameter $c \in \mathbb{R}_+$ is defined as follows:
+    \begin{enumerate}
+      \item for $t < K$, $A_t = t \mod K$ (pull each arm once),
+      \item for $t \ge K$, $A_t = \arg\max_{a \in [K]} \left( \hat{\mu}_{t,a} + \sqrt{\frac{c \log(t
+      + 1)}{N_{t,a}}} \right)$, where $\hat{\mu}_{t,a} = \frac{1}{N_{t,a}} \sum_{s=0}^{t-1}
+      \mathbb{I}(A_s = a) X_s$ is the empirical mean of the rewards for arm $a$.
+    \end{enumerate} -/)]
 noncomputable
 def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (UCB.nextArm hK c) (by fun_prop) ⟨0, hK⟩
@@ -95,6 +116,16 @@ lemma arm_ae_all_eq [Nonempty (Fin K)]
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero h, arm_ae_eq_ucbNextArm h⟩
 
+@[blueprint
+  "lem:ucbIndex_le_ucbIndex_arm"
+  (statement := /-- For the UCB algorithm, for all time $t \ge K$ and arm $a \in [K]$, we have
+    \begin{align*}
+      \hat{\mu}_{t,a} + \sqrt{\frac{c \log(t + 1)}{N_{t,a}}}
+      &\le \hat{\mu}_{t,A_t} + \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}}
+      \: .
+    \end{align*} -/)
+  (proof := /-- By definition of the algorithm. -/)
+  (latexEnv := "lemma")]
 lemma ucbIndex_le_ucbIndex_arm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) (hn : K ≤ n) :
     ∀ᵐ h ∂P, empMean A R a n h + ucbWidth A c a n h ≤
@@ -179,6 +210,32 @@ lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
   exact h2 n (h1 n h_gt).le a
 
 omit [IsMarkovKernel ν] in
+@[blueprint
+  "lem:gap_arm_le_two_mul_ucbWidth"
+  (statement := /-- Suppose that we have the 3 following conditions:
+    \begin{enumerate}
+      \item $\mu^* \le \hat{\mu}_{t, a^*} + \sqrt{\frac{c \log(t + 1)}{N_{t,a^*}}}$,
+      \item $\hat{\mu}_{t,A_t} - \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}} \le \mu_{A_t}$,
+      \item $\hat{\mu}_{t, a^*} + \sqrt{\frac{c \log(t + 1)}{N_{t,a^*}}} \le \hat{\mu}_{t,A_t} +
+      \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}}$.
+    \end{enumerate}
+    Then if $N_{t,A_t} > 0$ we have
+    \begin{align*}
+      \Delta_{A_t}
+      &\le 2 \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}}
+      \: .
+    \end{align*}
+    And in turn, if $\Delta_{A_t} > 0$ we get
+    \begin{align*}
+      N_{t,A_t}
+      &\le \frac{4 c \log(t + 1)}{\Delta_{A_t}^2}
+      \: .
+    \end{align*}
+    
+    Note that the third condition is always satisfied for UCB by
+    Lemma~\ref{lem:ucbIndex_le_ucbIndex_arm}, but this lemma, as stated, is independent of the UCB
+    algorithm. -/)
+  (latexEnv := "lemma")]
 lemma gap_arm_le_two_mul_ucbWidth [Nonempty (Fin K)]
     (h_best : (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) n ω + ucbWidth A c (bestArm ν) n ω)
     (h_arm : empMean A R (A n ω) n ω - ucbWidth A c (A n ω) n ω ≤ (ν (A n ω))[id])
@@ -195,6 +252,32 @@ lemma gap_arm_le_two_mul_ucbWidth [Nonempty (Fin K)]
     rwa [sub_le_iff_le_add] at h_arm
 
 omit [IsMarkovKernel ν] in
+@[blueprint
+  "lem:gap_arm_le_two_mul_ucbWidth"
+  (statement := /-- Suppose that we have the 3 following conditions:
+    \begin{enumerate}
+      \item $\mu^* \le \hat{\mu}_{t, a^*} + \sqrt{\frac{c \log(t + 1)}{N_{t,a^*}}}$,
+      \item $\hat{\mu}_{t,A_t} - \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}} \le \mu_{A_t}$,
+      \item $\hat{\mu}_{t, a^*} + \sqrt{\frac{c \log(t + 1)}{N_{t,a^*}}} \le \hat{\mu}_{t,A_t} +
+      \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}}$.
+    \end{enumerate}
+    Then if $N_{t,A_t} > 0$ we have
+    \begin{align*}
+      \Delta_{A_t}
+      &\le 2 \sqrt{\frac{c \log(t + 1)}{N_{t,A_t}}}
+      \: .
+    \end{align*}
+    And in turn, if $\Delta_{A_t} > 0$ we get
+    \begin{align*}
+      N_{t,A_t}
+      &\le \frac{4 c \log(t + 1)}{\Delta_{A_t}^2}
+      \: .
+    \end{align*}
+    
+    Note that the third condition is always satisfied for UCB by
+    Lemma~\ref{lem:ucbIndex_le_ucbIndex_arm}, but this lemma, as stated, is independent of the UCB
+    algorithm. -/)
+  (latexEnv := "lemma")]
 lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
     (h_best : (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) n ω + ucbWidth A c (bestArm ν) n ω)
     (h_arm : empMean A R (A n ω) n ω - ucbWidth A c (A n ω) n ω ≤ (ν (A n ω))[id])
@@ -259,6 +342,25 @@ lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
       mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
   _ ≤ 1 / (n + 1) ^ (c / 2) := prob_sum_ge_sqrt_log hν hc a k hk
 
+@[blueprint
+  "lem:prob_ucbIndex_le"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    Let $c \ge 0$ be a real number.
+    Then for any time $n \in \mathbb{N}$ and any arm $a \in [K]$, we have
+    \begin{align*}
+      P\left(0 < N_{n, a} \ \wedge \ \hat{\mu}_{n, a} + \sqrt{\frac{c \log(n + 1)}{N_{n,a}}} \le
+      \mu_a\right)
+      &\le \frac{1}{(n + 1)^{c / 2 - 1}}
+      \: .
+    \end{align*}
+    And also,
+    \begin{align*}
+      P\left(0 < N_{n, a} \ \wedge \ \hat{\mu}_{n, a} - \sqrt{\frac{c \log(n + 1)}{N_{n,a}}} \ge
+      \mu_a\right)
+      &\le \frac{1}{(n + 1)^{c / 2 - 1}}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma prob_ucbIndex_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
@@ -299,6 +401,25 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
+@[blueprint
+  "lem:prob_ucbIndex_le"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    Let $c \ge 0$ be a real number.
+    Then for any time $n \in \mathbb{N}$ and any arm $a \in [K]$, we have
+    \begin{align*}
+      P\left(0 < N_{n, a} \ \wedge \ \hat{\mu}_{n, a} + \sqrt{\frac{c \log(n + 1)}{N_{n,a}}} \le
+      \mu_a\right)
+      &\le \frac{1}{(n + 1)^{c / 2 - 1}}
+      \: .
+    \end{align*}
+    And also,
+    \begin{align*}
+      P\left(0 < N_{n, a} \ \wedge \ \hat{\mu}_{n, a} - \sqrt{\frac{c \log(n + 1)}{N_{n,a}}} \ge
+      \mu_a\right)
+      &\le \frac{1}{(n + 1)^{c / 2 - 1}}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma prob_ucbIndex_ge [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
@@ -366,6 +487,28 @@ lemma probReal_ucbIndex_ge [Nonempty (Fin K)]
   norm_cast
 
 omit [IsMarkovKernel ν] in
+@[blueprint
+  "lem:pullCount_le_add_three"
+  (statement := /-- For $C$ a natural number, for any time $n \in \mathbb{N}$ and any arm $a \in
+    [K]$, we have
+    \begin{align*}
+      N_{n,a}
+      &\le C + 1
+      \\&\quad +
+          \sum_{s=1}^{n-1} \mathbb{I}\{A_s = a \ \wedge \ C < N_{s,a} \ \wedge \
+            \mu^* \le \hat{\mu}_{s, a^*} + \sqrt{\frac{c \log(s + 1)}{N_{s,a^*}}} \ \wedge \
+            \hat{\mu}_{s, A_s} - \sqrt{\frac{c \log(s + 1)}{N_{s,A_s}}} \le \mu_{A_s}\}
+      \\&\quad +
+          \sum_{s=1}^{n-1}
+            \mathbb{I}\{0 < N_{s, a^*} \ \wedge \ \hat{\mu}_{s, a^*} + \sqrt{\frac{c \log(s +
+            1)}{N_{s,a^*}}} <
+              \mu^*\}
+      \\&\quad +
+          \sum_{s=1}^{n-1}
+            \mathbb{I}\{0 < N_{s, a} \ \wedge \ \mu_a <
+              \hat{\mu}_{s, a} - \sqrt{\frac{c \log(s + 1)}{N_{s,a}}}\}
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : Ω) :
     pullCount A a n ω ≤ C + 1 +
       ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω ∧
@@ -408,6 +551,28 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : Ω
           ∑ s ∈ range n, D.indicator 1 s := by
       rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
 
+@[blueprint
+  "lem:pullCount_le_add_three"
+  (statement := /-- For $C$ a natural number, for any time $n \in \mathbb{N}$ and any arm $a \in
+    [K]$, we have
+    \begin{align*}
+      N_{n,a}
+      &\le C + 1
+      \\&\quad +
+          \sum_{s=1}^{n-1} \mathbb{I}\{A_s = a \ \wedge \ C < N_{s,a} \ \wedge \
+            \mu^* \le \hat{\mu}_{s, a^*} + \sqrt{\frac{c \log(s + 1)}{N_{s,a^*}}} \ \wedge \
+            \hat{\mu}_{s, A_s} - \sqrt{\frac{c \log(s + 1)}{N_{s,A_s}}} \le \mu_{A_s}\}
+      \\&\quad +
+          \sum_{s=1}^{n-1}
+            \mathbb{I}\{0 < N_{s, a^*} \ \wedge \ \hat{\mu}_{s, a^*} + \sqrt{\frac{c \log(s +
+            1)}{N_{s,a^*}}} <
+              \mu^*\}
+      \\&\quad +
+          \sum_{s=1}^{n-1}
+            \mathbb{I}\{0 < N_{s, a} \ \wedge \ \mu_a <
+              \hat{\mu}_{s, a} - \sqrt{\frac{c \log(s + 1)}{N_{s,a}}}\}
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (a : Fin K) (n C : ℕ) (hC : C ≠ 0) :
@@ -430,6 +595,13 @@ lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
     exact fun h_gt ↦ hω _ (lt_of_le_of_lt (by grind) h_gt) _
   · exact fun h_gt ↦ hω _ (lt_of_le_of_lt (by grind) h_gt) _
 
+@[blueprint
+  "lem:some_sum_eq_zero"
+  (statement := /-- For the UCB algorithm with parameter $c \ge 0$, for any time $n \in \mathbb{N}$
+    and any arm $a \in [K]$ with positive gap, the first sum in
+    Lemma~\ref{lem:pullCount_le_add_three} is equal to zero for positive $C$ such that $C \ge
+    \frac{4 c \log(n + 1)}{\Delta_a^2}$. -/)
+  (latexEnv := "lemma")]
 lemma some_sum_eq_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a) (n C : ℕ)
@@ -578,6 +750,17 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
     positivity
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
+@[blueprint
+  "lem:expectation_pullCount_le"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    For the UCB algorithm with parameter $c > 0$, for any time $n \in \mathbb{N}$ and any arm $a \in
+    [K]$ with positive gap, we have
+    \begin{align*}
+      \mathbb{E}[N_{n,a}]
+      &\le \frac{4 c \log(n + 1)}{\Delta_a^2} + 2 + 2 \sum_{s=0}^{n-1} \frac{1}{(s + 1)^{c / 2 - 1}}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma expectation_pullCount_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
@@ -609,6 +792,17 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   ring
 
 /-- Regret bound for the UCB algorithm. -/
+@[blueprint
+  "lem:ucb_regret_le"
+  (statement := /-- Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
+    For the UCB algorithm with parameter $c > 0$, for any time $n \in \mathbb{N}$, we have
+    \begin{align*}
+      R_n
+      &\le \sum_{a : \Delta_a > 0} \left(\frac{4 c \log(n + 1)}{\Delta_a} + 2 \Delta_a\left(1 +
+      \sum_{s=0}^{n-1} \frac{1}{(s + 1)^{c / 2 - 1}}\right)\right)
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hc : 0 < c) (n : ℕ) :

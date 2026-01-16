@@ -1,15 +1,9 @@
 \chapter{Conditional independence}
 
 
-\begin{lemma}\label{lem:CondIndepFun.prod_right}
-  \leanok
-  \lean{ProbabilityTheory.CondIndepFun.prod_right}
-If $X \ind Y \mid Z$, then $X \ind (Y, Z) \mid Z$.
-\end{lemma}
+\inputleannode{lem:CondIndepFun.prod_right}
 
-\begin{proof}\leanok
 
-\end{proof}
 
 
 \begin{lemma}[Contraction]\label{lem:indepFun_contraction}
@@ -34,12 +28,6 @@ By the second hypothesis, $\mathcal{L}(X \mid Z, W) = \mathcal{L}(X \mid W)$.
 \end{proof}
 
 
-\begin{lemma}\label{lem:iIndepFun_nat_iff_forall_indepFun}
-  \leanok
-  \lean{ProbabilityTheory.iIndepFun_nat_iff_forall_indepFun}
-A family of random variables $(X_i)_{i \in \mathbb{N}}$ is independent if and only if for all $n \in \mathbb{N}$, $X_{n+1}$ is independent of $(X_0, \ldots, X_n)$.
-\end{lemma}
+\inputleannode{lem:iIndepFun_nat_iff_forall_indepFun}
 
-\begin{proof}\leanok
 
-\end{proof}

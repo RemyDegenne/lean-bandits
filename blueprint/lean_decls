@@ -3,8 +3,8 @@ Learning.Environment
 Learning.detAlgorithm
 Learning.stationaryEnv
 Learning.IsAlgEnvSeq
-Learning.IsAlgEnvSeq.hist
 Learning.IsAlgEnvSeq.step
+Learning.IsAlgEnvSeq.hist
 Learning.IsAlgEnvSeq.hasLaw_step_zero
 Learning.IsAlgEnvSeq.hasCondDistrib_step
 Learning.IsAlgEnvSeq.filtration
@@ -21,6 +21,7 @@ Learning.IT.adapted_step
 Learning.IT.adapted_hist
 ProbabilityTheory.Kernel.condDistrib_trajMeasure
 Learning.IsAlgEnvSeq.hasLaw_step_zero
+Learning.IsAlgEnvSeq.hasCondDistrib_step
 Learning.IT.action
 Learning.IT.reward
 Learning.IT.adapted_action
@@ -55,8 +56,8 @@ Bandits.Bandit.trajMeasure
 Bandits.Bandit.measure
 Bandits.ArrayModel.probSpace
 Bandits.ArrayModel.arrayMeasure
-Bandits.ArrayModel.algFunction
 Bandits.ArrayModel.initAlgFunction
+Bandits.ArrayModel.algFunction
 Bandits.ArrayModel.hist
 Bandits.ArrayModel.action
 Bandits.ArrayModel.reward

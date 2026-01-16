@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import LeanBandits.ForMathlib.KernelSub
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Independence.Basic
@@ -114,6 +115,10 @@ lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [Standard
     rw [Kernel.prod_apply, Kernel.id_apply, Measure.prod_apply_symm ht, lintegral_dirac]
 
 -- proved by Claude, then modified
+@[blueprint
+  "lem:CondIndepFun.prod_right"
+  (statement := /-- If $X \ind Y \mid Z$, then $X \ind (Y, Z) \mid Z$. -/)
+  (latexEnv := "lemma")]
 lemma CondIndepFun.prod_right [StandardBorelSpace α] [StandardBorelSpace β] [Nonempty β]
     [StandardBorelSpace γ] [Nonempty γ] [StandardBorelSpace δ] [Nonempty δ]
     {X : α → β} {Y : α → γ} {Z : α → δ}
@@ -441,6 +446,13 @@ end CondDistrib
 
 section Cond
 
+@[blueprint
+  "lem:condDistrib_ae_eq_cond"
+  (statement := /-- For a random variable $X$ on a countable space with the discrete sigma algebra,
+    $\mathcal{L}(Y \mid X) = (x \mapsto \mathcal{L}(Y \mid X = x))$, $(X_*P)$-almost surely.
+    Furthermore, that almost sure equality means that for all $x$ such that $P(X = x) > 0$, we have
+    $\mathcal{L}(Y \mid X = x) = \mathcal{L}(Y \mid X)(x)$. -/)
+  (latexEnv := "lemma")]
 lemma condDistrib_ae_eq_cond [Countable β] [MeasurableSingletonClass β]
     [IsFiniteMeasure μ]
     (hX : Measurable X) (hY : Measurable Y) :

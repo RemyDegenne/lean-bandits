@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
+import Architect
 import LeanBandits.SequentialLearning.FiniteActions
 
 /-!
@@ -22,6 +23,10 @@ variable {α Ω : Type*} [DecidableEq α] {mα : MeasurableSpace α} {mΩ : Meas
   {ω : Ω} {m n t : ℕ} {a : α}
 
 /-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
+@[blueprint
+  "def:gap"
+  (statement := /-- For an arm $a \in \mathcal{A}$, its gap is defined as the difference between the
+    mean of the best arm and the mean of that arm: $\Delta_a = \mu^* - \mu_a$. -/)]
 noncomputable
 def gap (ν : Kernel α ℝ) (a : α) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
 
@@ -31,6 +36,15 @@ lemma gap_nonneg [Fintype α] : 0 ≤ gap ν a := by
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
 /-- Regret of a sequence of pulls `k : ℕ → α` at time `t` for the reward kernel `ν ; Kernel α ℝ`. -/
+@[blueprint
+  "def:regret"
+  (title := "Regret")
+  (statement := /-- The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is
+    the difference between the cumulative reward of always playing the best arm and the cumulative
+    reward of the sequence:
+    \begin{align*}
+      R_T = T \mu^* - \sum_{t=0}^{T-1} \mu_{A_t} \: .
+    \end{align*} -/)]
 noncomputable
 def regret (ν : Kernel α ℝ) (A : ℕ → Ω → α) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
@@ -50,6 +64,24 @@ lemma gap_eq_zero_of_regret_eq_zero [Fintype α] (hr : regret ν A t ω = 0) {s 
   rw [regret_eq_sum_gap] at hr
   exact (sum_eq_zero_iff_of_nonneg fun _ _ ↦ gap_nonneg).1 hr s (mem_range.2 hs)
 
+@[blueprint
+  "lem:regret_eq_sum_pullCount_mul_gap"
+  (statement := /-- For $\mathcal{A}$ finite, the regret $R_T$ can be expressed as a sum over the
+    arms and their gaps:
+    \begin{align*}
+      R_T = \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a \: .
+    \end{align*} -/)
+  (proof := /-- Apply Lemma~\ref{lem:sum_pullCount_mul} with $f(a) = \Delta_a$ to obtain:
+    \begin{align*}
+      \sum_{a \in \mathcal{A}} N_{T,a} \Delta_a
+      &= \sum_{s=0}^{T-1} \Delta_{A_s}
+      \\
+      &= \sum_{s=0}^{T-1} \mu^* - \sum_{s=0}^{T-1} \mu_{A_s}
+      \\
+      &= R_T
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
     regret ν A t ω = ∑ a, pullCount A a t ω * gap ν a := by
   simp_rw [regret_eq_sum_gap, sum_pullCount_mul]

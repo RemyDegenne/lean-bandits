@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import LeanBandits.Bandit.Bandit
 import LeanBandits.Bandit.Regret
 import LeanBandits.ForMathlib.SubGaussian
@@ -130,6 +131,12 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
   · simp
   · simp [e]
 
+@[blueprint
+  "lem:AM.identDistrib_pullCount_prod_sumRewards"
+  (statement := /-- In the array model, for $t \in \mathbb{N}$, the random variable $(N_{t,a}, S_{t,
+    a})_{a \in \mathcal{A}}$ has the same distribution as $(N_{t,a}, \sum_{s=0}^{N_{t,a}-1}
+    \omega_{2, s, a})_{a \in \mathcal{A}}$. -/)
+  (latexEnv := "lemma")]
 lemma identDistrib_pullCount_prod_sumRewards (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
       (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) 𝔓 𝔓 := by
@@ -189,6 +196,13 @@ lemma identDistrib_sumRewards_arm (a : α) (n : ℕ) :
   fun_prop
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+@[blueprint
+  "lem:AM.identDistrib_sum_range_snd"
+  (statement := /-- In the array model, for $k \in \mathbb{N}$, the random variable
+    $\sum_{s=0}^{k-1} \omega_{2, s, a}$ has the same distribution as a sum of $k$ i.i.d. random
+    variables with law $\nu(a)$. -/)
+  (proof := /-- By definition of $P_{\mathcal{A}}$ (Definition~\ref{def:arrayMeasure}). -/)
+  (latexEnv := "lemma")]
 lemma identDistrib_sum_range_snd (a : α) (k : ℕ) :
     IdentDistrib (fun ω ↦ ∑ i ∈ range k, ω.2 i a) (fun ω ↦ ∑ i ∈ range k, ω i a)
       𝔓 (Bandit.streamMeasure ν) where
@@ -199,6 +213,18 @@ lemma identDistrib_sum_range_snd (a : α) (k : ℕ) :
       (ν := Bandit.streamMeasure ν), Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
 
+@[blueprint
+  "lem:prob_pullCount_prod_sumRewards_mem_le"
+  (statement := /-- In the array model, for $t \in \mathbb{N}$, $a \in \mathcal{A}$, and a
+    measurable set $B \subseteq \mathbb{N} \times \mathbb{R}$,
+    \begin{align*}
+      P_{\mathcal{A}}\left((N_{t,a}, S_{t, a}) \in B\right)
+      &\le \sum_{k < t, \exists r, (k, r) \in B} \nu(a)^{\otimes \mathbb{N}} \left(\sum_{s=0}^{k-1}
+      \omega_{s} \in \{x \mid \exists n, (n, x) \in B\}\right)
+      \: .
+    \end{align*}
+    As a consequence, this also holds for any algorithm-environment sequence. -/)
+  (latexEnv := "lemma")]
 lemma prob_pullCount_prod_sumRewards_mem_le (a : α) (n : ℕ)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
@@ -250,6 +276,18 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (a : α) (n : ℕ)
       exists_eq_right, mem_filter, mem_range] at hk
     simp [hk.2.1]
 
+@[blueprint
+  "lem:prob_sumRewards_le_sumRewards_le"
+  (statement := /-- In the array model,
+    \begin{align*}
+      P_{\mathcal{A}}\left( N_{t, a^*} = m_1 \wedge N_{t, a} = m_2 \wedge S_{t, a^*} \le S_{t,
+      a}\right)
+      &\le (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m_1-1} \omega_{s, a^*} \le
+      \sum_{s=0}^{m_2-1} \omega_{s, a} \right)
+      \: .
+    \end{align*}
+    As a consequence, this also holds for any algorithm-environment sequence. -/)
+  (latexEnv := "lemma")]
 lemma prob_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ) :
     (𝔓) {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
@@ -425,6 +463,18 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     exact fun n ↦ Measurable.prodMk (hA n) (hR n)
 
 -- this is what we will use for UCB
+@[blueprint
+  "lem:prob_pullCount_prod_sumRewards_mem_le"
+  (statement := /-- In the array model, for $t \in \mathbb{N}$, $a \in \mathcal{A}$, and a
+    measurable set $B \subseteq \mathbb{N} \times \mathbb{R}$,
+    \begin{align*}
+      P_{\mathcal{A}}\left((N_{t,a}, S_{t, a}) \in B\right)
+      &\le \sum_{k < t, \exists r, (k, r) \in B} \nu(a)^{\otimes \mathbb{N}} \left(\sum_{s=0}^{k-1}
+      \omega_{s} \in \{x \mid \exists n, (n, x) \in B\}\right)
+      \: .
+    \end{align*}
+    As a consequence, this also holds for any algorithm-environment sequence. -/)
+  (latexEnv := "lemma")]
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
@@ -482,6 +532,18 @@ lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable α]
   have hm' : m < n + 1 := by lia
   simpa [hm'] using h_le
 
+@[blueprint
+  "lem:prob_sumRewards_le_sumRewards_le"
+  (statement := /-- In the array model,
+    \begin{align*}
+      P_{\mathcal{A}}\left( N_{t, a^*} = m_1 \wedge N_{t, a} = m_2 \wedge S_{t, a^*} \le S_{t,
+      a}\right)
+      &\le (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m_1-1} \omega_{s, a^*} \le
+      \sum_{s=0}^{m_2-1} \omega_{s, a} \right)
+      \: .
+    \end{align*}
+    As a consequence, this also holds for any algorithm-environment sequence. -/)
+  (latexEnv := "lemma")]
 lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : α) (n m₁ m₂ : ℕ) :
     P.real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
@@ -517,6 +579,16 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 section Subgaussian
 
 omit [DecidableEq α] [StandardBorelSpace α] in
+@[blueprint
+  "lem:probReal_sum_le_sum_streamMeasure"
+  (statement := /-- Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a
+    \in \mathcal{A}$.
+    \begin{align*}
+      (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le
+      \sum_{s=0}^{m-1} \omega_{s, a} \right)
+      &\le \exp\left( -m \frac{\Delta_a^2}{4} \right)
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma probReal_sum_le_sum_streamMeasure [Fintype α]
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : α) (m : ℕ) :
     (Bandit.streamMeasure ν).real
@@ -548,6 +620,26 @@ lemma probReal_sum_le_sum_streamMeasure [Fintype α]
     ring
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+@[blueprint
+  "lem:prob_sum_le_sqrt_log"
+  (statement := /-- Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a
+    \in \mathcal{A}$.
+    Let $c \ge 0$ be a real number and $k$ a positive natural number.
+    Then
+    \begin{align*}
+      \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \le - \sqrt{c k
+      \log(n + 1)} \right)
+      &\le \frac{1}{(n + 1)^{c / 2}}
+      \: .
+    \end{align*}
+    The same upper bound holds for the upper tail:
+    \begin{align*}
+      \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \ge \sqrt{c k \log(n
+      + 1)} \right)
+      &\le \frac{1}{(n + 1)^{c / 2}}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma prob_sum_le_sqrt_log
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
     (a : α) (k : ℕ) (hk : k ≠ 0) :
@@ -578,6 +670,26 @@ lemma prob_sum_le_sqrt_log
     · field
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+@[blueprint
+  "lem:prob_sum_le_sqrt_log"
+  (statement := /-- Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a
+    \in \mathcal{A}$.
+    Let $c \ge 0$ be a real number and $k$ a positive natural number.
+    Then
+    \begin{align*}
+      \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \le - \sqrt{c k
+      \log(n + 1)} \right)
+      &\le \frac{1}{(n + 1)^{c / 2}}
+      \: .
+    \end{align*}
+    The same upper bound holds for the upper tail:
+    \begin{align*}
+      \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \ge \sqrt{c k \log(n
+      + 1)} \right)
+      &\le \frac{1}{(n + 1)^{c / 2}}
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma prob_sum_ge_sqrt_log
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
     (a : α) (k : ℕ) (hk : k ≠ 0) :

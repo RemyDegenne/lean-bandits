@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
+import Architect
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
 /-!
@@ -19,7 +20,13 @@ variable {α R : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R}
 
 /-- A stationary environment, in which the distribution of the next reward depends only on the last
 action. -/
-@[simps]
+@[simps, blueprint
+  "def:stationaryEnv"
+  (title := "Stationary environment")
+  (statement := /-- An environment is stationary if there exists a Markov kernel $\nu : \mathcal{A}
+    \rightsquigarrow \mathcal{R}$ such that $\nu'_0 = \nu$ and for all $t \in \mathbb{N}$, for all
+    $h_t \in (\mathcal{A} \times \mathcal{R})^{t+1}$, for all $a \in \mathcal{A}$, $\nu_t(h_t, a) =
+    \nu(a)$. -/)]
 def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R where
   feedback _ := ν.prodMkLeft _
   ν0 := ν
@@ -32,6 +39,12 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 namespace IsAlgEnvSeq
 
 /-- The conditional distribution of the reward at time `n` given the action at time `n` is `ν`. -/
+@[blueprint
+  "lem:condDistrib_reward_stationaryEnv"
+  (statement := /-- In a stationary environment, for any $t \in \mathbb{N}$, the conditional
+    distribution $P\left[R_t \mid A_t\right]$ is $(A_{t*} P_{\mathcal{T}})$-almost surely equal to
+    $\nu$. -/)
+  (latexEnv := "lemma")]
 lemma condDistrib_reward_stationaryEnv
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
     condDistrib (R' n) (A n) P =ᵐ[P.map (A n)] ν := by
@@ -55,6 +68,12 @@ lemma condDistrib_reward_stationaryEnv
 
 /-- The reward at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
+@[blueprint
+  "lem:condIndepFun_reward_hist_action"
+  (statement := /-- In a stationary environment, for any $t \in \mathbb{N}$, the reward $R_{t+1}$ is
+    conditionally independent of the history $H_t$ given the action $A_{t+1}$ (more succinctly,
+    $R_{t+1} \ind H_t \mid A_{t+1}$). -/)
+  (latexEnv := "lemma")]
 lemma condIndepFun_reward_hist_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
     R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A _ ; P] hist A R' n := by

@@ -3,6 +3,7 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
+import Architect
 import Mathlib.Probability.Moments.SubGaussian
 
 open MeasureTheory Real
@@ -80,6 +81,64 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     · rw [integral_finset_sum _ hY_int]
     · rw [integral_finset_sum _ hX_int]
 
+attribute [blueprint
+  "def:subGaussian"
+  (title := "Sub-Gaussian")
+  (statement := /-- A real valued random variable $X$ is $\sigma^2$-sub-Gaussian if for any $\lambda
+    \in \mathbb{R}$,
+    \begin{align*}
+      \mathbb{E}\left[e^{\lambda X}\right]
+      &\le e^{\frac{\lambda^2 \sigma^2}{2}}
+      \: .
+    \end{align*} -/)]
+  ProbabilityTheory.HasSubgaussianMGF
+
+attribute [blueprint
+  "lem:subGaussian_add_of_indepFun"
+  (statement := /-- If $X$ is $\sigma_1^2$-sub-Gaussian and $Y$ is $\sigma_2^2$-sub-Gaussian, and
+    $X$ and $Y$ are independent, then $X + Y$ is $(\sigma_1^2 + \sigma_2^2)$-sub-Gaussian. -/)
+  (latexEnv := "lemma")]
+  ProbabilityTheory.HasSubgaussianMGF.add_of_indepFun
+
+attribute [blueprint
+  "lem:hoeffding_one"
+  (statement := /-- For $X$ a $\sigma^2$-sub-Gaussian random variable, for any $t \ge 0$,
+    \begin{align*}
+      \mathbb{P}(X \ge t)
+      &\le \exp\left(- \frac{t^2}{2 \sigma^2}\right)
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
+  ProbabilityTheory.HasSubgaussianMGF.measure_ge_le
+
+attribute [blueprint
+  "thm:hoeffding"
+  (statement := /-- Let $X_1, \ldots, X_n$ be independent random variables such that $X_i$ is
+    $\sigma_i^2$-sub-Gaussian for $i \in [n]$.
+    Then for any $t \ge 0$,
+    \begin{align*}
+      \mathbb{P}\left(\sum_{i=1}^n X_i \ge t\right)
+      &\le \exp\left(- \frac{t^2}{2 \sum_{i=1}^n \sigma_i^2}\right)
+      \: .
+    \end{align*} -/)]
+  ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
+
+@[blueprint
+  "lem:measure_sum_le_sum_le'"
+  (statement := /-- Let $X_1, \ldots, X_n$ be random variables such that $X_i - P[X_i]$ is
+    $\sigma_{X,i}^2$-sub-Gaussian for $i \in [n]$.
+    Let $Y_1, \ldots, Y_m$ be random variables such that $Y_i - P[Y_i]$ is
+    $\sigma_{Y,i}^2$-sub-Gaussian for $i \in [m]$.
+    Suppose further that the vectors $X$ and $Y$ are independent and that $\sum_{i = 1}^m P[Y_i] \le
+    \sum_{i = 1}^n P[X_i]$.
+    Then
+    \begin{align*}
+      \mathbb{P}\left(\sum_{i=1}^m Y_i \ge \sum_{i=1}^n X_i\right)
+      &\le \exp\left(- \frac{\left(\sum_{i = 1}^n P[X_i] - \sum_{i=1}^m P[Y_i]\right)^2}{2
+      \sum_{i=1}^n (\sigma_{X,i}^2 + \sigma_{Y,i}^2)}\right)
+      \: .
+    \end{align*} -/)
+  (latexEnv := "lemma")]
 lemma measure_sum_le_sum_le' [IsFiniteMeasure μ]
     (hX_indep : iIndepFun X μ) (hY_indep : iIndepFun Y μ)
     (hX_subG : ∀ i ∈ s, HasSubgaussianMGF (fun ω ↦ X i ω - μ[X i]) (cX i) μ)

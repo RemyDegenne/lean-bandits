@@ -274,7 +274,7 @@ The law of $X_0$ under $P_{\mathcal{T}}$ is $\mu$.
 \subsection{Case of an algorithm-environment interaction}
 
 We now go back to the setting of an algorithm interacting with an environment and suppose that $\Omega_t = \mathcal{A} \times \mathcal{R}$ for some measurable spaces $\mathcal{A}$ and $\mathcal{R}$, and that for all $t \in \mathbb{N}$, $\kappa_t = \pi_t \otimes \nu_t$ for policy kernels $\pi_t : (\mathcal{A} \times \mathcal{R})^{t+1} \rightsquigarrow \mathcal{A}$ and feedback kernels $\nu_t : (\mathcal{A} \times \mathcal{R})^{t+1} \times \mathcal{A} \rightsquigarrow \mathcal{R}$.
-Likewise, $\mu = P_0 \otimes \nu'_0$ for a probability measure $P_0$ on $\mathcal{A}$ and a Markov kernel $\nu'_0 : \mathcal{A}_\rightsquigarrow \mathcal{R}$.
+Likewise, $\mu = P_0 \otimes \nu'_0$ for a probability measure $P_0$ on $\mathcal{A}$ and a Markov kernel $\nu'_0 : \mathcal{A} \rightsquigarrow \mathcal{R}$.
 The step random variable $X_t$ takes values in $\mathcal{A} \times \mathcal{R}$.
 
 \begin{definition}\label{def:IT.actionReward}
@@ -307,13 +307,13 @@ We need to check that the random variables $A_t$ and $R_t$ have the expected con
   \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
   \lean{Learning.IT.condDistrib_action}
-For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\pi_t$.
+For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right] = \pi_t$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.condDistrib_X_add_one}
-By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
-Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}_{t+1}$, which is $\pi_t$.
+By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right] = \kappa_t = \pi_t \otimes \nu_t$.
+Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}$, which is $\pi_t$.
 \end{proof}
 
 
@@ -321,13 +321,13 @@ Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}_{t+1}$, $P_{\math
   \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
   \lean{Learning.IT.condDistrib_reward}
-For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right]$ is $((H_t, A_{t+1})_* P_{\mathcal{T}})$-almost surely equal to $\nu_t$.
+For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right] = \nu_t$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.condDistrib_X_add_one, lem:IT.condDistrib_A_add_one}
 It suffices to show that $((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t = (H_t, A_{t+1}, R_{t+1})_* P_{\mathcal{T}} = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
-By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t = \pi_t \otimes \nu_t$.
+By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right] = \pi_t \otimes \nu_t$.
 Thus $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
 
 We thus have to prove that $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = ((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t$.
@@ -340,12 +340,12 @@ By Lemma~\ref{lem:IT.condDistrib_A_add_one}, $(H_t, A_{t+1})_* P_{\mathcal{T}} =
   \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
   \lean{Learning.IT.hasLaw_action_zero}
-The law of $A_0$ under $P_{\mathcal{T}}$ is $\alpha_0$.
+The law of $A_0$ under $P_{\mathcal{T}}$ is $P_0$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.law_X_zero}
-$X_0$ has law $\mu = \alpha_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ on the first space $\mathcal{A}_0$ and $\nu_0'$ is Markov, so $A_0$ has law $\alpha_0$.
+$X_0$ has law $\mu = P_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ on the first space $\mathcal{A}$ and $\nu_0'$ is Markov, so $A_0$ has law $P_0$.
 \end{proof}
 
 
@@ -353,15 +353,15 @@ $X_0$ has law $\mu = \alpha_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ 
   \uses{def:IT.actionReward, def:trajMeasure, def:algorithm, def:environment}
   \leanok
   \lean{Learning.IT.condDistrib_reward_zero}
-The conditional distribution $P_{\mathcal{T}}\left[R_0 \mid A_0\right]$ is $(A_{0*} P_{\mathcal{T}})$-almost surely equal to $\nu'_0$.
+$P_{\mathcal{T}}\left[R_0 \mid A_0\right] = \nu'_0$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.law_X_zero}
 To prove almost sure equality, it is enough to prove that $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_{0*} P_{\mathcal{T}}) \otimes \nu'_0$.
 By definition of the conditional distribution, we have $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_0, R_0)_* P_{\mathcal{T}} = X_{0*} P_{\mathcal{T}}$.
-By Lemma~\ref{lem:IT.law_X_zero}, $X_{0*} P_{\mathcal{T}} = \mu = \alpha_0 \otimes \nu'_0$.
-By Lemma~\ref{lem:IT.law_A_zero}, $A_{0*} P_{\mathcal{T}} = \alpha_0$.
+By Lemma~\ref{lem:IT.law_X_zero}, $X_{0*} P_{\mathcal{T}} = \mu = P_0 \otimes \nu'_0$.
+By Lemma~\ref{lem:IT.law_A_zero}, $A_{0*} P_{\mathcal{T}} = P_0$.
 Thus the two sides are equal.
 \end{proof}
 

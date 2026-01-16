@@ -86,7 +86,7 @@ Then
 
 
 
-\section{Laws of sums of rewards}
+\section{Concentration of the sums of rewards in bandit models}
 
 
 \begin{lemma}\label{lem:AM.identDistrib_pullCount_prod_sumRewards}
@@ -155,6 +155,7 @@ As a consequence, this also holds for any algorithm-environment sequence.
 
 \subsection{Sub-Gaussian rewards}
 
+TODO: extend this to sub-Gaussian with constant other than 1.
 
 \begin{lemma}\label{lem:probReal_sum_le_sum_streamMeasure}
   \leanok
@@ -162,7 +163,7 @@ As a consequence, this also holds for any algorithm-environment sequence.
 Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
 \begin{align*}
   (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le \sum_{s=0}^{m-1} \omega_{s, a} \right)
-  &\le \exp\left( -m \frac{\Delta_a^2}{4 \sigma^2} \right)
+  &\le \exp\left( -m \frac{\Delta_a^2}{4} \right)
 \end{align*}
 \end{lemma}
 

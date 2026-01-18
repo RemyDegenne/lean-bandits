@@ -6,6 +6,7 @@ Authors: Rémy Degenne
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.ForMathlib.MeasurableArgMax
+import LeanBandits.SequentialLearning.Deterministic
 
 /-! # The Explore-Then-Commit Algorithm
 

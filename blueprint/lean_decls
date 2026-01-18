@@ -51,8 +51,6 @@ Learning.rewardByCount_pullCount_add_one_eq_reward
 Learning.sumRewards
 Learning.empMean
 Learning.sum_rewardByCount_eq_sumRewards
-Bandits.Bandit.trajMeasure
-Bandits.Bandit.measure
 Bandits.ArrayModel.probSpace
 Bandits.ArrayModel.arrayMeasure
 Bandits.ArrayModel.algFunction

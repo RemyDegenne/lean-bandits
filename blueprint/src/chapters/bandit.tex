@@ -22,17 +22,6 @@ An algorithm can interact with a bandit to produce a sequence of arms and reward
   \item the history is updated to $H_{t+1} = ((A_0, R_0), \ldots, (A_{t+1}, R_{t+1}))$.
 \end{itemize}
 
-We now want to define a probability space on which we can study the sequences of arms and rewards, and formulate probabilistic statements about the interaction between the algorithm and the bandit.
-
-
-\begin{definition}[Bandit probability space]\label{def:Bandit.measure}
-  \uses{def:stationaryEnv,def:environment,def:algorithm,def:trajMeasure}
-  \leanok
-  \lean{Bandits.Bandit.trajMeasure, Bandits.Bandit.measure}
-As in Definition~\ref{def:trajMeasure}, an algorithm $(\pi, P_0)$ and bandit $\nu$ together defines a probability distribution $\mathbb{P}_{\mathcal{T}}$ on the space $\Omega_{\mathcal{T}} := (\mathcal{A} \times \mathbb{R})^{\mathbb{N}}$, the space of infinite sequences of arms and rewards.
-We augment that probability space with a stream of rewards from each arm, independent of the bandit interaction, to get the probability space $(\Omega, \mathbb{P})$, where $\Omega = \Omega_{\mathcal{T}} \times \mathbb{R}^{\mathbb{N} \times \mathcal{A}}$ and $\mathbb{P} = \mathbb{P}_{\mathcal{T}} \otimes (\bigotimes_{n \in \mathbb{N}, a \in \mathcal{A}} \nu(a))$.
-\end{definition}
-
 
 \section{The array model of rewards}
 

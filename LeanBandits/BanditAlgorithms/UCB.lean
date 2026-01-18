@@ -6,6 +6,7 @@ Authors: Rémy Degenne
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.ForMathlib.MeasurableArgMax
+import LeanBandits.SequentialLearning.Deterministic
 
 /-!
 # UCB algorithm
@@ -216,18 +217,18 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
 
 lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
-    Bandit.streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} ≤
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} ≤
       1 / (n + 1) ^ (c / 2) := by
   have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc Bandit.streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]}
-  _ = Bandit.streamMeasure ν
+  calc streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]}
+  _ = streamMeasure ν
       {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(c * log (n + 1) / k)} := by
     congr with ω
     field_simp
     rw [Finset.sum_sub_distrib]
     simp
     grind
-  _ = Bandit.streamMeasure ν
+  _ = streamMeasure ν
       {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * log (n + 1))} := by
     congr with ω
     field_simp
@@ -238,19 +239,19 @@ lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
 
 lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
-    Bandit.streamMeasure ν
+    streamMeasure ν
         {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)} ≤
       1 / (n + 1) ^ (c / 2) := by
   have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc Bandit.streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)}
-  _ = Bandit.streamMeasure ν
+  calc streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)}
+  _ = streamMeasure ν
       {ω | √(c * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
     congr with ω
     field_simp
     rw [Finset.sum_sub_distrib]
     simp
     grind
-  _ = Bandit.streamMeasure ν
+  _ = streamMeasure ν
       {ω | √(c * k * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
     congr with ω
     field_simp
@@ -272,15 +273,15 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
   classical
   calc P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A c a n h ≤ (ν a)[id]}
   _ ≤ ∑ k ∈ range (n + 1) with k ∈ Prod.fst '' s,
-      (Bandit.streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
+      (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     prob_pullCount_prod_sumRewards_mem_le h hs
   _ ≤ ∑ k ∈ Icc 1 n,
-      (Bandit.streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+      (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
     refine Finset.sum_le_sum_of_subset_of_nonneg (fun m ↦ ?_) fun _ _ _ ↦ by positivity
     simp [s]
     grind
   _ = ∑ k ∈ Icc 1 n,
-      (Bandit.streamMeasure ν) {ω | (∑ i ∈ range k, ω i a) / k + √(c * log (↑n + 1) / k) ≤
+      (streamMeasure ν) {ω | (∑ i ∈ range k, ω i a) / k + √(c * log (↑n + 1) / k) ≤
         (ν a)[id]} := by
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω
@@ -312,15 +313,15 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)]
   classical
   calc P {h | 0 < pullCount A a n h ∧ (ν a)[id] ≤ empMean A R a n h - ucbWidth A c a n h}
   _ ≤ ∑ k ∈ range (n + 1) with k ∈ Prod.fst '' s,
-      (Bandit.streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
+      (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     prob_pullCount_prod_sumRewards_mem_le h hs
   _ ≤ ∑ k ∈ Icc 1 n,
-      (Bandit.streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+      (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
     refine Finset.sum_le_sum_of_subset_of_nonneg (fun m ↦ ?_) fun _ _ _ ↦ by positivity
     simp [s]
     grind
   _ = ∑ k ∈ Icc 1 n,
-      (Bandit.streamMeasure ν)
+      (streamMeasure ν)
         {ω | (ν a)[id] ≤ (∑ i ∈ range k, ω i a) / k - √(c * log (↑n + 1) / k)} := by
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω

@@ -7,6 +7,7 @@ Note: times start at 0 to be consistent with Lean.
 Note: we will describe the algorithm by writing $A_t = ...$, but our formal bandit model needs a policy $\pi_t$ that gives the distribution of the arm to pull. What me mean is that $\pi_t$ is a Dirac distribution at that arm.
 
 \begin{definition}[Explore-Then-Commit algorithm]\label{def:etcAlgorithm}
+  \uses{def:detAlgorithm,def:algorithm}
   \leanok
   \lean{Bandits.ETC.nextArm, Bandits.etcAlgorithm}
 The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is defined as follows:
@@ -19,7 +20,7 @@ The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is def
 
 
 \begin{lemma}\label{lem:pullCount_etcAlgorithm}
-  \uses{def:etcAlgorithm, def:pullCount}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:pullCount,def:etcAlgorithm}
   \leanok
   \lean{Bandits.ETC.pullCount_of_ge}
 For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]$ and any time $t \ge Km$, we have
@@ -31,24 +32,26 @@ For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]
 \end{lemma}
 
 \begin{proof}\leanok
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:history,lem:pullCount_basic,def:etcAlgorithm}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:sumRewards_bestArm_le_of_arm_mul_eq}
-  \uses{def:etcAlgorithm, def:sumRewards}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:sumRewards,def:etcAlgorithm}
   \leanok
   \lean{Bandits.ETC.sumRewards_bestArm_le_of_arm_mul_eq}
 If $\hat{A}_m^* = a$, then we have $S_{Km, a^*} \le S_{Km, a}$.
 \end{lemma}
 
 \begin{proof}\leanok
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:history,def:pullCount,def:empMean,def:etcAlgorithm}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:prob_etc_error_le_exp}
-  \uses{def:etcAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:subGaussian,def:gap,def:etcAlgorithm}
   \leanok
   \lean{Bandits.ETC.prob_arm_mul_eq_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -56,7 +59,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \i
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:prob_sumRewards_le_sumRewards_le, lem:probReal_sum_le_sum_streamMeasure, lem:sumRewards_bestArm_le_of_arm_mul_eq}
+  \uses{def:environment,lem:probReal_sum_le_sum_streamMeasure,lem:prob_sumRewards_le_sumRewards_le,def:detAlgorithm,def:algorithm,thm:ionescu-tulcea,def:sumRewards,def:history,lem:sumRewards_bestArm_le_of_arm_mul_eq,def:pullCount,def:etcAlgorithm}
 By Lemma~\ref{lem:sumRewards_bestArm_le_of_arm_mul_eq},
 \begin{align*}
   \mathbb{P}(\hat{A}_m^* = a)
@@ -75,7 +78,7 @@ By Lemma~\ref{lem:prob_sumRewards_le_sumRewards_le}, and then the concentration 
 
 
 \begin{theorem}\label{thm:regret_etc_le}
-  \uses{def:etcAlgorithm, def:regret}
+  \uses{def:stationaryEnv,def:regret,def:IsAlgEnvSeq,def:subGaussian,def:gap,def:etcAlgorithm}
   \leanok
   \lean{Bandits.ETC.regret_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -88,7 +91,7 @@ Then for the Explore-Then-Commit algorithm with parameter $m$, the expected regr
 \end{theorem}
 
 \begin{proof}\leanok
-  \uses{lem:regret_eq_sum_pullCount_mul_gap, lem:pullCount_etcAlgorithm, lem:prob_etc_error_le_exp}
+  \uses{lem:pullCount_etcAlgorithm,def:environment,def:algorithm,lem:regret_eq_sum_pullCount_mul_gap,lem:prob_etc_error_le_exp,lem:pullCount_basic,def:pullCount}
 By Lemma~\ref{lem:regret_eq_sum_pullCount_mul_gap}, we have $\mathbb{E}[R_T] = \sum_{a=1}^K \mathbb{E}\left[N_{T,a}\right] \Delta_a$~.
 It thus suffices to bound $\mathbb{E}[N_{T,a}]$ for each arm $a$ with $\Delta_a > 0$.
 It suffices to prove that

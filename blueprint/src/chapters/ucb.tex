@@ -1,7 +1,7 @@
 \section{UCB}
 
 \begin{definition}[UCB algorithm]\label{def:ucbAlgorithm}
-  \uses{def:IT.actionReward, def:pullCount, def:empMean}
+  \uses{def:detAlgorithm,def:algorithm}
   \leanok
   \lean{Bandits.UCB.nextArm, Bandits.ucbAlgorithm}
 The UCB algorithm with parameter $c \in \mathbb{R}_+$ is defined as follows:
@@ -15,7 +15,7 @@ Note: the argmax in the second step is chosen in a measurable way.
 
 
 \begin{lemma}\label{lem:ucbIndex_le_ucbIndex_arm}
-  \uses{def:ucbAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:ucbAlgorithm,def:pullCount,def:empMean}
   \leanok
   \lean{Bandits.UCB.ucbIndex_le_ucbIndex_arm}
 For the UCB algorithm, for all time $t \ge K$ and arm $a \in [K]$, we have
@@ -27,12 +27,13 @@ For the UCB algorithm, for all time $t \ge K$ and arm $a \in [K]$, we have
 \end{lemma}
 
 \begin{proof}\leanok
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:sumRewards,def:ucbAlgorithm,def:history}
 By definition of the algorithm.
 \end{proof}
 
 
 \begin{lemma}\label{lem:gap_arm_le_two_mul_ucbWidth}
-  \uses{def:ucbAlgorithm}
+  \uses{def:pullCount,def:gap,def:empMean,def:pullCount,def:gap,def:empMean}
   \leanok
   \lean{Bandits.UCB.gap_arm_le_two_mul_ucbWidth, Bandits.UCB.pullCount_arm_le}
 Suppose that we have the 3 following conditions:
@@ -63,7 +64,7 @@ Note that the third condition is always satisfied for UCB by Lemma~\ref{lem:ucbI
 
 
 \begin{lemma}\label{lem:prob_ucbIndex_le}
-  \uses{def:empMean, def:pullCount}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:subGaussian,def:ucbAlgorithm,def:pullCount,def:empMean}
   \leanok
   \lean{Bandits.UCB.prob_ucbIndex_le, Bandits.UCB.prob_ucbIndex_ge}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -83,13 +84,13 @@ And also,
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:prob_pullCount_prod_sumRewards_mem_le, lem:prob_sum_le_sqrt_log, lem:pullCount_basic}
+  \uses{lem:prob_sum_le_sqrt_log,thm:ionescu-tulcea,lem:prob_pullCount_prod_sumRewards_mem_le}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:pullCount_le_add_three}
-  \uses{def:pullCount, def:empMean}
+  \uses{def:pullCount,def:empMean,def:stationaryEnv,def:IsAlgEnvSeq,def:ucbAlgorithm}
   \leanok
   \lean{Bandits.UCB.pullCount_le_add_three, Bandits.UCB.pullCount_le_add_three_ae}
 For $C$ a natural number, for any time $n \in \mathbb{N}$ and any arm $a \in [K]$, we have
@@ -112,25 +113,26 @@ For $C$ a natural number, for any time $n \in \mathbb{N}$ and any arm $a \in [K]
 \end{lemma}
 
 \begin{proof}\leanok
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:ucbAlgorithm,def:history,lem:pullCount_basic}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:some_sum_eq_zero}
-  \uses{def:pullCount, def:empMean, def:ucbAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:ucbAlgorithm,def:pullCount,def:gap,def:empMean}
   \leanok
   \lean{Bandits.UCB.some_sum_eq_zero}
 For the UCB algorithm with parameter $c \ge 0$, for any time $n \in \mathbb{N}$ and any arm $a \in [K]$ with positive gap, the first sum in Lemma~\ref{lem:pullCount_le_add_three} is equal to zero for positive $C$ such that $C \ge \frac{4 c \log(n + 1)}{\Delta_a^2}$.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:gap_arm_le_two_mul_ucbWidth, lem:ucbIndex_le_ucbIndex_arm}
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:ucbAlgorithm,lem:ucbIndex_le_ucbIndex_arm,def:history,lem:pullCount_basic,lem:gap_arm_le_two_mul_ucbWidth}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:expectation_pullCount_le}
-  \uses{def:ucbAlgorithm, def:pullCount, def:empMean}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:subGaussian,def:ucbAlgorithm,def:pullCount,def:gap}
   \leanok
   \lean{Bandits.UCB.expectation_pullCount_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -143,13 +145,13 @@ For the UCB algorithm with parameter $c > 0$, for any time $n \in \mathbb{N}$ an
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:pullCount_le_add_three, lem:some_sum_eq_zero, lem:prob_ucbIndex_le}
+  \uses{def:environment,def:algorithm,def:sumRewards,lem:some_sum_eq_zero,lem:prob_ucbIndex_le,lem:pullCount_basic,def:empMean,lem:pullCount_le_add_three}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:ucb_regret_le}
-  \uses{def:ucbAlgorithm, def:regret}
+  \uses{def:stationaryEnv,def:regret,def:IsAlgEnvSeq,def:subGaussian,def:ucbAlgorithm,def:gap}
   \leanok
   \lean{Bandits.UCB.regret_le}
 Suppose that $\nu(a)$ is 1-sub-Gaussian for all arms $a \in [K]$.
@@ -162,7 +164,7 @@ For the UCB algorithm with parameter $c > 0$, for any time $n \in \mathbb{N}$, w
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:expectation_pullCount_le, lem:regret_eq_sum_pullCount_mul_gap}
+  \uses{def:environment,def:algorithm,lem:regret_eq_sum_pullCount_mul_gap,lem:pullCount_basic,lem:expectation_pullCount_le,def:pullCount}
 
 \end{proof}
 

@@ -79,7 +79,7 @@ Then
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:subGaussian_add_of_indepFun, thm:hoeffding}
+  \uses{lem:subGaussian_add_of_indepFun, lem:hoeffding_one}
 
 \end{proof}
 
@@ -90,20 +90,20 @@ Then
 
 
 \begin{lemma}\label{lem:AM.identDistrib_pullCount_prod_sumRewards}
-  \uses{def:rewardByCount, def:sumRewards, def:pullCount, def:AM.history}
+  \uses{def:arrayMeasure,def:AM.history,def:algorithm,def:sumRewards,def:pullCount}
   \leanok
   \lean{Bandits.ArrayModel.identDistrib_pullCount_prod_sumRewards}
 In the array model, for $t \in \mathbb{N}$, the random variable $(N_{t,a}, S_{t, a})_{a \in \mathcal{A}}$ has the same distribution as $(N_{t,a}, \sum_{s=0}^{N_{t,a}-1} \omega_{2, s, a})_{a \in \mathcal{A}}$.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{def:AM.history, lem:AM.measurable_hist, lem:sum_rewardByCount}
+  \uses{def:AM.history,lem:stepsUntil_basic,thm:ionescu-tulcea,def:algFunction,lem:AM.measurable_hist,def:rewardByCount,lem:pullCount_basic,def:stepsUntil,lem:sum_rewardByCount}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:AM.identDistrib_sum_range_snd}
-  \uses{def:AM.history}
+  \uses{def:arrayMeasure,thm:ionescu-tulcea}
   \leanok
   \lean{Bandits.ArrayModel.identDistrib_sum_range_snd}
 In the array model, for $k \in \mathbb{N}$, the random variable $\sum_{s=0}^{k-1} \omega_{2, s, a}$ has the same distribution as a sum of $k$ i.i.d. random variables with law $\nu(a)$.
@@ -115,7 +115,7 @@ By definition of $P_{\mathcal{A}}$ (Definition~\ref{def:arrayMeasure}).
 
 
 \begin{lemma}\label{lem:prob_pullCount_prod_sumRewards_mem_le}
-  \uses{def:sumRewards, def:pullCount, def:AM.history}
+  \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea,def:sumRewards,def:pullCount,def:stationaryEnv,def:IsAlgEnvSeq}
   \leanok
   \lean{Bandits.ArrayModel.prob_pullCount_prod_sumRewards_mem_le, Bandits.prob_pullCount_prod_sumRewards_mem_le}
 In the array model, for $t \in \mathbb{N}$, $a \in \mathcal{A}$, and a measurable set $B \subseteq \mathbb{N} \times \mathbb{R}$,
@@ -128,13 +128,13 @@ As a consequence, this also holds for any algorithm-environment sequence.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:AM.identDistrib_pullCount_prod_sumRewards, lem:AM.identDistrib_sum_range_snd, thm:isAlgEnvSeq_unique, thm:isAlgEnvSeq_arrayMeasure}
+  \uses{lem:AM.identDistrib_sum_range_snd,lem:AM.identDistrib_pullCount_prod_sumRewards,lem:AM.measurable_hist,lem:pullCount_basic,def:arrayMeasure,def:AM.history,def:environment,thm:isAlgEnvSeq_arrayMeasure,lem:AM.measurable_hist,thm:isAlgEnvSeq_unique}
 
 \end{proof}
 
 
 \begin{lemma}\label{lem:prob_sumRewards_le_sumRewards_le}
-  \uses{def:sumRewards, def:pullCount, def:AM.history}
+  \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea,def:sumRewards,def:pullCount,def:stationaryEnv,def:IsAlgEnvSeq}
   \leanok
   \lean{Bandits.ArrayModel.prob_sumRewards_le_sumRewards_le, Bandits.probReal_sumRewards_le_sumRewards_le}
 In the array model,
@@ -147,7 +147,7 @@ As a consequence, this also holds for any algorithm-environment sequence.
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{lem:AM.identDistrib_pullCount_prod_sumRewards, lem:AM.identDistrib_sum_range_snd, thm:isAlgEnvSeq_unique,thm:isAlgEnvSeq_arrayMeasure}
+  \uses{lem:AM.identDistrib_pullCount_prod_sumRewards,lem:AM.measurable_hist,lem:pullCount_basic,def:arrayMeasure,def:AM.history,def:environment,thm:isAlgEnvSeq_arrayMeasure,lem:AM.measurable_hist,thm:isAlgEnvSeq_unique}
 
 \end{proof}
 
@@ -158,6 +158,7 @@ As a consequence, this also holds for any algorithm-environment sequence.
 TODO: extend this to sub-Gaussian with constant other than 1.
 
 \begin{lemma}\label{lem:probReal_sum_le_sum_streamMeasure}
+  \uses{thm:ionescu-tulcea,def:subGaussian,def:gap}
   \leanok
   \lean{Bandits.probReal_sum_le_sum_streamMeasure}
 Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
@@ -174,6 +175,7 @@ Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \i
 
 
 \begin{lemma}\label{lem:prob_sum_le_sqrt_log}
+  \uses{thm:ionescu-tulcea,def:subGaussian}
   \leanok
   \lean{Bandits.prob_sum_le_sqrt_log, Bandits.prob_sum_ge_sqrt_log}
 Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.

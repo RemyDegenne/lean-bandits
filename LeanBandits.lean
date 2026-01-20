@@ -4,9 +4,9 @@ import LeanBandits.Bandit.RewardByCountMeasure
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.BanditAlgorithms.ETC
+import LeanBandits.BanditAlgorithms.TS
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.BanditAlgorithms.Uniform
-import LeanBandits.BanditAlgorithms.TS
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.CondIndepFun
 import LeanBandits.ForMathlib.HasCondDistrib

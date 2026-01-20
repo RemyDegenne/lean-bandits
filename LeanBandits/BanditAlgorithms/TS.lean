@@ -3,91 +3,12 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import Mathlib.Probability.Distributions.Uniform
 import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.SequentialLearning.Algorithm
-import LeanBandits.SequentialLearning.IonescuTulceaSpace
+import LeanBandits.BanditAlgorithms.Uniform
+import LeanBandits.SequentialLearning.BayesStationaryEnv
 
 open MeasureTheory ProbabilityTheory Finset
 open Learning
-
-section Algorithm -- SequentialLearning/Algorithm.lean
-
-variable {α R : Type*} [mα : MeasurableSpace α] [mR : MeasurableSpace R]
-
-namespace Learning
-
-def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm α R) :
-    Algorithm α (E × R) where
-  policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
-  p0 := alg.p0
-
-end Learning
-
-end Algorithm
-
-section StationaryEnv -- SequentialLearning/StationaryEnv.lean
-
-variable {α R E : Type*} [mα : MeasurableSpace α] [mR : MeasurableSpace R] [mE : MeasurableSpace E]
-
-noncomputable
-def bayesStationaryEnv (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] : Environment α (E × R) where
-  feedback n :=
-    let g : (Iic n → α × (E × R)) × α → (α × E) := fun (h, a) => (a, (h ⟨0, by simp⟩).2.1)
-    (Kernel.deterministic (Prod.snd ∘ g) (by fun_prop)) ×ₖ (κ.comap g (by fun_prop))
-  h_feedback := inferInstance
-  ν0 := (Kernel.const α Q) ⊗ₖ κ
-  hp0 := Kernel.IsMarkovKernel.compProd _ _
-
-noncomputable
-def bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] (alg : Algorithm α R) :=
-  trajMeasure (alg.prod_left E) (bayesStationaryEnv Q κ)
-
-instance isProbabilityMeasure_bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q]
-    (κ : Kernel (α × E) R) [IsMarkovKernel κ] (alg : Algorithm α R) :
-    IsProbabilityMeasure (bayesTrajMeasure Q κ alg) := by
-  unfold bayesTrajMeasure
-  infer_instance
-
-lemma isAlgEnvSeq_bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] [StandardBorelSpace α] [Nonempty α]
-    [StandardBorelSpace R] [StandardBorelSpace E] [Nonempty E] [Nonempty R] (alg : Algorithm α R) :
-    IsAlgEnvSeq IT.action IT.reward (alg.prod_left E) (bayesStationaryEnv Q κ)
-    (bayesTrajMeasure Q κ alg) :=
-  IT.isAlgEnvSeq_trajMeasure (alg.prod_left E) (bayesStationaryEnv Q κ)
-
-end StationaryEnv
-
-namespace POTraj
-
-variable {α R E : Type*}
-
-def action (n : ℕ) (ω : ℕ → α × (E × R)) : α := (ω n).1
-
-def reward (n : ℕ) (ω : ℕ → α × (E × R)) : R := (ω n).2.2
-
-def hist (n : ℕ) (ω : ℕ → α × (E × R)) : Iic n → α × R :=
-  fun i ↦ (action i ω, reward i ω)
-
-def latent (n : ℕ) (ω : ℕ → α × (E × R)) : E := (ω n).2.1
-
-end POTraj
-
-section Uniform -- BanditAlgorithms/Uniform.lean
-
-variable {K : ℕ} (hK : 0 < K)
-
-noncomputable
-def uniformAlgorithm : Algorithm (Fin K) ℝ :=
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  { policy _ := Kernel.const _ (PMF.uniformOfFintype (Fin K)).toMeasure
-    p0 := (PMF.uniformOfFintype (Fin K)).toMeasure }
-
-end Uniform
-
-section ThompsonSampling -- BanditAlgorithms/TS.lean
 
 variable {K : ℕ}
 variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
@@ -135,5 +56,3 @@ def tsAlgorithm : Algorithm (Fin K) ℝ where
   h_policy := isMarkovKernel_tsPolicy hK Q κ
   p0 := tsInitPolicy hK Q κ
   hp0 := isProbabilityMeasure_tsInitPolicy hK Q κ
-
-end ThompsonSampling

@@ -30,6 +30,11 @@ structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wher
 instance (alg : Algorithm α R) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm α R) : IsProbabilityMeasure alg.p0 := alg.hp0
 
+def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm α R) :
+    Algorithm α (E × R) where
+  policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
+  p0 := alg.p0
+
 /-- A stochastic environment. -/
 structure Environment (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
   /-- Distribution of the next observation as function of the past history. -/

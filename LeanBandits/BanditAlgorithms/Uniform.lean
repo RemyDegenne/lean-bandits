@@ -6,8 +6,9 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib.Probability.Distributions.Uniform
 import LeanBandits.SequentialLearning.Algorithm
 
-open ProbabilityTheory
-open Learning
+open ProbabilityTheory Learning
+
+namespace Bandits
 
 variable {K : ℕ} (hK : 0 < K)
 
@@ -16,3 +17,5 @@ def uniformAlgorithm : Algorithm (Fin K) ℝ :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   { policy _ := Kernel.const _ (PMF.uniformOfFintype (Fin K)).toMeasure
     p0 := (PMF.uniformOfFintype (Fin K)).toMeasure }
+
+end Bandits

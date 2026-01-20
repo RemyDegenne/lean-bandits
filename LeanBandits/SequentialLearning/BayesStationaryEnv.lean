@@ -6,13 +6,14 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
 open MeasureTheory ProbabilityTheory Finset
-open Learning
+
+namespace Learning
 
 variable {α R E : Type*} [mα : MeasurableSpace α] [mR : MeasurableSpace R] [mE : MeasurableSpace E]
+variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R) [IsMarkovKernel κ]
 
 noncomputable
-def bayesStationaryEnv (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] : Environment α (E × R) where
+def bayesStationaryEnv : Environment α (E × R) where
   feedback n :=
     let g : (Iic n → α × (E × R)) × α → (α × E) := fun (h, a) => (a, (h ⟨0, by simp⟩).2.1)
     (Kernel.deterministic (Prod.snd ∘ g) (by fun_prop)) ×ₖ (κ.comap g (by fun_prop))
@@ -21,20 +22,18 @@ def bayesStationaryEnv (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α
   hp0 := Kernel.IsMarkovKernel.compProd _ _
 
 noncomputable
-def bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] (alg : Algorithm α R) :=
+def bayesTrajMeasure (alg : Algorithm α R) :=
   trajMeasure (alg.prod_left E) (bayesStationaryEnv Q κ)
 
-instance isProbabilityMeasure_bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q]
-    (κ : Kernel (α × E) R) [IsMarkovKernel κ] (alg : Algorithm α R) :
+instance isProbabilityMeasure_bayesTrajMeasure (alg : Algorithm α R) :
     IsProbabilityMeasure (bayesTrajMeasure Q κ alg) := by
   unfold bayesTrajMeasure
   infer_instance
 
-lemma isAlgEnvSeq_bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
-    [IsMarkovKernel κ] [StandardBorelSpace α] [Nonempty α]
-    [StandardBorelSpace R] [StandardBorelSpace E] [Nonempty E] [Nonempty R] (alg : Algorithm α R) :
-    IsAlgEnvSeq IT.action IT.reward (alg.prod_left E) (bayesStationaryEnv Q κ)
+lemma isAlgEnvSeq_bayesTrajMeasure
+    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    [StandardBorelSpace E] [Nonempty E] (alg : Algorithm α R) :
+      IsAlgEnvSeq IT.action IT.reward (alg.prod_left E) (bayesStationaryEnv Q κ)
     (bayesTrajMeasure Q κ alg) :=
   IT.isAlgEnvSeq_trajMeasure (alg.prod_left E) (bayesStationaryEnv Q κ)
 
@@ -52,3 +51,5 @@ def hist (n : ℕ) (ω : ℕ → α × (E × R)) : Iic n → α × R :=
 def latent (n : ℕ) (ω : ℕ → α × (E × R)) : E := (ω n).2.1
 
 end POTraj
+
+end Learning

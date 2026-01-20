@@ -7,8 +7,9 @@ import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 
-open MeasureTheory ProbabilityTheory Finset
-open Learning
+open MeasureTheory ProbabilityTheory Finset Learning
+
+namespace Bandits
 
 variable {K : ℕ}
 variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
@@ -56,3 +57,5 @@ def tsAlgorithm : Algorithm (Fin K) ℝ where
   h_policy := isMarkovKernel_tsPolicy hK Q κ
   p0 := tsInitPolicy hK Q κ
   hp0 := isProbabilityMeasure_tsInitPolicy hK Q κ
+
+end Bandits

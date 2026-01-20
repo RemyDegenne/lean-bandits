@@ -20,7 +20,7 @@ variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
 
 noncomputable
 def tsPosterior (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) E :=
-  Learning.Bayes.posterior Q κ n (uniformAlgorithm hK)
+  Learning.Bayes.posterior Q κ (uniformAlgorithm hK) n
 
 noncomputable
 def isMarkovKernel_tsPosterior (n : ℕ) : IsMarkovKernel (tsPosterior hK Q κ n) := by

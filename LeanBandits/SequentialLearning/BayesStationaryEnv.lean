@@ -38,12 +38,12 @@ def hist (n : ℕ) (ω : ℕ → α × E × R) : Iic n → α × R :=  fun i ↦
 def env (ω : ℕ → α × E × R) : E := (ω 0).2.1
 
 noncomputable
-def posterior [StandardBorelSpace E] [Nonempty E] (n : ℕ) (alg : Algorithm α R) :
+def posterior [StandardBorelSpace E] [Nonempty E] (alg : Algorithm α R) (n : ℕ) :
     Kernel (Iic n → α × R) E :=
   condDistrib env (hist n) (trajMeasure Q κ alg)
 
-instance [StandardBorelSpace E] [Nonempty E] (n : ℕ) (alg : Algorithm α R) :
-    IsMarkovKernel (posterior Q κ n alg) := by
+instance [StandardBorelSpace E] [Nonempty E] (alg : Algorithm α R) (n : ℕ) :
+    IsMarkovKernel (posterior Q κ alg n) := by
   unfold posterior
   infer_instance
 

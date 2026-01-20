@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib.Probability.Distributions.Uniform
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.SequentialLearning.Algorithm
+import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
 open MeasureTheory ProbabilityTheory Finset
 open Learning
@@ -20,15 +21,6 @@ def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm α R) :
     Algorithm α (E × R) where
   policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
   p0 := alg.p0
-
-variable {Ω E : Type*} [mΩ : MeasurableSpace Ω] [mE : MeasurableSpace E]
-
-def IsPOAlgEnvSeq
-    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-    [StandardBorelSpace E] [Nonempty E]
-    (A : ℕ → Ω → α) (R' : ℕ → Ω → R) (E' : ℕ → Ω → E)
-    (alg : Algorithm α R) (env : Environment α (E × R)) (P : Measure Ω) [IsFiniteMeasure P]
-    := IsAlgEnvSeq A (fun n ω ↦ (E' n ω, R' n ω)) (alg.prod_left E) env P
 
 end Learning
 
@@ -59,7 +51,29 @@ instance isProbabilityMeasure_bayesTrajMeasure (Q : Measure E) [IsProbabilityMea
   unfold bayesTrajMeasure
   infer_instance
 
+lemma isAlgEnvSeq_bayesTrajMeasure (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R)
+    [IsMarkovKernel κ] [StandardBorelSpace α] [Nonempty α]
+    [StandardBorelSpace R] [StandardBorelSpace E] [Nonempty E] [Nonempty R] (alg : Algorithm α R) :
+    IsAlgEnvSeq IT.action IT.reward (alg.prod_left E) (bayesStationaryEnv Q κ)
+    (bayesTrajMeasure Q κ alg) :=
+  IT.isAlgEnvSeq_trajMeasure (alg.prod_left E) (bayesStationaryEnv Q κ)
+
 end StationaryEnv
+
+namespace POTraj
+
+variable {α R E : Type*}
+
+def action (n : ℕ) (ω : ℕ → α × (E × R)) : α := (ω n).1
+
+def reward (n : ℕ) (ω : ℕ → α × (E × R)) : R := (ω n).2.2
+
+def hist (n : ℕ) (ω : ℕ → α × (E × R)) : Iic n → α × R :=
+  fun i ↦ (action i ω, reward i ω)
+
+def latent (n : ℕ) (ω : ℕ → α × (E × R)) : E := (ω n).2.1
+
+end POTraj
 
 section Uniform -- BanditAlgorithms/Uniform.lean
 
@@ -77,7 +91,6 @@ section ThompsonSampling -- BanditAlgorithms/TS.lean
 
 variable {K : ℕ}
 variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
-variable {Ω : Type*} [mΩ : MeasurableSpace Ω]
 
 variable (hK : 0 < K)
 variable (Q : Measure E) [IsProbabilityMeasure Q]
@@ -85,11 +98,7 @@ variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
 
 noncomputable
 def tsPosterior (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) E :=
-  let P := bayesTrajMeasure Q κ (uniformAlgorithm hK)
-  let E' : ℕ → (ℕ → (Fin K) × (E × ℝ)) → E := fun n ω ↦ (ω n).2.1
-  let A : ℕ → (ℕ → (Fin K) × (E × ℝ)) → (Fin K) := fun n ω ↦ (ω n).1
-  let R' : ℕ → (ℕ → (Fin K) × (E × ℝ)) → ℝ := fun n ω ↦ (ω n).2.2
-  condDistrib (E' 0) (IsAlgEnvSeq.hist A R' n) P
+  condDistrib (POTraj.latent 0) (POTraj.hist n) (bayesTrajMeasure Q κ (uniformAlgorithm hK))
 
 noncomputable
 def isMarkovKernel_tsPosterior (n : ℕ) : IsMarkovKernel (tsPosterior hK Q κ n) := by

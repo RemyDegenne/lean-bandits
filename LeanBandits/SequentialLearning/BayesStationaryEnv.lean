@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
+import LeanBandits.Bandit.Regret
 
 open MeasureTheory ProbabilityTheory Finset
 
@@ -46,6 +47,22 @@ def hist (n : ℕ) (ω : ℕ → α × E × R) : Iic n → α × R :=  fun i ↦
 defines how the rewards are generated given actions. -/
 def env (ω : ℕ → α × E × R) : E := (ω 0).2.1
 
+@[fun_prop]
+lemma measurable_action (n : ℕ) : Measurable (@action α E R n) := by
+  unfold action; fun_prop
+
+@[fun_prop]
+lemma measurable_reward (n : ℕ) : Measurable (@reward α E R n) := by
+  unfold reward; fun_prop
+
+@[fun_prop]
+lemma measurable_env : Measurable (@env α E R) := by
+  unfold env; fun_prop
+
+@[fun_prop]
+lemma measurable_hist (n : ℕ) : Measurable (@hist α E R n) := by
+  unfold hist; fun_prop
+
 /-- The posterior over "environments" for every given history (for a fixed algorithm). -/
 noncomputable
 def posterior [StandardBorelSpace E] [Nonempty E] (alg : Algorithm α R) (n : ℕ) :
@@ -57,10 +74,111 @@ instance [StandardBorelSpace E] [Nonempty E] (alg : Algorithm α R) (n : ℕ) :
   unfold posterior
   infer_instance
 
-lemma isAlgEnvSeq_trajMeasure
-    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R] [StandardBorelSpace E]
-    [Nonempty E] (alg : Algorithm α R) :
+section Laws
+
+variable (alg : Algorithm α R)
+variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+variable [StandardBorelSpace E] [Nonempty E]
+
+lemma isAlgEnvSeq_trajMeasure :
     IsAlgEnvSeq action IT.reward (alg.prod_left E) (StationaryEnv Q κ) (trajMeasure Q κ alg) :=
   IT.isAlgEnvSeq_trajMeasure _ _
+
+-- Revise (Claude)
+lemma hasLaw_env : HasLaw env Q (trajMeasure Q κ alg) := by
+  apply HasCondDistrib.hasLaw_of_const
+  simpa [StationaryEnv] using (isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_reward_zero.fst
+
+-- Revise (Claude)
+lemma hasCondDistrib_action (n : ℕ) :
+    HasCondDistrib (action (n + 1)) (hist n) (alg.policy n) (trajMeasure Q κ alg) :=
+  ((isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_action n).comp_left (by fun_prop)
+
+-- Revise (Claude)
+lemma hasCondDistrib_reward_zero :
+    HasCondDistrib (reward 0) (fun ω ↦ (action 0 ω, env ω)) κ (trajMeasure Q κ alg) := by
+  simpa [StationaryEnv] using
+    (isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_reward_zero.of_compProd
+
+-- Revise (Claude)
+lemma hasCondDistrib_reward (n : ℕ) :
+    HasCondDistrib (reward (n + 1)) (fun ω ↦ (action (n + 1) ω, env ω)) κ
+      (trajMeasure Q κ alg) := by
+  have h := ((isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_reward n).snd
+  simp_rw [StationaryEnv, Kernel.snd_prod] at h
+  exact h.comp_left (by fun_prop)
+
+-- Revise (Claude)
+lemma hasCondDistrib_action_env_hist (n : ℕ) :
+    HasCondDistrib (action (n + 1)) (fun ω ↦ (env ω, hist n ω))
+      ((alg.policy n).prodMkLeft E) (trajMeasure Q κ alg) := by
+  have h := (isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_action n
+  simp only [Algorithm.prod_left, Kernel.prodMkLeft] at h ⊢
+  have hf : Measurable (fun h : Iic n → α × E × R ↦
+      ((h ⟨0, by simp⟩).2.1, fun i ↦ ((h i).1, (h i).2.2))) := by fun_prop
+  have h' : HasCondDistrib (action (n + 1)) (IsAlgEnvSeq.hist action IT.reward n)
+      (((alg.policy n).comap Prod.snd (by fun_prop)).comap
+        (fun h : Iic n → α × E × R ↦ ((h ⟨0, by simp⟩).2.1, fun i ↦ ((h i).1, (h i).2.2))) hf)
+      (trajMeasure Q κ alg) := by convert h using 2
+  convert h'.comp_left hf using 2
+
+-- Revise (Claude)
+lemma hasCondDistrib_reward_hist (n : ℕ) :
+    HasCondDistrib (reward (n + 1)) (fun ω ↦ (hist n ω, action (n + 1) ω, env ω))
+      (κ.prodMkLeft _) (trajMeasure Q κ alg) := by
+  have h := ((isAlgEnvSeq_trajMeasure Q κ alg).hasCondDistrib_reward n).snd
+  simp_rw [StationaryEnv, Kernel.snd_prod, Kernel.prodMkLeft] at h ⊢
+  have hf : Measurable (fun (p : (Iic n → α × (E × R)) × α) ↦
+      ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), p.2, (p.1 ⟨0, by simp⟩).2.1)) := by fun_prop
+  have h' : HasCondDistrib (reward (n + 1))
+      (fun ω ↦ (IsAlgEnvSeq.hist action IT.reward n ω, action (n + 1) ω))
+      ((κ.comap Prod.snd (by fun_prop)).comap (fun (p : (Iic n → α × (E × R)) × α) ↦
+        ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), p.2, (p.1 ⟨0, by simp⟩).2.1)) hf)
+      (trajMeasure Q κ alg) := by convert h using 2
+  convert h'.comp_left hf using 2
+
+-- Revise (Claude)
+lemma condIndepFun_action_env_hist (n : ℕ) :
+    action (n + 1) ⟂ᵢ[hist n, (by fun_prop); trajMeasure Q κ alg] env :=
+  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (by fun_prop) (by fun_prop) (by fun_prop)
+    (hasCondDistrib_action_env_hist Q κ alg n).condDistrib_eq
+
+-- Revise (Claude)
+lemma condIndepFun_reward_hist (n : ℕ) :
+    reward (n + 1)
+      ⟂ᵢ[(fun ω ↦ (action (n + 1) ω, env ω)), (by fun_prop); trajMeasure Q κ alg] hist n :=
+  condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (by fun_prop) (by fun_prop) (by fun_prop)
+    (hasCondDistrib_reward_hist Q κ alg n).condDistrib_eq
+
+end Laws
+
+section Regret
+
+variable (κ : Kernel (α × E) ℝ)
+
+noncomputable
+def regretAt (t : ℕ) (ω : ℕ → α × E × ℝ) : ℝ :=
+  Bandits.regret (κ.comap (·, env ω) (by fun_prop)) action t ω
+
+-- Revise (Claude)
+lemma measurable_regretAt [Fintype α] (t : ℕ) : Measurable (regretAt κ t) := by
+  unfold regretAt Bandits.regret
+  have hmean : Measurable fun (p : α × E) ↦ (κ p)[id] :=
+    stronglyMeasurable_id.integral_kernel.measurable
+  apply Measurable.sub
+  · apply Measurable.const_mul
+    have h : ∀ a, Measurable fun (ω : ℕ → α × E × ℝ) ↦ (κ (a, env ω))[id] := fun a ↦
+      hmean.comp (measurable_const.prodMk measurable_env)
+    exact Measurable.iSup h
+  · apply Finset.measurable_sum
+    intro s _
+    exact hmean.comp ((measurable_action s).prodMk measurable_env)
+
+variable (alg : Algorithm α ℝ)
+
+noncomputable
+def regret [IsMarkovKernel κ] (t : ℕ) : ℝ := (trajMeasure Q κ alg)[regretAt κ t]
+
+end Regret
 
 end Learning.Bayes

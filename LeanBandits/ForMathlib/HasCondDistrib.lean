@@ -182,6 +182,19 @@ lemma hasCondDistrib_prod_right_iff [IsFiniteMeasure μ] [IsFiniteKernel κ] (X 
     rw [← Measure.map_prod_map _ _ (by fun_prop) (by fun_prop), Measure.map_id,
       Measure.map_dirac (by fun_prop)]
 
+-- Revise (Claude)
+lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
+    [IsProbabilityMeasure μ] [IsProbabilityMeasure Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ where
+  aemeasurable := h.aemeasurable_fst
+  map_eq := by
+    have : IsProbabilityMeasure (μ.map X) := Measure.isProbabilityMeasure_map h.aemeasurable_snd
+    rw [← Measure.snd_prod (μ := μ.map X) (ν := Q), ← Measure.compProd_const,
+      ← (condDistrib_ae_eq_iff_measure_eq_compProd X h.aemeasurable_fst _).1 h.condDistrib_eq,
+      Measure.snd, AEMeasurable.map_map_of_aemeasurable (by fun_prop)
+      (h.aemeasurable_snd.prodMk h.aemeasurable_fst)]
+    rfl
+
 lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFiniteKernel κ]
     (h1 : HasLaw X P μ) (h2 : HasCondDistrib Y X κ μ) :
     HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ := by
@@ -192,6 +205,32 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFi
   refine Measure.compProd_congr ?_
   rw [← h1.map_eq]
   exact h2.condDistrib_eq
+
+-- Revise (Claude)
+lemma HasCondDistrib.of_compProd [IsFiniteMeasure μ] [IsFiniteKernel κ]
+    {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsMarkovKernel η]
+    (h : HasCondDistrib (fun ω ↦ (Y ω, Z ω)) X (κ ⊗ₖ η) μ) :
+    HasCondDistrib Z (fun ω ↦ (X ω, Y ω)) η μ := by
+  have hY : AEMeasurable Y μ := h.aemeasurable_fst.fst
+  have hZ : AEMeasurable Z μ := h.aemeasurable_fst.snd
+  have hX : AEMeasurable X μ := h.aemeasurable_snd
+  refine ⟨hZ, by fun_prop, ?_⟩
+  have h_eq := h.condDistrib_eq
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop) _] at h_eq ⊢
+  have h_assoc : (μ.map X ⊗ₘ κ ⊗ₘ η).map MeasurableEquiv.prodAssoc = μ.map X ⊗ₘ (κ ⊗ₖ η) :=
+    Measure.compProd_assoc'
+  calc μ.map (fun ω ↦ ((X ω, Y ω), Z ω))
+  _ = (μ.map (fun ω ↦ (X ω, Y ω, Z ω))).map MeasurableEquiv.prodAssoc.symm := by
+      rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]; rfl
+  _ = (μ.map X ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by rw [h_eq]
+  _ = μ.map X ⊗ₘ κ ⊗ₘ η := by
+      rw [← h_assoc, Measure.map_map (by fun_prop) (by fun_prop)]
+      simp only [MeasurableEquiv.symm_comp_self, Measure.map_id]
+  _ = μ.map (fun ω ↦ (X ω, Y ω)) ⊗ₘ η := by
+      have h_fst := h.fst
+      rw [Kernel.fst_compProd] at h_fst
+      have h_fst_eq := (condDistrib_ae_eq_iff_measure_eq_compProd X hY _).mp h_fst.condDistrib_eq
+      rw [h_fst_eq]
 
 lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
     {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsFiniteKernel η]
@@ -215,5 +254,29 @@ lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
   rw [← Measure.compProd_assoc', ← h_condDistrib_Y, ← h_condDistrib_Z,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+-- Revise (Claude)
+lemma HasCondDistrib.comp_left [IsFiniteMeasure μ] [IsFiniteKernel κ] {f : γ → β}
+    (hf : Measurable f) {Z : α → γ} (h : HasCondDistrib Y Z (κ.comap f hf) μ) :
+    HasCondDistrib Y (f ∘ Z) κ μ where
+  aemeasurable_fst := h.aemeasurable_fst
+  aemeasurable_snd := hf.comp_aemeasurable h.aemeasurable_snd
+  condDistrib_eq := by
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.aemeasurable_fst]
+    calc μ.map (fun ω ↦ ((f ∘ Z) ω, Y ω))
+    _ = (μ.map (fun ω ↦ (Z ω, Y ω))).map (Prod.map f id) := by
+        rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop)
+          (h.aemeasurable_snd.prodMk h.aemeasurable_fst)]; rfl
+    _ = (μ.map Z ⊗ₘ κ.comap f hf).map (Prod.map f id) := by
+        rw [(condDistrib_ae_eq_iff_measure_eq_compProd Z h.aemeasurable_fst _).mp h.condDistrib_eq]
+    _ = μ.map (f ∘ Z) ⊗ₘ κ := by
+        rw [← AEMeasurable.map_map_of_aemeasurable hf.aemeasurable h.aemeasurable_snd]
+        ext s hs
+        rw [Measure.map_apply (by fun_prop) hs, Measure.compProd_apply hs,
+          Measure.compProd_apply (hs.preimage (by fun_prop))]
+        rw [lintegral_map (Kernel.measurable_kernel_prodMk_left hs) hf]
+        refine lintegral_congr fun x ↦ ?_
+        rw [Kernel.comap_apply]
+        congr 1
 
 end ProbabilityTheory

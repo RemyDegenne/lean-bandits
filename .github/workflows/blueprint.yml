@@ -16,9 +16,12 @@ concurrency:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read  # Read access to repository contents
-  pages: write    # Write access to GitHub Pages
-  id-token: write # Write access to ID tokens
+  contents: read          # Read access to repository contents
+  pages: write            # Write access to GitHub Pages
+  id-token: write         # Write access to ID tokens
+  issues: write           # Write access to issues
+  pull-requests: write    # Write access to pull requests
+  actions: write          # Write access to GitHub Actions
 
 jobs:
   build_project:
@@ -44,8 +47,9 @@ jobs:
       - name: Build and lint project
         uses: leanprover/lean-action@c544e89643240c6b398f14a431bcdc6309e36b3e # v1.4.0
         with:
-          use-github-cache: false
-          build-args: :blueprint
+          build: true
+          lint: false
+          mk_all-check: true
 
       - name: Compile blueprint and documentation
         uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26

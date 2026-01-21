@@ -26,7 +26,7 @@ section Algorithm
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
 noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
-  √(c * log (n + 2) / pullCount' n h a)
+  √(2 * c * log (n + 2) / pullCount' n h a)
 
 open Classical in
 /-- Arm pulled by the UCB algorithm at time `n + 1`. -/
@@ -57,12 +57,12 @@ variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
-   {n : ℕ} {ω : Ω}
+  {σ2 : ℝ≥0} {n : ℕ} {ω : Ω}
 
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
 noncomputable def ucbWidth (A : ℕ → Ω → Fin K) (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
-  √(c * log (n + 1) / pullCount A a n ω)
+  √(2 * c * log (n + 1) / pullCount A a n ω)
 
 @[fun_prop]
 lemma measurable_ucbWidth (hA : ∀ n, Measurable (A n)) (c : ℝ) (a : Fin K) :
@@ -202,76 +202,80 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
     (h_le : empMean A R (bestArm ν) n ω + ucbWidth A c (bestArm ν) n ω ≤
       empMean A R (A n ω) n ω + ucbWidth A c (A n ω) n ω)
     (h_gap_pos : 0 < gap ν (A n ω)) (h_pull_pos : 0 < pullCount A (A n ω) n ω) :
-    pullCount A (A n ω) n ω ≤ 4 * c * log (n + 1) / gap ν (A n ω) ^ 2 := by
+    pullCount A (A n ω) n ω ≤ 8 * c * log (n + 1) / gap ν (A n ω) ^ 2 := by
   have h_gap_le := gap_arm_le_two_mul_ucbWidth h_best h_arm h_le
   rw [ucbWidth] at h_gap_le
-  have h2 : (gap ν (A n ω)) ^ 2 ≤ (2 * √(c * log (n + 1) / pullCount A (A n ω) n ω)) ^ 2 := by
+  have h2 : (gap ν (A n ω)) ^ 2 ≤ (2 * √(2 * c * log (n + 1) / pullCount A (A n ω) n ω)) ^ 2 := by
     gcongr
   rw [mul_pow, sq_sqrt] at h2
   · have : (2 : ℝ) ^ 2 = 4 := by norm_num
     rw [this] at h2
     field_simp at h2 ⊢
-    exact h2
+    grind
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
 
-lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
-    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]} ≤
-      1 / (n + 1) ^ (c / 2) := by
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ c := by
   have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(c * log (n + 1) / k) ≤ (ν a)[id]}
+  calc
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]}
   _ = streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(c * log (n + 1) / k)} := by
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(2 * c * σ2 * log (n + 1) / k)} := by
     congr with ω
     field_simp
     rw [Finset.sum_sub_distrib]
     simp
     grind
   _ = streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * log (n + 1))} := by
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * log (n + 1))} := by
     congr with ω
     field_simp
     congr! 2
     rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
-      mul_assoc (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
-  _ ≤ 1 / (n + 1) ^ (c / 2) := prob_sum_le_sqrt_log hν hc a k hk
+      mul_assoc (k : ℝ), mul_assoc (k : ℝ), mul_assoc (k : ℝ),
+      sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_le_sqrt_log hν hσ2 hc a k hk
 
-lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
     (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
     streamMeasure ν
-        {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)} ≤
-      1 / (n + 1) ^ (c / 2) := by
+        {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 *log (n + 1) / k)} ≤
+      1 / (n + 1) ^ c := by
   have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(c * log (n + 1) / k)}
+  calc
+    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 * log (n + 1) / k)}
   _ = streamMeasure ν
-      {ω | √(c * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
+      {ω | √(2 * c * σ2 * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
     congr with ω
     field_simp
     rw [Finset.sum_sub_distrib]
     simp
     grind
   _ = streamMeasure ν
-      {ω | √(c * k * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
+      {ω | √(2 * c * k * σ2 * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
     congr with ω
     field_simp
     congr! 1
     rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
       mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
-  _ ≤ 1 / (n + 1) ^ (c / 2) := prob_sum_ge_sqrt_log hν hc a k hk
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_ge_sqrt_log hν hσ2 hc a k hk
 
-lemma prob_ucbIndex_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A c a n h ≤ (ν a)[id]} ≤
-      1 / (n + 1) ^ (c / 2 - 1) := by
-  let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ x / m + √(c * log (↑n + 1) / m) ≤ (ν a)[id]}
+-- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
+lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+    P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ (c - 1) := by
+  let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ x / m + √(2 * (c * σ2) * log (↑n + 1) / m) ≤ (ν a)[id]}
   have hs : MeasurableSet s := by
     simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOf, s]
     fun_prop
   classical
-  calc P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A c a n h ≤ (ν a)[id]}
+  calc P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]}
   _ ≤ ∑ k ∈ range (n + 1) with k ∈ Prod.fst '' s,
       (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     prob_pullCount_prod_sumRewards_mem_le h hs
@@ -281,37 +285,40 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
     simp [s]
     grind
   _ = ∑ k ∈ Icc 1 n,
-      (streamMeasure ν) {ω | (∑ i ∈ range k, ω i a) / k + √(c * log (↑n + 1) / k) ≤
+      (streamMeasure ν) {ω | (∑ i ∈ range k, ω i a) / k + √(2 * c * σ2 * log (↑n + 1) / k) ≤
         (ν a)[id]} := by
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω
     have hk : 0 < k := by grind
-    simp [s, hk]
-  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    simp only [Nat.cast_nonneg, sqrt_div', id_eq, Set.preimage_setOf_eq, hk, true_and,
+      Set.mem_setOf_eq, s]
+    grind
+  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
-    exact todo hν hc a n k (by grind)
-  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    exact todo hν hσ2 hc a n k (by grind)
+  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ c := by
     simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
     rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
     gcongr
     exact le_self_add
-  _ = 1 / (n + 1) ^ (c / 2 - 1) := by
+  _ = 1 / (n + 1) ^ (c - 1) := by
     simp only [mul_one, one_div]
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma prob_ucbIndex_ge [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+-- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
+lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P {h | 0 < pullCount A a n h ∧
-      (ν a)[id] ≤ empMean A R a n h - ucbWidth A c a n h} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
-  let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ (ν a)[id] ≤ x / m - √(c * log (↑n + 1) / m)}
+      (ν a)[id] ≤ empMean A R a n h - ucbWidth A (c * σ2) a n h} ≤ 1 / (n + 1) ^ (c - 1) := by
+  let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ (ν a)[id] ≤ x / m - √(2 * (c * σ2) * log (↑n + 1) / m)}
   have hs : MeasurableSet s := by
     simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOf, s]
     fun_prop
   classical
-  calc P {h | 0 < pullCount A a n h ∧ (ν a)[id] ≤ empMean A R a n h - ucbWidth A c a n h}
+  calc P {h | 0 < pullCount A a n h ∧ (ν a)[id] ≤ empMean A R a n h - ucbWidth A (c * σ2) a n h}
   _ ≤ ∑ k ∈ range (n + 1) with k ∈ Prod.fst '' s,
       (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     prob_pullCount_prod_sumRewards_mem_le h hs
@@ -322,45 +329,47 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)]
     grind
   _ = ∑ k ∈ Icc 1 n,
       (streamMeasure ν)
-        {ω | (ν a)[id] ≤ (∑ i ∈ range k, ω i a) / k - √(c * log (↑n + 1) / k)} := by
+        {ω | (ν a)[id] ≤ (∑ i ∈ range k, ω i a) / k - √(2 * c * σ2 * log (↑n + 1) / k)} := by
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω
     have hk : 0 < k := by grind
-    simp [s, hk]
-  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    simp only [id_eq, Nat.cast_nonneg, sqrt_div', Set.preimage_setOf_eq, hk, true_and,
+      Set.mem_setOf_eq, s]
+    grind
+  _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
-    exact todo' hν hc a n k (by grind)
-  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ (c / 2) := by
+    exact todo' hν hσ2 hc a n k (by grind)
+  _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ c := by
     simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
     rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
     gcongr
     exact le_self_add
-  _ = 1 / (n + 1) ^ (c / 2 - 1) := by
+  _ = 1 / (n + 1) ^ (c - 1) := by
     simp only [mul_one, one_div]
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma probReal_ucbIndex_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
-    P.real {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A c a n h ≤ (ν a)[id]} ≤
-      1 / (n + 1) ^ (c / 2 - 1) := by
+lemma probReal_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+    P.real {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ (c - 1) := by
   rw [measureReal_def]
-  grw [prob_ucbIndex_le h hν hc a n]
+  grw [prob_ucbIndex_le h hν hσ2 hc a n]
   swap; · finiteness
   simp only [one_div, ENNReal.toReal_inv]
   rw [← ENNReal.toReal_rpow]
   norm_cast
 
-lemma probReal_ucbIndex_ge [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
+lemma probReal_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P.real {h | 0 < pullCount A a n h ∧
-      (ν a)[id] ≤ empMean A R a n h - ucbWidth A c a n h} ≤ 1 / (n + 1) ^ (c / 2 - 1) := by
+      (ν a)[id] ≤ empMean A R a n h - ucbWidth A (c * σ2) a n h} ≤ 1 / (n + 1) ^ (c - 1) := by
   rw [measureReal_def]
-  grw [prob_ucbIndex_ge h hν hc a n]
+  grw [prob_ucbIndex_ge h hν hσ2 hc a n]
   swap; · finiteness
   simp only [one_div, ENNReal.toReal_inv]
   rw [← ENNReal.toReal_rpow]
@@ -432,21 +441,22 @@ lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
   · exact fun h_gt ↦ hω _ (lt_of_le_of_lt (by grind) h_gt) _
 
 lemma some_sum_eq_zero [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a) (n C : ℕ)
-    (hC : C ≠ 0) (hC' : 4 * c * log (n + 1) / gap ν a ^ 2 ≤ C) :
+    (hC : C ≠ 0) (hC' : 8 * c * σ2 * log (n + 1) / gap ν a ^ 2 ≤ C) :
     ∀ᵐ ω ∂P,
     ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω ∧
-      (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω ∧
-      empMean A R (A s ω) s ω - ucbWidth A c (A s ω) s ω ≤ (ν (A s ω))[id]}.indicator 1 s = 0 := by
-  have h_ae := forall_ucbIndex_le_ucbIndex_arm h (bestArm ν) (ν := ν) (c := c) (hK := hK)
-  have h_gt := time_gt_of_pullCount_gt_one h a (ν := ν) (c := c) (hK := hK)
+      (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω ∧
+      empMean A R (A s ω) s ω - ucbWidth A (c * σ2) (A s ω) s ω
+        ≤ (ν (A s ω))[id]}.indicator 1 s = 0 := by
+  have h_ae := forall_ucbIndex_le_ucbIndex_arm h (bestArm ν) (ν := ν) (c := c * σ2) (hK := hK)
+  have h_gt := time_gt_of_pullCount_gt_one h a (ν := ν) (c := c * σ2) (hK := hK)
   filter_upwards [h_ae, h_gt] with ω h_le h_time_ge
   simp only [id_eq, tsub_le_iff_right, sum_eq_zero_iff, mem_range, Set.indicator_apply_eq_zero,
     Set.mem_setOf_eq, Pi.one_apply, one_ne_zero, imp_false, not_and, not_le]
   intro k hn h_arm hC_lt h_le_best
   by_contra! h_le_arm
-  have h := pullCount_arm_le hc h_le_best (by simpa) ?_ ?_ ?_
+  have h := pullCount_arm_le (by positivity : 0 ≤ c * σ2) h_le_best (by simpa) ?_ ?_ ?_
   rotate_left
   · refine h_le _ ?_
     refine (h_time_ge _ ?_).le
@@ -455,26 +465,27 @@ lemma some_sum_eq_zero [Nonempty (Fin K)]
   · rwa [h_arm]
   · rw [h_arm]
     exact zero_le'.trans_lt hC_lt
-  refine lt_irrefl (4 * c * log (n + 1) / gap ν a ^ 2) ?_
+  refine lt_irrefl (8 * c * σ2 * log (n + 1) / gap ν a ^ 2) ?_
   refine hC'.trans_lt (lt_of_lt_of_le ?_ (h.trans ?_))
   · rw [h_arm]
     exact mod_cast hC_lt
   · rw [h_arm]
+    simp_rw [← mul_assoc]
     gcongr
 
 lemma pullCount_ae_le_add_two [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a)
-    (n C : ℕ) (hC : C ≠ 0) (hC' : 4 * c * log (n + 1) / gap ν a ^ 2 ≤ C) :
+    (n C : ℕ) (hC : C ≠ 0) (hC' : 8 * c * σ2 * log (n + 1) / gap ν a ^ 2 ≤ C) :
     ∀ᵐ ω ∂P,
     pullCount A a n ω ≤ C + 1 +
       ∑ s ∈ range n,
         {s | 0 < pullCount A (bestArm ν) s ω ∧
-          empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω <
+          empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω <
             (ν (bestArm ν))[id]}.indicator 1 s +
       ∑ s ∈ range n,
         {s | 0 < pullCount A a s ω ∧ (ν a)[id] <
-          empMean A R a s ω - ucbWidth A c a s ω}.indicator 1 s := by
+          empMean A R a s ω - ucbWidth A (c * σ2) a s ω}.indicator 1 s := by
   filter_upwards [some_sum_eq_zero h hc a h_gap n C hC hC',
     pullCount_le_add_three_ae h a n C hC] with ω hω_zero hω_le
   refine (hω_le).trans_eq ?_
@@ -482,7 +493,7 @@ lemma pullCount_ae_le_add_two [Nonempty (Fin K)]
 
 /-- A sum that appears in the UCB regret upper bound. -/
 noncomputable
-def constSum (c : ℝ) (n : ℕ) : ℝ≥0∞ := ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c / 2 - 1)
+def constSum (c : ℝ) (n : ℕ) : ℝ≥0∞ := ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c - 1)
 
 lemma constSum_lt_top (c : ℝ) (n : ℕ) : constSum c n < ∞ := by
   rw [constSum, ENNReal.sum_lt_top]
@@ -492,35 +503,35 @@ lemma constSum_lt_top (c : ℝ) (n : ℕ) : constSum c n < ∞ := by
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le' [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
     ∫⁻ ω, pullCount A a n ω ∂P ≤
-      ENNReal.ofReal (4 * c * log (n + 1) / gap ν a ^ 2 + 1) + 1 + 2 * constSum c n := by
+      ENNReal.ofReal (8 * c * σ2 * log (n + 1) / gap ν a ^ 2 + 1) + 1 + 2 * constSum c n := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   by_cases hn_zero : n = 0
   · simp [hn_zero]
-  let C a : ℕ := ⌈4 * c * log (n + 1) / gap ν a ^ 2⌉₊
+  let C a : ℕ := ⌈8 * c * σ2 * log (n + 1) / gap ν a ^ 2⌉₊
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have h_set_1 b : MeasurableSet {a_1 | 0 < pullCount A a b a_1 ∧
-      (ν a)[id] < empMean A R a b a_1 - ucbWidth A c a b a_1} := by
+      (ν a)[id] < empMean A R a b a_1 - ucbWidth A (c * σ2) a b a_1} := by
     change MeasurableSet ({a_1 | 0 < pullCount A a b a_1} ∩
-      {a_1 | (ν a)[id] < empMean A R a b a_1 - ucbWidth A c a b a_1})
+      {a_1 | (ν a)[id] < empMean A R a b a_1 - ucbWidth A (c * σ2) a b a_1})
     exact (measurableSet_lt (by fun_prop) (by fun_prop)).inter
       (measurableSet_lt (by fun_prop) (by fun_prop))
   have h_set_2 b : MeasurableSet {a | 0 < pullCount A (bestArm ν) b a ∧
-      empMean A R (bestArm ν) b a + ucbWidth A c (bestArm ν) b a < (ν (bestArm ν))[id]} := by
+      empMean A R (bestArm ν) b a + ucbWidth A (c * σ2) (bestArm ν) b a < (ν (bestArm ν))[id]} := by
     change MeasurableSet ({a | 0 < pullCount A (bestArm ν) b a} ∩
-      {a | empMean A R (bestArm ν) b a + ucbWidth A c (bestArm ν) b a < (ν (bestArm ν))[id]})
+      {a | empMean A R (bestArm ν) b a + ucbWidth A (c * σ2) (bestArm ν) b a < (ν (bestArm ν))[id]})
     exact (measurableSet_lt (by fun_prop) (by fun_prop)).inter
       (measurableSet_lt (by fun_prop) (by fun_prop))
   have h_meas_1 b : Measurable fun h ↦ {s | 0 < pullCount A a s h ∧ (ν a)[id] <
-      empMean A R a s h - ucbWidth A c a s h}.indicator (1 : ℕ → ℕ) b := by
+      empMean A R a s h - ucbWidth A (c * σ2) a s h}.indicator (1 : ℕ → ℕ) b := by
     simp only [id_eq, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
     exact Measurable.ite (h_set_1 _) (by fun_prop) (by fun_prop)
   have h_meas_2 b : Measurable fun h ↦ {s | 0 < pullCount A (bestArm ν) s h ∧
-      empMean A R (bestArm ν) s h + ucbWidth A c (bestArm ν) s h <
+      empMean A R (bestArm ν) s h + ucbWidth A (c * σ2) (bestArm ν) s h <
           (ν (bestArm ν))[id]}.indicator (1 : ℕ → ℕ) b := by
     simp only [id_eq, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
     exact Measurable.ite (h_set_2 _) (by fun_prop) (by fun_prop)
@@ -528,11 +539,11 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
   _ ≤ ∫⁻ ω, C a + 1 +
       ∑ s ∈ range n,
         {s | 0 < pullCount A (bestArm ν) s ω ∧
-          empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω <
+          empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω <
             (ν (bestArm ν))[id]}.indicator (1 : ℕ → ℕ) s +
       ∑ s ∈ range n,
         {s | 0 < pullCount A a s ω ∧ (ν a)[id] <
-          empMean A R a s ω - ucbWidth A c a s ω}.indicator (1 : ℕ → ℕ) s ∂P := by
+          empMean A R a s ω - ucbWidth A (c * σ2) a s ω}.indicator (1 : ℕ → ℕ) s ∂P := by
     refine lintegral_mono_ae ?_
     have hCa : C a ≠ 0 := by
       simp only [ne_eq, Nat.ceil_eq_zero, not_le, C]
@@ -544,9 +555,10 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
   _ ≤ (C a : ℝ≥0∞) + 1 +
       ∑ s ∈ range n,
         P {ω | 0 < pullCount A (bestArm ν) s ω ∧
-          empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω < (ν (bestArm ν))[id]} +
+          empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω < (ν (bestArm ν))[id]} +
       ∑ s ∈ range n,
-        P {ω | 0 < pullCount A a s ω ∧ (ν a)[id] < empMean A R a s ω - ucbWidth A c a s ω} := by
+        P {ω | 0 < pullCount A a s ω ∧ (ν a)[id] <
+          empMean A R a s ω - ucbWidth A (c * σ2) a s ω} := by
     simp only [id_eq, Nat.cast_sum]
     rw [lintegral_add_left (by fun_prop), lintegral_add_left (by fun_prop)]
     simp only [lintegral_const, measure_univ, mul_one]
@@ -561,14 +573,14 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
       gcongr with h
       simp [Set.indicator_apply]
   _ ≤ (C a : ℝ≥0∞) + 1 +
-      ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c / 2 - 1) +
-      ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c / 2 - 1) := by
+      ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c - 1) +
+      ∑ s ∈ range n, 1 / ((s : ℝ≥0∞) + 1) ^ (c - 1) := by
     gcongr with s hs s hs
-    · refine (measure_mono ?_).trans (prob_ucbIndex_le h hν hc.le (bestArm ν) s)
+    · refine (measure_mono ?_).trans (prob_ucbIndex_le h hν hσ2 (by positivity) (bestArm ν) s)
       grind
-    · refine (measure_mono ?_).trans (prob_ucbIndex_ge h hν hc.le a s)
+    · refine (measure_mono ?_).trans (prob_ucbIndex_ge h hν hσ2 (by positivity) a s)
       grind
-  _ ≤ ENNReal.ofReal (4 * c * log (n + 1) / gap ν a ^ 2 + 1) + 1 + 2 * constSum c n := by
+  _ ≤ ENNReal.ofReal (8 * c * σ2 * log (n + 1) / gap ν a ^ 2 + 1) + 1 + 2 * constSum c n := by
     rw [two_mul, add_assoc, constSum]
     gcongr
     simp only [C]
@@ -580,13 +592,13 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
-    (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)] ≤
-      4 * c * log (n + 1) / gap ν a ^ 2 + 2 + 2 * (constSum c n).toReal := by
+      8 * c * σ2 * log (n + 1) / gap ν a ^ 2 + 2 + 2 * (constSum c n).toReal := by
   have hA := h.measurable_A
-  have h := expectation_pullCount_le' h hν hc a h_gap n (hK := hK)
+  have h := expectation_pullCount_le' h hν hσ2 hc a h_gap n (hK := hK)
   simp_rw [← ENNReal.ofReal_natCast] at h
   rw [← ofReal_integral_eq_lintegral_ofReal] at h
   rotate_left
@@ -611,10 +623,11 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
 
 /-- Regret bound for the UCB algorithm. -/
 lemma regret_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hc : 0 < c) (n : ℕ) :
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) (hc : 0 < c) (n : ℕ) :
     P[regret ν A n] ≤
-      ∑ a, (4 * c * log (n + 1) / gap ν a + gap ν a * (2 + 2 * (constSum c n).toReal)) := by
+      ∑ a, (8 * c * σ2 * log (n + 1) / gap ν a + gap ν a * (2 + 2 * (constSum c n).toReal)) := by
   have hA := h.measurable_A
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]
@@ -624,7 +637,7 @@ lemma regret_le [Nonempty (Fin K)]
   by_cases h_gap : gap ν a = 0
   · simp [h_gap]
   replace h_gap : 0 < gap ν a := lt_of_le_of_ne gap_nonneg (Ne.symm h_gap)
-  grw [expectation_pullCount_le h hν hc a h_gap n]
+  grw [expectation_pullCount_le h hν hσ2 hc a h_gap n]
   refine le_of_eq ?_
   rw [mul_add]
   field

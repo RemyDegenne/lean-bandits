@@ -68,6 +68,7 @@ variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
+  {σ2 : ℝ≥0}
 
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
@@ -194,9 +195,9 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
 
 lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
-      Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+      Real.exp (-↑m * gap ν a ^ 2 / (4 * σ2)) := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h a (K * m) m m
@@ -213,9 +214,9 @@ lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
 `exp(- m * Δ_a^2 / 4)`. -/
 lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
-    P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+    P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have h_pos : 0 < K * m := Nat.mul_pos hK hm.bot_lt
   have h_le : P.real {ω | A (K * m) ω = a}
       ≤ P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} := by
@@ -229,10 +230,10 @@ lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
 /-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
-      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   have : (fun ω ↦ (pullCount A a n ω : ℝ))
@@ -259,10 +260,10 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
 /-- Regret bound for the ETC algorithm. -/
 lemma regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     P[regret ν A n] ≤
-      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
+      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2))) := by
   have hA := h.measurable_A
   simp_rw [regret_eq_sum_pullCount_mul_gap]
   rw [integral_finset_sum]

@@ -155,16 +155,14 @@ As a consequence, this also holds for any algorithm-environment sequence.
 
 \subsection{Sub-Gaussian rewards}
 
-TODO: extend this to sub-Gaussian with constant other than 1.
-
 \begin{lemma}\label{lem:probReal_sum_le_sum_streamMeasure}
   \uses{thm:ionescu-tulcea,def:subGaussian,def:gap}
   \leanok
   \lean{Bandits.probReal_sum_le_sum_streamMeasure}
-Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
+Let $\nu(a)$ be a $\sigma^2$-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
 \begin{align*}
   (\otimes_a \nu(a))^{\otimes \mathbb{N}} \left( \sum_{s=0}^{m-1} \omega_{s, a^*} \le \sum_{s=0}^{m-1} \omega_{s, a} \right)
-  &\le \exp\left( -m \frac{\Delta_a^2}{4} \right)
+  &\le \exp\left( -m \frac{\Delta_a^2}{4 \sigma^2} \right)
 \end{align*}
 \end{lemma}
 
@@ -178,17 +176,17 @@ Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \i
   \uses{thm:ionescu-tulcea,def:subGaussian}
   \leanok
   \lean{Bandits.prob_sum_le_sqrt_log, Bandits.prob_sum_ge_sqrt_log}
-Let $\nu(a)$ be a 1-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
+Let $\nu(a)$ be a $\sigma^2$-sub-Gaussian distribution on $\mathbb{R}$ for each arm $a \in \mathcal{A}$.
 Let $c \ge 0$ be a real number and $k$ a positive natural number.
 Then
 \begin{align*}
-  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \le - \sqrt{2 c k \log(n + 1)} \right)
+  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \le - \sqrt{2 c k \sigma^2 \log(n + 1)} \right)
   &\le \frac{1}{(n + 1)^{c}}
   \: .
 \end{align*}
 The same upper bound holds for the upper tail:
 \begin{align*}
-  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \ge \sqrt{2 c k \log(n + 1)} \right)
+  \nu(a)^{\otimes \mathbb{N}} \left( \sum_{s=0}^{k-1} (\omega_{s} - \mu_a) \ge \sqrt{2 c k \sigma^2 \log(n + 1)} \right)
   &\le \frac{1}{(n + 1)^{c}}
   \: .
 \end{align*}

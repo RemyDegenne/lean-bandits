@@ -12,12 +12,13 @@ namespace Bandits
 
 variable {K : ℕ} (hK : 0 < K)
 
+/-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
 def uniformAlgorithm : Algorithm (Fin K) ℝ :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have : IsProbabilityMeasure (uniformOn (Set.univ : Set (Fin K))) :=
     uniformOn_isProbabilityMeasure Set.finite_univ Set.univ_nonempty
   { policy _ := Kernel.const _ (uniformOn Set.univ)
-    p0 := (uniformOn Set.univ) }
+    p0 := uniformOn Set.univ }
 
 end Bandits

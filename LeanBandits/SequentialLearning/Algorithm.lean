@@ -30,6 +30,8 @@ structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wher
 instance (alg : Algorithm α R) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm α R) : IsProbabilityMeasure alg.p0 := alg.hp0
 
+/-- An algorithm that receives observations in `E × R` created form an algorithm that receives
+observations in `R` by ignoring the additional information. -/
 def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm α R) :
     Algorithm α (E × R) where
   policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)

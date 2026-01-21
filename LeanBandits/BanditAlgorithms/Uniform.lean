@@ -1,12 +1,12 @@
 /-
-Copyright (c) 2025 Rémy Degenne. All rights reserved.
+Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import Mathlib.Probability.Distributions.Uniform
+import Mathlib.Probability.UniformOn
 import LeanBandits.SequentialLearning.Algorithm
 
-open ProbabilityTheory Learning
+open MeasureTheory ProbabilityTheory Learning
 
 namespace Bandits
 
@@ -15,7 +15,9 @@ variable {K : ℕ} (hK : 0 < K)
 noncomputable
 def uniformAlgorithm : Algorithm (Fin K) ℝ :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  { policy _ := Kernel.const _ (PMF.uniformOfFintype (Fin K)).toMeasure
-    p0 := (PMF.uniformOfFintype (Fin K)).toMeasure }
+  have : IsProbabilityMeasure (uniformOn (Set.univ : Set (Fin K))) :=
+    uniformOn_isProbabilityMeasure Set.finite_univ Set.univ_nonempty
+  { policy _ := Kernel.const _ (uniformOn Set.univ)
+    p0 := (uniformOn Set.univ) }
 
 end Bandits

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Rémy Degenne. All rights reserved.
+Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
@@ -17,17 +17,12 @@ def StationaryEnv : Environment α (E × R) where
   feedback n :=
     let g : (Iic n → α × E × R) × α → α × E := fun (h, a) => (a, (h ⟨0, by simp⟩).2.1)
     (Kernel.deterministic (Prod.snd ∘ g) (by fun_prop)) ×ₖ (κ.comap g (by fun_prop))
-  h_feedback := inferInstance
   ν0 := (Kernel.const α Q) ⊗ₖ κ
-  hp0 := Kernel.IsMarkovKernel.compProd _ _
 
 noncomputable
 def trajMeasure (alg : Algorithm α R) :=
   Learning.trajMeasure (alg.prod_left E) (StationaryEnv Q κ)
-
-instance (alg : Algorithm α R) : IsProbabilityMeasure (trajMeasure Q κ alg) := by
-  unfold trajMeasure
-  infer_instance
+deriving IsProbabilityMeasure
 
 def action (n : ℕ) (ω : ℕ → α × E × R) : α := (ω n).1
 

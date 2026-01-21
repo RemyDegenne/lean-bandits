@@ -263,8 +263,9 @@ lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a
       mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
   _ ≤ 1 / (n + 1) ^ c := prob_sum_ge_sqrt_log hν hσ2 hc a k hk
 
-lemma prob_ucbIndex_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+-- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
+lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
@@ -305,9 +306,9 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)]
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma prob_ucbIndex_ge [Nonempty (Fin K)]
-    -- todo: the algorithm used in that IsAlgEnvSeq does not matter
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+-- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
+lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P {h | 0 < pullCount A a n h ∧
@@ -348,8 +349,8 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)]
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma probReal_ucbIndex_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+lemma probReal_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P.real {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
@@ -361,8 +362,8 @@ lemma probReal_ucbIndex_le [Nonempty (Fin K)]
   rw [← ENNReal.toReal_rpow]
   norm_cast
 
-lemma probReal_ucbIndex_ge [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+lemma probReal_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P.real {h | 0 < pullCount A a n h ∧
@@ -418,22 +419,22 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : Ω
       rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
 
 lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (a : Fin K) (n C : ℕ) (hC : C ≠ 0) :
     ∀ᵐ ω ∂P,
     pullCount A a n ω ≤ C + 1 +
       ∑ s ∈ range n, {s | A s ω = a ∧ C < pullCount A a s ω ∧
-        (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω ∧
-        empMean A R (A s ω) s ω - ucbWidth A (c * σ2) (A s ω) s ω ≤ (ν (A s ω))[id]}.indicator 1 s +
+        (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω ∧
+        empMean A R (A s ω) s ω - ucbWidth A c (A s ω) s ω ≤ (ν (A s ω))[id]}.indicator 1 s +
       ∑ s ∈ range n,
         {s | 0 < pullCount A (bestArm ν) s ω ∧
-          empMean A R (bestArm ν) s ω + ucbWidth A (c * σ2) (bestArm ν) s ω <
+          empMean A R (bestArm ν) s ω + ucbWidth A c (bestArm ν) s ω <
             (ν (bestArm ν))[id]}.indicator 1 s +
       ∑ s ∈ range n,
         {s | 0 < pullCount A a s ω ∧ (ν a)[id] <
-          empMean A R a s ω - ucbWidth A (c * σ2) a s ω}.indicator 1 s := by
+          empMean A R a s ω - ucbWidth A c a s ω}.indicator 1 s := by
   filter_upwards [pullCount_pos_of_pullCount_gt_one h a] with ω hω
-  refine (pullCount_le_add_three (R := R) a n C ω (ν := ν) (c := c * σ2)).trans ?_
+  refine (pullCount_le_add_three (R := R) a n C ω (ν := ν) (c := c)).trans ?_
   gcongr 5 with k hk j k hk j
   · gcongr 1
     exact fun h_gt ↦ hω _ (lt_of_le_of_lt (by grind) h_gt) _

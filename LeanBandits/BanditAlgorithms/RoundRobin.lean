@@ -50,34 +50,34 @@ variable {hK : 0 < K} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
 
 lemma arm_zero [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (roundRobinAlgorithm hK) (stationaryEnv ν) P) :
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P 0) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_zero_detAlgorithm
 
-lemma arm_ae_eq_roundRobinNextArm [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (roundRobinAlgorithm hK) (stationaryEnv ν) P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK n (IsAlgEnvSeq.hist A R n ω) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact h.action_detAlgorithm_ae_eq n
+lemma arm_ae_eq_roundRobinNextArm [Nonempty (Fin K)] (n : ℕ)
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (n + 1)) :
+    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK n (IsAlgEnvSeq.hist A R n ω) :=
+  h.action_detAlgorithm_ae_eq (by grind)
 
 /-- The arm pulled at time `n` is the arm `n % K`. -/
-lemma arm_ae_eq [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (roundRobinAlgorithm hK) (stationaryEnv ν) P) (n : ℕ) :
+lemma arm_ae_eq [Nonempty (Fin K)] (n : ℕ)
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P n) :
     A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
   cases n with
   | zero => exact arm_zero h
   | succ n =>
-    filter_upwards [arm_ae_eq_roundRobinNextArm h n] with h hn_eq
+    filter_upwards [arm_ae_eq_roundRobinNextArm n h] with h hn_eq
     rw [hn_eq, nextArm]
 
 /-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
-lemma pullCount_mul [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (roundRobinAlgorithm hK) (stationaryEnv ν) P) (a : Fin K) (m : ℕ) :
+lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m)) (a : Fin K) :
     pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
-  have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := arm_ae_eq h n
+  have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
+    arm_ae_eq n (h.mono (by have := n.2; simp only [mem_range] at this; grind))
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
   filter_upwards [h_arm] with ω h_arm
   have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : A i ω = ⟨i % K, Nat.mod_lt _ hK⟩ := h_arm ⟨i, hi⟩

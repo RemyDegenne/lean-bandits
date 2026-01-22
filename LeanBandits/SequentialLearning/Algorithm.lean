@@ -123,6 +123,27 @@ structure IsAlgEnvSeqUntil
     HasCondDistrib (R' (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
       (env.feedback n) P
 
+lemma IsAlgEnvSeqUntil.mono [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (h : IsAlgEnvSeqUntil A R' alg env P N) {N' : ℕ} (hN : N' ≤ N) :
+    IsAlgEnvSeqUntil A R' alg env P N' where
+  measurable_A := h.measurable_A
+  measurable_R := h.measurable_R
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_action n hn := h.hasCondDistrib_action n (hn.trans_le hN)
+  hasCondDistrib_reward n hn := h.hasCondDistrib_reward n (hn.trans_le hN)
+
+lemma IsAlgEnvSeq.isAlgEnvSeqUntil
+    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+    (h : IsAlgEnvSeq A R' alg env P) (N : ℕ) :
+    IsAlgEnvSeqUntil A R' alg env P N where
+  measurable_A := h.measurable_A
+  measurable_R := h.measurable_R
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_action n _ := h.hasCondDistrib_action n
+  hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+
 lemma IsAlgEnvSeq.hasLaw_step_zero
     [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
     (h : IsAlgEnvSeq A R' alg env P) :

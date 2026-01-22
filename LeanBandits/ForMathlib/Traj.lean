@@ -59,14 +59,16 @@ lemma MeasurableEquiv.coe_prodCongr {α β γ δ : Type*}
 lemma MeasurableEquiv.coe_refl {α : Type*} {mα : MeasurableSpace α} :
     (MeasurableEquiv.refl α : α → α) = id := rfl
 
-theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
-    {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
-    (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
-    (n : ℕ) :
+theorem hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+    {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P) {N n : ℕ}
+    (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
+    (hn : n ≤ N) :
     HasLaw (fun ω (i : Iic n) ↦ Y i ω)
       ((partialTraj κ 0 n) ∘ₘ (μ₀.map (MeasurableEquiv.piUnique _).symm)) P := by
+  revert hn
   induction n with
   | zero =>
+    intro _
     simp only [piUnique_symm_apply, partialTraj_self, Measure.id_comp]
     rw [← h0.map_eq, AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
     constructor
@@ -84,7 +86,9 @@ theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [�
       rw [Unique.eq_default i]
       simp [coe_default_Iic_zero]
   | succ n hn =>
-    specialize h_condDistrib n
+    intro hn_le
+    specialize h_condDistrib n (by grind)
+    specialize hn (by grind)
     have h_law := hn.prod_of_hasCondDistrib h_condDistrib
     have : (fun ω (i : Iic (n + 1)) ↦ Y i ω) =
         (MeasurableEquiv.IicSuccProd X n).symm ∘
@@ -109,12 +113,28 @@ theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [�
     congr
     simp [MeasurableEquiv.coe_refl]
 
+theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+    {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
+    (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
+    (n : ℕ) :
+    HasLaw (fun ω (i : Iic n) ↦ Y i ω)
+      ((partialTraj κ 0 n) ∘ₘ (μ₀.map (MeasurableEquiv.piUnique _).symm)) P := by
+  exact hasLaw_Iic_of_forall_hasCondDistrib' (N := n) h0 (fun n _ ↦ h_condDistrib n) le_rfl
+
 omit [IsProbabilityMeasure μ₀] in
 lemma trajMeasure_map_frestrictLe (n : ℕ) :
     (trajMeasure μ₀ κ).map (frestrictLe n) =
       (partialTraj κ 0 n) ∘ₘ (μ₀.map (MeasurableEquiv.piUnique _).symm) := by
   rw [trajMeasure, ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
     Kernel.deterministic_comp_eq_map, traj_map_frestrictLe]
+
+theorem eq_trajMeasure_map_frestrictLe [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+    {Y : (n : ℕ) → Ω → X n}
+    (h0 : HasLaw (Y 0) μ₀ P) {N : ℕ}
+    (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
+    P.map (fun ω (n : Iic N) ↦ Y n ω) = (trajMeasure μ₀ κ).map (frestrictLe N) := by
+  rw [(hasLaw_Iic_of_forall_hasCondDistrib' h0 h_condDistrib le_rfl).map_eq,
+    trajMeasure_map_frestrictLe]
 
 -- todo: switch to `HasLaw`
 /-- Uniqueness of `trajMeasure`. -/

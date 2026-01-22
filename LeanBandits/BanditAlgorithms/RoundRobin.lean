@@ -3,10 +3,10 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
-import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.SequentialLearning.Deterministic
+import LeanBandits.SequentialLearning.FiniteActions
+import LeanBandits.SequentialLearning.StationaryEnv
 
 /-! # Round-Robin algorithm
 
@@ -65,7 +65,8 @@ lemma arm_ae_eq [Nonempty (Fin K)] (n : ℕ)
 
 /-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
 lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
-    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m)) (a : Fin K) :
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1))
+    (a : Fin K) :
     pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
@@ -78,6 +79,38 @@ lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
   _ = (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) :=
     sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
   _ = m := sum_mod_range_mul hK m a
+
+lemma pullCount_eq_one [Nonempty (Fin K)]
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1))
+    (a : Fin K) :
+    pullCount A a K =ᵐ[P] fun _ ↦ 1 := by
+  suffices pullCount A a (K * 1) =ᵐ[P] fun _ ↦ 1 by simpa using this
+  refine pullCount_mul 1 (P := P) (ν := ν) (R := R) (hK := hK) ?_ a
+  simpa
+
+lemma time_gt_of_pullCount_gt_one [Nonempty (Fin K)]
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) (a : Fin K) :
+    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n := by
+  filter_upwards [pullCount_eq_one h a] with h h_eq n hn
+  rw [← h_eq] at hn
+  by_contra! h_lt
+  exact hn.not_ge (pullCount_mono _ h_lt _)
+
+lemma pullCount_pos_of_time_ge [Nonempty (Fin K)]
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) :
+    ∀ᵐ ω ∂P, ∀ n, K ≤ n → ∀ b : Fin K, 0 < pullCount A b n ω := by
+  have h_ae a := pullCount_eq_one h a
+  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
+  filter_upwards [h_ae] with ω hω n hn a
+  refine Nat.one_pos.trans_le ?_
+  rw [← hω a]
+  exact pullCount_mono _ hn _
+
+lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
+    (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) (a : Fin K) :
+    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω := by
+  filter_upwards [time_gt_of_pullCount_gt_one h a, pullCount_pos_of_time_ge h] with ω h1 h2 n h_gt a
+  exact h2 n (h1 n h_gt).le a
 
 end RoundRobin
 

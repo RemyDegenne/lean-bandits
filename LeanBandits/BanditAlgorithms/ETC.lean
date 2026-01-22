@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit.SumRewards
-import LeanBandits.BanditAlgorithms.AuxSums
+import LeanBandits.BanditAlgorithms.RoundRobin
 import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.SequentialLearning.Deterministic
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -60,13 +59,28 @@ variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0}
 
+/-- Until round `K * m - 1`, the ETC algorithm behaves like the Round-Robin algorithm. -/
+lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
+    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1) where
+  measurable_A := h.measurable_A
+  measurable_R := h.measurable_R
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_action n hn := by
+    convert h.hasCondDistrib_action n using 1
+    simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
+    congr 1 with h
+    unfold ETC.nextArm RoundRobin.nextArm
+    simp [hn]
+  hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+
 section AlgorithmBehavior
 
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
-    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact h.action_zero_detAlgorithm
+    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
+  RoundRobin.arm_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
 
 lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
@@ -77,13 +91,8 @@ lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
 /-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
 lemma arm_of_lt [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) {n : ℕ} (hn : n < K * m) :
-    A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
-  cases n with
-  | zero => exact arm_zero h
-  | succ n =>
-    filter_upwards [arm_ae_eq_etcNextArm h n] with h hn_eq
-    rw [hn_eq, nextArm, dif_pos]
-    grind
+    A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
+  RoundRobin.arm_ae_eq n ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono (by grind))
 
 /-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
 phase. -/
@@ -125,18 +134,8 @@ lemma arm_of_ge [Nonempty (Fin K)]
 /-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
 lemma pullCount_mul [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) :
-    pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
-  rw [Filter.EventuallyEq]
-  simp_rw [pullCount_eq_sum]
-  have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
-    arm_of_lt h (mem_range.mp n.2)
-  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
-  filter_upwards [h_arm] with ω h_arm
-  have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : A i ω = ⟨i % K, Nat.mod_lt _ hK⟩ := h_arm ⟨i, hi⟩
-  calc (∑ s ∈ range (K * m), if A s ω = a then 1 else 0)
-  _ = (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) :=
-    sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
-  _ = m := sum_mod_range_mul hK m a
+    pullCount A a (K * m) =ᵐ[P] fun _ ↦ m :=
+  RoundRobin.pullCount_mul m (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 lemma pullCount_add_one_of_ge [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)

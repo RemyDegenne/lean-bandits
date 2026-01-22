@@ -4,6 +4,7 @@ import LeanBandits.Bandit.RewardByCountMeasure
 import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.BanditAlgorithms.ETC
+import LeanBandits.BanditAlgorithms.RoundRobin
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.CondIndepFun

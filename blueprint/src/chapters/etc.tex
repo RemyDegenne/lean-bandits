@@ -1,5 +1,41 @@
 \chapter{Bandit algorithms}
 
+\section{Round-Robin}
+
+This is not an interesting bandit algorithm per se, but it is used as a subroutine in other algorithms and can be a simple baseline.
+This algorithm simply cycles through the arms in order.
+
+\begin{definition}\label{def:roundRobinAlgorithm}
+  \uses{def:detAlgorithm,def:algorithm}
+  \leanok
+  \lean{Bandits.RoundRobin.nextArm, Bandits.roundRobinAlgorithm}
+The Round-Robin algorithm is defined as follows: at time $t \in \mathbb{N}$, $A_t = t \mod K$.
+\end{definition}
+
+
+\begin{lemma}\label{lem:pullCount_roundRobinAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:pullCount,def:roundRobinAlgorithm}
+  \leanok
+  \lean{Bandits.RoundRobin.pullCount_mul}
+For the Round-Robin algorithm, for any arm $a \in [K]$, at time $Km$ we have
+\begin{align*}
+  N_{Km,a}
+  &= m
+  \: .
+\end{align*}
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:history,lem:pullCount_basic,def:roundRobinAlgorithm}
+
+\end{proof}
+
+
+TODO: regret.
+
+
+
+
 \section{Explore-Then-Commit}
 
 Note: times start at 0 to be consistent with Lean.
@@ -19,6 +55,20 @@ The Explore-Then-Commit (ETC) algorithm with parameter $m \in \mathbb{N}$ is def
 \end{definition}
 
 
+\begin{lemma}\label{lem:ETC.isAlgEnvSeqUntil_roundRobinAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:etcAlgorithm,def:roundRobinAlgorithm}
+  \leanok
+  \lean{Bandits.ETC.isAlgEnvSeqUntil_roundRobinAlgorithm}
+An algorithm-environment sequence for the Explore-Then-Commit algorithm with parameter $m$ is an algorithm-environment sequence for the Round-Robin algorithm until time $Km - 1$.
+That is, ETC plays the same as Round-Robin until time $Km - 1$.
+\end{lemma}
+
+\begin{proof}
+  \leanok
+
+\end{proof}
+
+
 \begin{lemma}\label{lem:pullCount_etcAlgorithm}
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:pullCount,def:etcAlgorithm}
   \leanok
@@ -32,7 +82,7 @@ For the Explore-Then-Commit algorithm with parameter $m$, for any arm $a \in [K]
 \end{lemma}
 
 \begin{proof}\leanok
-  \uses{def:environment,def:detAlgorithm,def:algorithm,def:history,lem:pullCount_basic,def:etcAlgorithm}
+  \uses{def:environment,def:detAlgorithm,def:algorithm,def:history,lem:pullCount_basic,def:etcAlgorithm,lem:pullCount_roundRobinAlgorithm,lem:ETC.isAlgEnvSeqUntil_roundRobinAlgorithm}
 
 \end{proof}
 

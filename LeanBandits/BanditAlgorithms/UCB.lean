@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit.SumRewards
-import LeanBandits.BanditAlgorithms.AuxSums
+import LeanBandits.BanditAlgorithms.RoundRobin
 import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.SequentialLearning.Deterministic
 
 /-!
 # UCB algorithm
@@ -59,6 +58,22 @@ variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0} {n : ℕ} {ω : Ω}
 
+/-- Until round `K - 1`, the UCB algorithm behaves like the Round-Robin algorithm. -/
+lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1) where
+  measurable_A := h.measurable_A
+  measurable_R := h.measurable_R
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_action n hn := by
+    convert h.hasCondDistrib_action n using 1
+    simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
+    congr 1 with h
+    unfold UCB.nextArm RoundRobin.nextArm
+    simp [hn]
+  hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+
 section AlgorithmBehavior
 
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
@@ -82,9 +97,8 @@ lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n �
 
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact h.action_zero_detAlgorithm
+    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
+  RoundRobin.arm_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
 
 lemma arm_ae_eq_ucbNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
@@ -147,39 +161,15 @@ lemma forall_arm_prop [Nonempty (Fin K)]
     simp_rw [ae_all_iff] at h_ae
     exact h_ae n hn
 
-lemma pullCount_eq_of_time_eq [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
-    ∀ᵐ ω ∂P, pullCount A a K ω = 1 := by
-  filter_upwards [forall_arm_eq_mod_of_lt h] with h h_eq
-  rw [pullCount_eq_sum]
-  conv_rhs => rw [← sum_mod_range hK a]
-  refine Finset.sum_congr rfl fun s hs ↦ ?_
-  congr
-  exact h_eq s (by grind)
-
 lemma time_gt_of_pullCount_gt_one [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
-    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n := by
-  filter_upwards [pullCount_eq_of_time_eq h a] with h h_eq n hn
-  rw [← h_eq] at hn
-  by_contra! h_lt
-  exact hn.not_ge (pullCount_mono _ h_lt _)
-
-lemma pullCount_pos_of_time_ge [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    ∀ᵐ ω ∂P, ∀ n, K ≤ n → ∀ b : Fin K, 0 < pullCount A b n ω := by
-  have h_ae a := pullCount_eq_of_time_eq h a
-  rw [← ae_all_iff] at h_ae
-  filter_upwards [h_ae] with ω hω n hn a
-  refine Nat.one_pos.trans_le ?_
-  rw [← hω a]
-  exact pullCount_mono _ hn _
+    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n :=
+  RoundRobin.time_gt_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
-    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω := by
-  filter_upwards [time_gt_of_pullCount_gt_one h a, pullCount_pos_of_time_ge h] with ω h1 h2 n h_gt a
-  exact h2 n (h1 n h_gt).le a
+    ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω :=
+  RoundRobin.pullCount_pos_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 end AlgorithmBehavior
 

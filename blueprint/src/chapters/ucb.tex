@@ -14,6 +14,20 @@ The UCB algorithm with parameter $c \in \mathbb{R}_+$ is defined as follows:
 Note: the argmax in the second step is chosen in a measurable way.
 
 
+\begin{lemma}\label{lem:UCB.isAlgEnvSeqUntil_roundRobinAlgorithm}
+  \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:ucbAlgorithm,def:roundRobinAlgorithm}
+  \leanok
+  \lean{Bandits.UCB.isAlgEnvSeqUntil_roundRobinAlgorithm}
+An algorithm-environment sequence for the UCB algorithm is an algorithm-environment sequence for the Round-Robin algorithm until time $K - 1$.
+That is, UCB plays the same as Round-Robin until time $K - 1$.
+\end{lemma}
+
+\begin{proof}
+  \leanok
+
+\end{proof}
+
+
 \begin{lemma}\label{lem:ucbIndex_le_ucbIndex_arm}
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:ucbAlgorithm,def:pullCount,def:empMean}
   \leanok

@@ -55,7 +55,7 @@ lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
   simp_rw [regret_eq_sum_gap, sum_pullCount_mul]
 
 lemma integral_regret_eq_sum_gap_mul_integral_pullCount
-    [Nonempty α] [StandardBorelSpace α] [Fintype α] {P : Measure Ω} [IsProbabilityMeasure P]
+    [StandardBorelSpace α] [Fintype α] {P : Measure Ω} [IsProbabilityMeasure P]
     (hA : ∀ n, Measurable (A n)) :
     P[regret ν A n] = ∑ a, gap ν a * P[fun ω ↦ (pullCount A a n ω : ℝ)] := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]

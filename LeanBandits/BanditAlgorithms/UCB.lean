@@ -161,20 +161,10 @@ lemma forall_arm_prop [Nonempty (Fin K)]
     simp_rw [ae_all_iff] at h_ae
     exact h_ae n hn
 
-lemma pullCount_eq_of_time_eq [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
-    ∀ᵐ ω ∂P, pullCount A a K ω = 1 :=
-  RoundRobin.pullCount_eq_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
-
 lemma time_gt_of_pullCount_gt_one [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n :=
   RoundRobin.time_gt_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
-
-lemma pullCount_pos_of_time_ge [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    ∀ᵐ ω ∂P, ∀ n, K ≤ n → ∀ b : Fin K, 0 < pullCount A b n ω :=
-  RoundRobin.pullCount_pos_of_time_ge (isAlgEnvSeqUntil_roundRobinAlgorithm h)
 
 lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :

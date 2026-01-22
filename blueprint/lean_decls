@@ -93,6 +93,7 @@ Bandits.regret
 Bandits.gap
 Learning.sum_pullCount_mul
 Bandits.regret_eq_sum_pullCount_mul_gap
+Bandits.integral_regret_eq_sum_gap_mul_integral_pullCount
 ProbabilityTheory.HasSubgaussianMGF
 ProbabilityTheory.HasSubgaussianMGF.add_of_indepFun
 ProbabilityTheory.HasSubgaussianMGF.measure_ge_le

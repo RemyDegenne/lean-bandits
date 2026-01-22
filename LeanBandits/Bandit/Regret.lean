@@ -54,6 +54,33 @@ lemma regret_eq_sum_pullCount_mul_gap [Fintype α] :
     regret ν A t ω = ∑ a, pullCount A a t ω * gap ν a := by
   simp_rw [regret_eq_sum_gap, sum_pullCount_mul]
 
+lemma integral_regret_eq_sum_gap_mul_integral_pullCount
+    [Nonempty α] [StandardBorelSpace α] [Fintype α] {P : Measure Ω} [IsProbabilityMeasure P]
+    (hA : ∀ n, Measurable (A n)) :
+    P[regret ν A n] = ∑ a, gap ν a * P[fun ω ↦ (pullCount A a n ω : ℝ)] := by
+  simp_rw [regret_eq_sum_pullCount_mul_gap]
+  rw [integral_finset_sum]
+  swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
+  congr with a
+  rw [integral_mul_const, mul_comm]
+
+/-- To bound the expected regret, it suffices to bound the expected number of pulls for each action
+with positive gap. -/
+lemma integral_regret_le_of_forall_integral_pullCount_le
+    [Nonempty α] [StandardBorelSpace α] [Fintype α] {P : Measure Ω} [IsProbabilityMeasure P]
+    {alg : Algorithm α ℝ} {env : Environment α ℝ} {B : α → ℝ}
+    (h : IsAlgEnvSeq A R alg env P)
+    (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :
+    P[regret ν A n] ≤ ∑ a, gap ν a * B a := by
+  have hA := h.measurable_A
+  rw [integral_regret_eq_sum_gap_mul_integral_pullCount hA]
+  gcongr 1 with a
+  by_cases h_gap : gap ν a = 0
+  · simp [h_gap]
+  gcongr
+  · exact gap_nonneg
+  · exact h_le a h_gap
+
 section bestArm
 
 variable [Fintype α] [Nonempty α]

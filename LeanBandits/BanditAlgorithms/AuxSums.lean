@@ -7,6 +7,11 @@ import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Tactic.Ring.RingNF
 
+/-!
+# Lemmas about sums of indicators
+
+-/
+
 open Finset
 
 lemma sum_mod_range {K : ℕ} (hK : 0 < K) (a : Fin K) :

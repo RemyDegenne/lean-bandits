@@ -59,6 +59,8 @@ variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0} {n : ℕ} {ω : Ω}
 
+section AlgorithmBehavior
+
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
 noncomputable def ucbWidth (A : ℕ → Ω → Fin K) (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
@@ -179,6 +181,8 @@ lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
   filter_upwards [time_gt_of_pullCount_gt_one h a, pullCount_pos_of_time_ge h] with ω h1 h2 n h_gt a
   exact h2 n (h1 n h_gt).le a
 
+end AlgorithmBehavior
+
 omit [IsMarkovKernel ν] in
 lemma gap_arm_le_two_mul_ucbWidth [Nonempty (Fin K)]
     (h_best : (ν (bestArm ν))[id] ≤ empMean A R (bestArm ν) n ω + ucbWidth A c (bestArm ν) n ω)
@@ -214,54 +218,6 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
     grind
   · have : 0 ≤ log (n + 1) := by simp [log_nonneg]
     positivity
-
-lemma todo (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
-    (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
-    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]} ≤
-      1 / (n + 1) ^ c := by
-  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc
-    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]}
-  _ = streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(2 * c * σ2 * log (n + 1) / k)} := by
-    congr with ω
-    field_simp
-    rw [Finset.sum_sub_distrib]
-    simp
-    grind
-  _ = streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * log (n + 1))} := by
-    congr with ω
-    field_simp
-    congr! 2
-    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
-      mul_assoc (k : ℝ), mul_assoc (k : ℝ), mul_assoc (k : ℝ),
-      sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
-  _ ≤ 1 / (n + 1) ^ c := prob_sum_le_sqrt_log hν hσ2 hc a k hk
-
-lemma todo' (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
-    (hc : 0 ≤ c) (a : Fin K) (n k : ℕ) (hk : k ≠ 0) :
-    streamMeasure ν
-        {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 *log (n + 1) / k)} ≤
-      1 / (n + 1) ^ c := by
-  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
-  calc
-    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 * log (n + 1) / k)}
-  _ = streamMeasure ν
-      {ω | √(2 * c * σ2 * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
-    congr with ω
-    field_simp
-    rw [Finset.sum_sub_distrib]
-    simp
-    grind
-  _ = streamMeasure ν
-      {ω | √(2 * c * k * σ2 * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
-    congr with ω
-    field_simp
-    congr! 1
-    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
-      mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
-  _ ≤ 1 / (n + 1) ^ c := prob_sum_ge_sqrt_log hν hσ2 hc a k hk
 
 -- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
 lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
@@ -628,19 +584,13 @@ lemma regret_le [Nonempty (Fin K)]
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (n : ℕ) :
     P[regret ν A n] ≤
       ∑ a, (8 * c * σ2 * log (n + 1) / gap ν a + gap ν a * (2 + 2 * (constSum c n).toReal)) := by
-  have hA := h.measurable_A
-  simp_rw [regret_eq_sum_pullCount_mul_gap]
-  rw [integral_finset_sum]
-  swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
-  gcongr with a
-  rw [integral_mul_const]
+  refine (integral_regret_le_of_forall_integral_pullCount_le h
+    (fun a h_gap ↦ expectation_pullCount_le h hν hσ2 hc a
+      (lt_of_le_of_ne' gap_nonneg h_gap) n)).trans_eq ?_
+  congr with a
   by_cases h_gap : gap ν a = 0
   · simp [h_gap]
-  replace h_gap : 0 < gap ν a := lt_of_le_of_ne gap_nonneg (Ne.symm h_gap)
-  grw [expectation_pullCount_le h hν hσ2 hc a h_gap n]
-  refine le_of_eq ?_
-  rw [mul_add]
-  field
+  · field
 
 end UCB
 

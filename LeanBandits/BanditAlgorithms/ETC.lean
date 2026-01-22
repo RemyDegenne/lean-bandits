@@ -14,16 +14,6 @@ import LeanBandits.ForMathlib.MeasurableArgMax
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
-section Aux
-
-lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
-    s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
-  rw [Filter.EventuallyEq]
-  simp only [eq_iff_iff]
-  congr!
-
-end Aux
-
 namespace Bandits
 
 variable {K : ℕ}
@@ -84,6 +74,8 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
     unfold ETC.nextArm RoundRobin.nextArm
     simp [hn]
   hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+
+section AlgorithmBehavior
 
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
@@ -192,13 +184,15 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
   · simp [ha, hm]
   · simp [h_best, hm]
 
+end AlgorithmBehavior
+
+section Regret
+
 lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
       Real.exp (-↑m * gap ν a ^ 2 / (4 * σ2)) := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
   have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h a (K * m) m m
   have h2 := probReal_sum_le_sum_streamMeasure hν a m
   refine le_trans (le_of_eq ?_) (h1.trans h2)
@@ -234,7 +228,6 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have hA := h.measurable_A
-  have hR := h.measurable_R
   have : (fun ω ↦ (pullCount A a n ω : ℝ))
       =ᵐ[P] fun ω ↦ m + (n - K * m) * {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
     filter_upwards [pullCount_of_ge h a hm hn] with ω h
@@ -262,16 +255,11 @@ lemma regret_le [Nonempty (Fin K)]
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     P[regret ν A n] ≤
-      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2))) := by
-  have hA := h.measurable_A
-  simp_rw [regret_eq_sum_pullCount_mul_gap]
-  rw [integral_finset_sum]
-  swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
-  gcongr with a
-  rw [mul_comm (gap _ _), integral_mul_const]
-  gcongr
-  · exact gap_nonneg
-  · exact expectation_pullCount_le h hν a hm hn
+      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2))) :=
+  integral_regret_le_of_forall_integral_pullCount_le h
+    (fun a _ ↦ expectation_pullCount_le h hν a hm hn)
+
+end Regret
 
 end ETC
 

@@ -11,6 +11,7 @@ import LeanBandits.ForMathlib.CondIndepFun
 import LeanBandits.ForMathlib.HasCondDistrib
 import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.IndepInfinitePi
+import LeanBandits.ForMathlib.Integrable
 import LeanBandits.ForMathlib.KernelRepresentation
 import LeanBandits.ForMathlib.KernelSub
 import LeanBandits.ForMathlib.Measurable

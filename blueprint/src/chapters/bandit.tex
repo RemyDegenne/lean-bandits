@@ -327,7 +327,7 @@ The law of $A_0$ in the array model is $P_0$.
   \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea}
   \leanok
   \lean{Bandits.ArrayModel.hasCondDistrib_reward_zero}
-In the array model, $P_{\mathcal{A}}[R_0 \mid A_0] = \nu$.
+In the array model, $P_{\mathcal{A}}(R_0 \mid A_0) = \nu$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -340,7 +340,7 @@ In the array model, $P_{\mathcal{A}}[R_0 \mid A_0] = \nu$.
   \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea}
   \leanok
   \lean{Bandits.ArrayModel.hasCondDistrib_action}
-In the array model, $P_{\mathcal{A}}[A_{t+1} \mid H_t] = \pi_t$.
+In the array model, $P_{\mathcal{A}}(A_{t+1} \mid H_t) = \pi_t$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -353,7 +353,7 @@ In the array model, $P_{\mathcal{A}}[A_{t+1} \mid H_t] = \pi_t$.
   \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea,def:pullCount}
 \leanok
   \lean{Bandits.ArrayModel.hasCondDistrib_reward_pullCount_action}
-In the array model, $P_{\mathcal{A}}[R_{t+1} \mid N_{t+1,A_{t+1}}, A_{t+1}] = \nu$.
+In the array model, $P_{\mathcal{A}}(R_{t+1} \mid N_{t+1,A_{t+1}}, A_{t+1}) = \nu$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -366,7 +366,7 @@ In the array model, $P_{\mathcal{A}}[R_{t+1} \mid N_{t+1,A_{t+1}}, A_{t+1}] = \n
   \uses{def:arrayMeasure,def:AM.history,def:algorithm,thm:ionescu-tulcea,def:pullCount}
 \leanok
   \lean{Bandits.ArrayModel.hasCondDistrib_reward_hist_action_pullCount}
-In the array model, $P_{\mathcal{A}}[R_{t+1} \mid H_t, A_{t+1}, N_{t+1,A_{t+1}}] = \nu$.
+In the array model, $P_{\mathcal{A}}(R_{t+1} \mid H_t, A_{t+1}, N_{t+1,A_{t+1}}) = \nu$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -392,7 +392,7 @@ For $t \ge 0$, $R_{t+1} \ind H_t \mid A_{t+1}, N_{t+1, A_{t+1}}$.
   \uses{def:arrayMeasure,def:AM.history,def:stationaryEnv,def:environment,def:algorithm,thm:ionescu-tulcea}
   \leanok
   \lean{Bandits.ArrayModel.hasCondDistrib_reward}
-In the array model, $P_{\mathcal{A}}[R_{t+1} \mid H_t, A_{t+1}] = \nu$.
+In the array model, $P_{\mathcal{A}}(R_{t+1} \mid H_t, A_{t+1}) = \nu$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -456,17 +456,17 @@ It thus suffices to show that $R_t \ind (H_{t-1}, A_t) \mid A_t$, which is impli
   \leanok
   \lean{Bandits.reward_cond_stepsUntil}
 Let $n > 0$, $t \in \mathbb{N}$ and suppose that $P(T_{n, a} = t) > 0$.
-Then $\mathcal{L}(R_t \mid T_{n, a} = t) = \nu(a)$.
+Then $P(R_t \mid T_{n, a} = t) = \nu(a)$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{def:environment,lem:stepsUntil_basic,lem:condIndepFun_reward_stepsUntil_arm,def:pullCount,lem:condDistrib_ae_eq_cond,lem:condDistrib_reward_stationaryEnv}
-First, if $T_{n, a} = t$, then $A_t = a$ (Lemma~\ref{lem:stepsUntil_basic}), such that $\mathcal{L}(R_t \mid T_{n, a} = t) = \mathcal{L}(R_t \mid T_{n, a} = t, A_t = a)$.
+First, if $T_{n, a} = t$, then $A_t = a$ (Lemma~\ref{lem:stepsUntil_basic}), such that $P(R_t \mid T_{n, a} = t) = P(R_t \mid T_{n, a} = t, A_t = a)$.
 
 Then, using first the independence from Lemma~\ref{lem:condIndepFun_reward_stepsUntil_arm} and then the conditional distribution from Lemma~\ref{lem:condDistrib_reward_stationaryEnv}, we have
 \begin{align*}
-  \mathcal{L}(R_t \mid T_{n, a} = t, A_t = a)
-  &= \mathcal{L}(R_t \mid A_t = a)
+  P(R_t \mid T_{n, a} = t, A_t = a)
+  &= P(R_t \mid A_t = a)
   = \nu(a)
   \: .
 \end{align*}
@@ -476,8 +476,8 @@ Then, using first the independence from Lemma~\ref{lem:condIndepFun_reward_steps
 \begin{lemma}\label{lem:condDistrib_ae_eq_cond}
   \leanok
   \lean{ProbabilityTheory.condDistrib_ae_eq_cond}
-For a random variable $X$ on a countable space with the discrete sigma algebra, $\mathcal{L}(Y \mid X) = (x \mapsto \mathcal{L}(Y \mid X = x))$, $(X_*P)$-almost surely.
-Furthermore, that almost sure equality means that for all $x$ such that $P(X = x) > 0$, we have $\mathcal{L}(Y \mid X = x) = \mathcal{L}(Y \mid X)(x)$.
+For a random variable $X$ on a countable space with the discrete sigma algebra, $P(Y \mid X) = (x \mapsto P(Y \mid X = x))$, $(X_*P)$-almost surely.
+Furthermore, that almost sure equality means that for all $x$ such that $P(X = x) > 0$, we have $P(Y \mid X = x) = P(Y \mid X)(x)$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -489,16 +489,16 @@ Furthermore, that almost sure equality means that for all $x$ such that $P(X = x
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:algorithm,thm:ionescu-tulcea,def:rewardByCount,def:stepsUntil}
 \leanok
   \lean{Bandits.condDistrib_rewardByCount_stepsUntil}
-For $n > 0$ and $t \in \mathbb{N}$, $\mathcal{L}(Y_{n,a} \mid T_{n,a}) = \nu(a)$ (in which the measure on the r.h.s. is seen as a constant kernel).
+For $n > 0$ and $t \in \mathbb{N}$, $P(Y_{n,a} \mid T_{n,a}) = \nu(a)$ (in which the measure on the r.h.s. is seen as a constant kernel).
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{def:environment,lem:reward_cond_stepsUntil,def:pullCount,lem:condDistrib_ae_eq_cond}
-It suffices to show that for all $t \in \mathbb{N} \cup \{\infty\}$ such that $\mathbb{P}(T_{n, a} = t) > 0$, the law of $Y_{n,a}$ conditioned on $T_{n,a} = t$ is $\nu(a)$.
+It suffices to show that for all $t \in \mathbb{N} \cup \{\infty\}$ such that $P(T_{n, a} = t) > 0$, the law of $Y_{n,a}$ conditioned on $T_{n,a} = t$ is $\nu(a)$.
 
-If $t < \infty$, then $\mathcal{L}(Y_{n, a} \mid T_{n, a} = t) = \mathcal{L}(R_t \mid T_{n, a} = t) = \nu(a)$ by Lemma~\ref{lem:reward_cond_stepsUntil}.
+If $t < \infty$, then $P(Y_{n, a} \mid T_{n, a} = t) = P(R_t \mid T_{n, a} = t) = \nu(a)$ by Lemma~\ref{lem:reward_cond_stepsUntil}.
 
-If $t = \infty$, then $\mathcal{L}(Y_{n, a} \mid T_{n, a} = \infty) = \mathcal{L}(Z_{n, a} \mid T_{n, a} = \infty)$. By independence of $Z_{n,a}$ and $T_{n, a}$, this is just $\nu(a)$, the law of $Z_{n,a}$.
+If $t = \infty$, then $P(Y_{n, a} \mid T_{n, a} = \infty) = P(Z_{n, a} \mid T_{n, a} = \infty)$. By independence of $Z_{n,a}$ and $T_{n, a}$, this is just $\nu(a)$, the law of $Z_{n,a}$.
 \end{proof}
 
 
@@ -506,13 +506,13 @@ If $t = \infty$, then $\mathcal{L}(Y_{n, a} \mid T_{n, a} = \infty) = \mathcal{L
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:algorithm,thm:ionescu-tulcea,def:rewardByCount}
   \leanok
   \lean{Bandits.hasLaw_rewardByCount}
-For $n > 0$ and $a \in \mathcal{A}$, $\mathcal{L}(Y_{n,a}) = \nu(a)$.
+For $n > 0$ and $a \in \mathcal{A}$, $(Y_{n,a})_*P = \nu(a)$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{def:environment,lem:condDistrib_rewardByCount_stepsUntil,def:stepsUntil,def:pullCount}
-The law of $Y_{n,a}$ is given by $\mathcal{L}(Y_{n, a}) = \mathcal{L}(Y_{n, a} \mid T_{n, a}) \circ \mathcal{L}(T_{n, a})$.
-By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $\mathcal{L}(Y_{n, a} \mid T_{n, a}) = \nu(a)$, a constant kernel.
+The law of $Y_{n,a}$ is given by $(Y_{n, a})_*P = P(Y_{n, a} \mid T_{n, a}) \circ (T_{n, a})_*P$.
+By Lemma~\ref{lem:condDistrib_rewardByCount_stepsUntil}, $P(Y_{n, a} \mid T_{n, a}) = \nu(a)$, a constant kernel.
 Thus the composition is just $\nu(a)$.
 \end{proof}
 
@@ -649,6 +649,7 @@ The regret $R_T$ of a sequence of arms $A_0, \ldots, A_{T-1}$ after $T$ pulls is
 \end{align*}
 \end{definition}
 
+TODO: the $R_T$ notation clashes with the random variable $R_t$.
 
 \begin{definition}\label{def:gap}
   \uses{def:armMean}
@@ -703,4 +704,20 @@ Apply Lemma~\ref{lem:sum_pullCount_mul} with $f(a) = \Delta_a$ to obtain:
   &= R_T
   \: .
 \end{align*}
+\end{proof}
+
+
+\begin{corollary}\label{cor:integral_regret_eq_sum_mul}
+  \uses{def:regret,def:gap,def:pullCount}
+  \leanok
+  \lean{Bandits.integral_regret_eq_sum_gap_mul_integral_pullCount}
+For $\mathcal{A}$ finite, the expected regret can be expressed as a sum over the arms and their gaps:
+\begin{align*}
+  P[R_T] = \sum_{a \in \mathcal{A}}P[N_{T,a}] \Delta_a \: .
+\end{align*}
+\end{corollary}
+
+\begin{proof}\leanok
+  \uses{lem:regret_eq_sum_pullCount_mul_gap}
+
 \end{proof}

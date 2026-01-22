@@ -25,20 +25,13 @@ section AlgorithmDefinition
 
 /-- Arm pulled by the Round-Robin algorithm at time `n + 1`. This is arm `n % K`. -/
 noncomputable
-def RoundRobin.nextArm (hK : 0 < K) (n : ℕ) (_h : Iic n → Fin K × ℝ) : Fin K :=
-  ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
-
-/-- The next arm pulled by Round-Robin is chosen in a measurable way. -/
-@[fun_prop]
-lemma RoundRobin.measurable_nextArm (hK : 0 < K) (n : ℕ) : Measurable (nextArm hK n) := by
-  unfold nextArm
-  fun_prop
+def RoundRobin.nextArm (hK : 0 < K) (n : ℕ) : Fin K := ⟨(n + 1) % K, Nat.mod_lt _ hK⟩
 
 /-- The Round-Robin algorithm: deterministic algorithm that chooses the next arm according
 to `RoundRobin.nextArm`. -/
 noncomputable
 def roundRobinAlgorithm (hK : 0 < K) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (RoundRobin.nextArm hK) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (fun n _ ↦ RoundRobin.nextArm hK n) (by fun_prop) ⟨0, hK⟩
 
 end AlgorithmDefinition
 
@@ -57,7 +50,7 @@ lemma arm_zero [Nonempty (Fin K)]
 
 lemma arm_ae_eq_roundRobinNextArm [Nonempty (Fin K)] (n : ℕ)
     (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (n + 1)) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK n (IsAlgEnvSeq.hist A R n ω) :=
+    A (n + 1) =ᵐ[P] fun _ ↦ nextArm hK n :=
   h.action_detAlgorithm_ae_eq (by grind)
 
 /-- The arm pulled at time `n` is the arm `n % K`. -/

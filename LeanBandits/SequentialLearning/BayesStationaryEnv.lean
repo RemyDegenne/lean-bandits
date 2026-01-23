@@ -3,6 +3,7 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
+import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.Bandit.Regret
 
 open MeasureTheory ProbabilityTheory Finset
@@ -151,6 +152,23 @@ section Regret
 
 variable (κ : Kernel (α × E) ℝ)
 variable (alg : Algorithm α ℝ)
+
+noncomputable
+def value (a : α) (ω : Ω) : ℝ := (κ (a, env R' ω))[id]
+
+noncomputable
+def bestArm [Fintype α] [Encodable α] [MeasurableSingletonClass α] (ω : Ω) : α :=
+    measurableArgmax (fun ω' a ↦ value R' κ a ω') ω
+
+noncomputable
+def condDistribBestArm [Fintype α] [Encodable α] [MeasurableSingletonClass α] (n : ℕ) :
+    Kernel (Iic n → α × R) α :=
+  condDistrib (bestArm R' κ) (hist A R' n) P
+
+instance (n : ℕ) [Fintype α] [Encodable α] [MeasurableSingletonClass α] :
+    IsMarkovKernel (condDistribBestArm P A R' κ n) := by
+  unfold condDistribBestArm
+  infer_instance
 
 noncomputable
 def regretAt (t : ℕ) (ω : Ω) : ℝ :=

@@ -6,7 +6,6 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.SequentialLearning.BayesStationaryEnv
-import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
 open MeasureTheory ProbabilityTheory Finset Learning
 
@@ -23,12 +22,11 @@ variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
 noncomputable
 def tsPolicy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  Learning.Bayes.IsAlgEnvSeq.condDistribBestArm
-    (trajMeasure ((uniformAlgorithm hK).prod_left E) (Bayes.StationaryEnv Q κ)) IT.action
-    IT.reward κ n
+  IsBayesianAlgEnvSeq.condDistribBestAction (IT.bayesianTrajMeasure Q κ (uniformAlgorithm hK)) κ
+    IT.action IT.reward n
 
 instance (n : ℕ) : IsMarkovKernel (tsPolicy hK Q κ n) := by
-  unfold tsPolicy Bayes.IsAlgEnvSeq.condDistribBestArm
+  unfold tsPolicy
   infer_instance
 
 /-- The initial distribution over actions for TS. -/

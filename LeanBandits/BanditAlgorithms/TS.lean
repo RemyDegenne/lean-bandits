@@ -62,7 +62,7 @@ def bayesian_regret_le [Nonempty (Fin K)]
     (h : IsBayesianAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) :
-    ∃ C > 0, ∀ K > 0, ∀ n : ℕ,
+    ∃ C > 0, ∀ n : ℕ,
       (IsBayesianAlgEnvSeq.bayesianRegret P κ A R' n) ≤ C * √(K * n * Real.log n) :=
   sorry
 

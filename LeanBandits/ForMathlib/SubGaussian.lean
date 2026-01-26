@@ -81,7 +81,7 @@ lemma todo_supermartingale_optional {X : ℕ → Ω → ℝ} {c : ℕ → ℝ≥
     (h_subG : ∀ n, HasCondSubgaussianMGF (ℱ n) (ℱ.le n) (X (n + 1)) (c (n + 1)) μ)
     (hp : IsPredictable ℱ p) (t : ℝ) :
     Supermartingale (fun n ω ↦ exp (∑ i ∈ Finset.range n,
-      t * if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) ℱ μ :=
+      if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) ℱ μ :=
   sorry
 
 end HasCondSubgaussianMGF

@@ -18,6 +18,8 @@ variable (hK : 0 < K)
 variable (Q : Measure E) [IsProbabilityMeasure Q]
 variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
 
+namespace TS
+
 /-- The distribution over actions for every given history for TS. -/
 noncomputable
 def tsPolicy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
@@ -49,5 +51,18 @@ noncomputable
 def tsAlgorithm : Algorithm (Fin K) ℝ where
   policy := tsPolicy hK Q κ
   p0 := tsInitPolicy hK Q κ
+
+
+variable {Ω : Type*} [MeasurableSpace Ω]
+variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → E × ℝ}
+variable {P : Measure Ω} [IsFiniteMeasure P]
+
+def bayesian_regret_le [Nonempty (Fin K)]
+    (h : IsBayesianAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P) :
+    ∃ C > 0, ∀ K > 0, ∀ n : ℕ,
+      (IsBayesianAlgEnvSeq.bayesianRegret P κ A R' n) ≤ C * √(K * n * Real.log n) :=
+  sorry
+
+end TS
 
 end Bandits

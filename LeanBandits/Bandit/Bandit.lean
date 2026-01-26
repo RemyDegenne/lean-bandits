@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.ForMathlib.CondIndepFun
 import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.IndepInfinitePi
+import LeanBandits.ForMathlib.Integrable
 import LeanBandits.ForMathlib.KernelRepresentation
 import LeanBandits.ForMathlib.StandardBorel
 import LeanBandits.SequentialLearning.FiniteActions
@@ -58,16 +59,6 @@ lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel α R) [IsMarkovKernel
     rw [← (hasLaw_eval_eval_streamMeasure ν n a).map_eq,
       Measure.map_map (by fun_prop) (by fun_prop)]
     simp
-
-lemma Integrable.congr_identDistrib {Ω Ω' : Type*}
-    {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
-    {μ : Measure Ω} {μ' : Measure Ω'} {X : Ω → ℝ} {Y : Ω' → ℝ}
-    (hX : Integrable X μ) (hXY : IdentDistrib X Y μ μ') :
-    Integrable Y μ' := by
-  have hX' : Integrable id (μ.map X) := by
-    rwa [integrable_map_measure (by fun_prop) hXY.aemeasurable_fst]
-  rw [hXY.map_eq] at hX'
-  rwa [integrable_map_measure (by fun_prop) hXY.aemeasurable_snd] at hX'
 
 lemma integrable_eval_streamMeasure (ν : Kernel α ℝ) [IsMarkovKernel ν] (n : ℕ) (a : α)
     (h_int : Integrable id (ν a)) :

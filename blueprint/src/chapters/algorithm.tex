@@ -72,8 +72,14 @@ We will want to make global probabilistic statements about the whole sequence of
 For example, we may want to prove that an optimization algorithm converges to the minimum of a function almost surely.
 For such a statement to make sense, we need a probability space on which the whole sequence of actions and observations is defined as a random variable.
 
-We denote by $P[X \mid Y]$ the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
-When we write that $P[X \mid Y] = \kappa$, or that $X$ has conditional distribution $\kappa$ given $Y$, the equality should be understood as holding $Y_* P$-almost surely.
+We denote by $P(X \mid Y)$ the conditional distribution of a random variable $X$ given another random variable $Y$ under a probability measure $P$.
+When we write that $P(X \mid Y) = \kappa$, or that $X$ has conditional distribution $\kappa$ given $Y$, the equality should be understood as holding $Y_* P$-almost surely.
+
+
+\begin{remark}[Lean remark: \texttt{HasCondDistrib}]
+In the Lean implementation, we define a predicate to state those almost sure equalities of conditional distributions: \texttt{HasCondDistrib X Y k P} states that under the probability measure $P$, the random variable $X$ has conditional distribution $k$ given the random variable $Y$ (almost surely with respect to the law of $X$).
+For convenience, the predicate also records that both random variables are almost everywhere measurable.
+\end{remark}
 
 
 \begin{definition}[Algorithm-environment interaction]\label{def:IsAlgEnvSeq}
@@ -84,9 +90,9 @@ Let $\mathfrak{A}$ be an algorithm as in Definition~\ref{def:algorithm} and $\ma
 A probability space $(\Omega, P)$ and two sequences of random variables $A : \mathbb{N} \to \Omega \to \mathcal{A}$ and $R : \mathbb{N} \to \Omega \to \mathcal{R}$ form an algorithm-environment interaction for $\mathfrak{A}$ and $\mathfrak{E}$ if the following conditions hold:
 \begin{enumerate}
   \item The law of $A_0$ is $P_0$.
-  \item $P \left[ R_0 \mid A_0 \right] = \nu'_0$.
-  \item For all $t \in \mathbb{N}$, $P\left[A_{t+1} \mid A_0, R_0, \ldots, A_t, R_t \right] = \pi_t$.
-  \item For all $t \in \mathbb{N}$, $P\left[R_{t+1} \mid A_0, R_0, \ldots, A_t, R_t, A_{t+1}\right] = \nu_t$.
+  \item $P \left( R_0 \mid A_0 \right) = \nu'_0$.
+  \item For all $t \in \mathbb{N}$, $P\left(A_{t+1} \mid A_0, R_0, \ldots, A_t, R_t \right) = \pi_t$.
+  \item For all $t \in \mathbb{N}$, $P\left(R_{t+1} \mid A_0, R_0, \ldots, A_t, R_t, A_{t+1}\right) = \nu_t$.
 \end{enumerate}
 \end{definition}
 
@@ -106,7 +112,7 @@ We call history up to time $t$ the random variable $H_t : \Omega \to (\mathcal{A
 In an algorithm-environment interaction $(A, R, P)$ as in Definition~\ref{def:IsAlgEnvSeq},
 \begin{itemize}
   \item the law of the initial step $X_0$ is $P_0 \otimes \nu'_0$,
-  \item for all $t \in \mathbb{N}$, $P \left[ X_{t+1} \mid H_t \right] = \pi_t \otimes \nu_t$.
+  \item for all $t \in \mathbb{N}$, $P \left( X_{t+1} \mid H_t \right) = \pi_t \otimes \nu_t$.
 \end{itemize}
 \end{lemma}
 
@@ -148,7 +154,7 @@ Let $(A, R, P)$ be an algorithm-environment interaction in a stationary environm
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:algorithm}
   \leanok
   \lean{Learning.IsAlgEnvSeq.condDistrib_reward_stationaryEnv}
-In a stationary environment, for any $t \in \mathbb{N}$, the conditional distribution $P\left[R_t \mid A_t\right]$ is $(A_{t*} P_{\mathcal{T}})$-almost surely equal to $\nu$.
+In a stationary environment, for any $t \in \mathbb{N}$, $P\left(R_t \mid A_t\right) = \nu$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -248,7 +254,7 @@ Said differently, the processes $(X_t)_{t \in \mathbb{N}}$ and $(H_t)_{t \in \ma
   \uses{def:IT.history, thm:ionescu-tulcea, def:trajMeasure}
   \leanok
   \lean{ProbabilityTheory.Kernel.condDistrib_trajMeasure}
-For any $t \in \mathbb{N}$, the conditional distribution $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to $\kappa_t$.
+For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left(X_{t+1} \mid H_t\right) = \kappa_t$.
 \end{lemma}
 
 \begin{proof}\leanok
@@ -308,13 +314,13 @@ We need to check that the random variables $A_t$ and $R_t$ have the expected con
   \uses{def:environment,def:algorithm,thm:ionescu-tulcea,def:IT.actionReward,def:trajMeasure,def:IT.history}
   \leanok
   \lean{Learning.IT.condDistrib_action}
-For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right] = \pi_t$.
+For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left(A_{t+1} \mid H_t\right) = \pi_t$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.condDistrib_X_add_one,def:IT.history}
-By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right] = \kappa_t = \pi_t \otimes \nu_t$.
-Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}$, $P_{\mathcal{T}}\left[A_{t+1} \mid H_t\right]$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}$, which is $\pi_t$.
+By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left(X_{t+1} \mid H_t\right) = \kappa_t = \pi_t \otimes \nu_t$.
+Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}$, $P_{\mathcal{T}}\left(A_{t+1} \mid H_t\right)$ is $((H_t)_* P_{\mathcal{T}})$-almost surely equal to the projection of $\kappa_t$ on $\mathcal{A}$, which is $\pi_t$.
 \end{proof}
 
 
@@ -322,13 +328,13 @@ Since $A_{t+1}$ is the projection of $X_{t+1}$ on $\mathcal{A}$, $P_{\mathcal{T}
   \uses{def:environment,def:algorithm,thm:ionescu-tulcea,def:IT.actionReward,def:trajMeasure,def:IT.history}
   \leanok
   \lean{Learning.IT.condDistrib_reward}
-For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left[R_{t+1} \mid H_t, A_{t+1}\right] = \nu_t$.
+For any $t \in \mathbb{N}$, $P_{\mathcal{T}}\left(R_{t+1} \mid H_t, A_{t+1}\right) = \nu_t$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.condDistrib_X_add_one,def:IT.history,lem:IT.condDistrib_A_add_one}
 It suffices to show that $((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t = (H_t, A_{t+1}, R_{t+1})_* P_{\mathcal{T}} = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
-By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left[X_{t+1} \mid H_t\right] = \pi_t \otimes \nu_t$.
+By Lemma~\ref{lem:IT.condDistrib_X_add_one}, $P_{\mathcal{T}}\left(X_{t+1} \mid H_t\right) = \pi_t \otimes \nu_t$.
 Thus $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = (H_t, X_{t+1})_* P_{\mathcal{T}}$.
 
 We thus have to prove that $((H_t)_* P_{\mathcal{T}}) \otimes (\pi_t \otimes \nu_t) = ((H_t, A_{t+1})_* P_{\mathcal{T}}) \otimes \nu_t$.
@@ -354,13 +360,13 @@ $X_0$ has law $\mu = P_0 \otimes \nu'_0$. $A_0$ is the projection of $X_0$ on th
   \uses{def:environment,def:algorithm,thm:ionescu-tulcea,def:IT.actionReward,def:trajMeasure}
   \leanok
   \lean{Learning.IT.condDistrib_reward_zero}
-$P_{\mathcal{T}}\left[R_0 \mid A_0\right] = \nu'_0$.
+$P_{\mathcal{T}}\left(R_0 \mid A_0\right) = \nu'_0$.
 \end{lemma}
 
 \begin{proof}\leanok
   \uses{lem:IT.law_X_zero,lem:IT.law_A_zero,def:IT.history}
-To prove almost sure equality, it is enough to prove that $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_{0*} P_{\mathcal{T}}) \otimes \nu'_0$.
-By definition of the conditional distribution, we have $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left[R_0 \mid A_0\right] = (A_0, R_0)_* P_{\mathcal{T}} = X_{0*} P_{\mathcal{T}}$.
+To prove almost sure equality, it is enough to prove that $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left(R_0 \mid A_0\right) = (A_{0*} P_{\mathcal{T}}) \otimes \nu'_0$.
+By definition of the conditional distribution, we have $(A_{0*} P_{\mathcal{T}}) \otimes P_{\mathcal{T}}\left(R_0 \mid A_0\right) = (A_0, R_0)_* P_{\mathcal{T}} = X_{0*} P_{\mathcal{T}}$.
 By Lemma~\ref{lem:IT.law_X_zero}, $X_{0*} P_{\mathcal{T}} = \mu = P_0 \otimes \nu'_0$.
 By Lemma~\ref{lem:IT.law_A_zero}, $A_{0*} P_{\mathcal{T}} = P_0$.
 Thus the two sides are equal.

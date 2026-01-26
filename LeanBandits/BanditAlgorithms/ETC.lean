@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 import LeanBandits.Bandit.SumRewards
-import LeanBandits.BanditAlgorithms.AuxSums
+import LeanBandits.BanditAlgorithms.RoundRobin
 import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.SequentialLearning.Deterministic
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -14,16 +13,6 @@ import LeanBandits.SequentialLearning.Deterministic
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
-
-section Aux
-
-lemma ae_eq_set_iff {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} {s t : Set α} :
-    s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
-  rw [Filter.EventuallyEq]
-  simp only [eq_iff_iff]
-  congr!
-
-end Aux
 
 namespace Bandits
 
@@ -68,12 +57,30 @@ variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
+  {σ2 : ℝ≥0}
+
+/-- Until round `K * m - 1`, the ETC algorithm behaves like the Round-Robin algorithm. -/
+lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
+    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1) where
+  measurable_A := h.measurable_A
+  measurable_R := h.measurable_R
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_action n hn := by
+    convert h.hasCondDistrib_action n using 1
+    simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
+    congr 1 with h
+    unfold ETC.nextArm RoundRobin.nextArm
+    simp [hn]
+  hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+
+section AlgorithmBehavior
 
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
-    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact h.action_zero_detAlgorithm
+    A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
+  RoundRobin.arm_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
 
 lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
@@ -84,13 +91,8 @@ lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
 /-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
 lemma arm_of_lt [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) {n : ℕ} (hn : n < K * m) :
-    A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
-  cases n with
-  | zero => exact arm_zero h
-  | succ n =>
-    filter_upwards [arm_ae_eq_etcNextArm h n] with h hn_eq
-    rw [hn_eq, nextArm, dif_pos]
-    grind
+    A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
+  RoundRobin.arm_ae_eq n ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono (by grind))
 
 /-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
 phase. -/
@@ -132,18 +134,8 @@ lemma arm_of_ge [Nonempty (Fin K)]
 /-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
 lemma pullCount_mul [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) :
-    pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
-  rw [Filter.EventuallyEq]
-  simp_rw [pullCount_eq_sum]
-  have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
-    arm_of_lt h (mem_range.mp n.2)
-  simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
-  filter_upwards [h_arm] with ω h_arm
-  have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : A i ω = ⟨i % K, Nat.mod_lt _ hK⟩ := h_arm ⟨i, hi⟩
-  calc (∑ s ∈ range (K * m), if A s ω = a then 1 else 0)
-  _ = (∑ s ∈ range (K * m), if ⟨s % K, Nat.mod_lt _ hK⟩ = a then 1 else 0) :=
-    sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
-  _ = m := sum_mod_range_mul hK m a
+    pullCount A a (K * m) =ᵐ[P] fun _ ↦ m :=
+  RoundRobin.pullCount_mul m (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 lemma pullCount_add_one_of_ge [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
@@ -192,13 +184,15 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
   · simp [ha, hm]
   · simp [h_best, hm]
 
+end AlgorithmBehavior
+
+section Regret
+
 lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K) :
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
-      Real.exp (-↑m * gap ν a ^ 2 / 4) := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+      Real.exp (-↑m * gap ν a ^ 2 / (4 * σ2)) := by
   have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h a (K * m) m m
   have h2 := probReal_sum_le_sum_streamMeasure hν a m
   refine le_trans (le_of_eq ?_) (h1.trans h2)
@@ -213,9 +207,9 @@ lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
 `exp(- m * Δ_a^2 / 4)`. -/
 lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : Fin K)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
-    P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+    P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have h_pos : 0 < K * m := Nat.mul_pos hK hm.bot_lt
   have h_le : P.real {ω | A (K * m) ω = a}
       ≤ P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} := by
@@ -229,12 +223,11 @@ lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
 /-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a))
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
-      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4) := by
+      ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have hA := h.measurable_A
-  have hR := h.measurable_R
   have : (fun ω ↦ (pullCount A a n ω : ℝ))
       =ᵐ[P] fun ω ↦ m + (n - K * m) * {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
     filter_upwards [pullCount_of_ge h a hm hn] with ω h
@@ -259,19 +252,14 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
 /-- Regret bound for the ETC algorithm. -/
 lemma regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (hm : m ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     P[regret ν A n] ≤
-      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / 4)) := by
-  have hA := h.measurable_A
-  simp_rw [regret_eq_sum_pullCount_mul_gap]
-  rw [integral_finset_sum]
-  swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
-  gcongr with a
-  rw [mul_comm (gap _ _), integral_mul_const]
-  gcongr
-  · exact gap_nonneg
-  · exact expectation_pullCount_le h hν a hm hn
+      ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2))) :=
+  integral_regret_le_of_forall_integral_pullCount_le h
+    (fun a _ ↦ expectation_pullCount_le h hν a hm hn)
+
+end Regret
 
 end ETC
 

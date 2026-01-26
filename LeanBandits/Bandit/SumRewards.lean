@@ -13,34 +13,6 @@ import LeanBandits.ForMathlib.SubGaussian
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
-lemma measurable_sum_range_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ range (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ range (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ range i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
-
-lemma measurable_sum_Icc_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
-
 namespace Bandits
 
 namespace ArrayModel
@@ -517,14 +489,14 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 section Subgaussian
 
 omit [DecidableEq α] [StandardBorelSpace α] in
-lemma probReal_sum_le_sum_streamMeasure [Fintype α]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : α) (m : ℕ) :
+lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (a : α) (m : ℕ) :
     (streamMeasure ν).real
         {ω | ∑ s ∈ range m, ω s (bestArm ν) ≤ ∑ s ∈ range m, ω s a} ≤
-      Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+      Real.exp (-↑m * gap ν a ^ 2 / (4 * c)) := by
   by_cases ha : a = bestArm ν
   · simp [ha]
-  refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ 1) (cY := fun _ ↦ 1)
+  refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ c) (cY := fun _ ↦ c)
     ?_ ?_ ?_ ?_ ?_ ?_).trans_eq ?_
   · exact iIndepFun_eval_streamMeasure'' ν (bestArm ν)
   · exact iIndepFun_eval_streamMeasure'' ν a
@@ -542,70 +514,120 @@ lemma probReal_sum_le_sum_streamMeasure [Fintype α]
     exact le_bestArm a
   · congr 1
     simp_rw [integral_eval_streamMeasure]
-    simp only [id_eq, sum_const, card_range, nsmul_eq_mul, mul_one, NNReal.coe_natCast,
+    simp only [id_eq, sum_const, card_range, nsmul_eq_mul, NNReal.coe_mul, NNReal.coe_natCast,
       gap_eq_bestArm_sub, neg_mul]
     field_simp
     ring
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma prob_sum_le_sqrt_log
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
-    (a : α) (k : ℕ) (hk : k ≠ 0) :
+lemma prob_sum_le_sqrt_log {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) {c : ℝ} (hc : 0 ≤ c) (a : α) (k : ℕ) (hk : k ≠ 0) :
     streamMeasure ν
-        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * Real.log (n + 1))} ≤
-      1 / (n + 1) ^ (c / 2) := by
+        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * Real.log (n + 1))} ≤
+      1 / (n + 1) ^ c := by
   calc
     streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * Real.log (n + 1))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(c * k * Real.log (n + 1))) ^ 2 / (2 * k * 1))) := by
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * Real.log (n + 1))}
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
     rw [← ofReal_measureReal]
     gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := 1) ?_ ?_ (by positivity))
+    refine (HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
     · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
         (fun _ ↦ by fun_prop)
     · intro i him
       refine (hν a).congr_identDistrib ?_
       exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-  _ = 1 / (n + 1) ^ (c / 2) := by
+  _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
     field_simp
-    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+    rw [← Real.log_rpow (by positivity), ← Real.log_inv,
       Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
       ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
-    congr 2
-    · norm_cast
-    · field
+    norm_cast
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma prob_sum_ge_sqrt_log
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
-    (a : α) (k : ℕ) (hk : k ≠ 0) :
+lemma prob_sum_ge_sqrt_log {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) {c : ℝ} (hc : 0 ≤ c) (a : α) (k : ℕ) (hk : k ≠ 0) :
     streamMeasure ν
-        {ω | √(c * k * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} ≤
-      1 / (n + 1) ^ (c / 2) := by
+        {ω | √(2 * c * k * σ2 * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} ≤
+      1 / (n + 1) ^ c := by
   calc
     streamMeasure ν
-      {ω | √(c * k * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(c * k * Real.log (n + 1))) ^ 2 / (2 * k * 1))) := by
+      {ω | √(2 * c * k * σ2 * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))}
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
     rw [← ofReal_measureReal]
     gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 1) ?_ ?_ (by positivity))
+    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
     · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
         (fun _ ↦ by fun_prop)
     · intro i him
       refine (hν a).congr_identDistrib ?_
       exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-  _ = 1 / (n + 1) ^ (c / 2) := by
+  _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
     field_simp
-    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+    rw [← Real.log_rpow (by positivity), ← Real.log_inv,
       Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
       ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
-    congr 2
-    · norm_cast
-    · field
+    norm_cast
+
+open Real
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma todo {σ2 : ℝ≥0} {c : ℝ}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
+    (hc : 0 ≤ c) (a : α) (n k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ c := by
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
+  calc
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]}
+  _ = streamMeasure ν
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(2 * c * σ2 * log (n + 1) / k)} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = streamMeasure ν
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * log (n + 1))} := by
+    congr with ω
+    field_simp
+    congr! 2
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_assoc (k : ℝ), mul_assoc (k : ℝ), mul_assoc (k : ℝ),
+      sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_le_sqrt_log hν hσ2 hc a k hk
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma todo' {σ2 : ℝ≥0} {c : ℝ}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
+    (hc : 0 ≤ c) (a : α) (n k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν
+        {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 *log (n + 1) / k)} ≤
+      1 / (n + 1) ^ c := by
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
+  calc
+    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 * log (n + 1) / k)}
+  _ = streamMeasure ν
+      {ω | √(2 * c * σ2 * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = streamMeasure ν
+      {ω | √(2 * c * k * σ2 * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
+    congr with ω
+    field_simp
+    congr! 1
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_ge_sqrt_log hν hσ2 hc a k hk
 
 end Subgaussian
 

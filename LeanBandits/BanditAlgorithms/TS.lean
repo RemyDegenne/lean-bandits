@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Paulo Rauber
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.SequentialLearning.BayesStationaryEnv
+import LeanBandits.ForMathlib.SubGaussian
 
 open MeasureTheory ProbabilityTheory Finset Learning
 
@@ -58,7 +59,9 @@ variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → E × ℝ}
 variable {P : Measure Ω} [IsFiniteMeasure P]
 
 def bayesian_regret_le [Nonempty (Fin K)]
-    (h : IsBayesianAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P) :
+    (h : IsBayesianAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
+    (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) :
     ∃ C > 0, ∀ K > 0, ∀ n : ℕ,
       (IsBayesianAlgEnvSeq.bayesianRegret P κ A R' n) ≤ C * √(K * n * Real.log n) :=
   sorry

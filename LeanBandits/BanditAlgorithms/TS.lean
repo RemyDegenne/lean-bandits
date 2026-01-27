@@ -25,8 +25,7 @@ namespace TS
 noncomputable
 def tsPolicy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  IsBayesianAlgEnvSeq.condDistribBestAction (IT.bayesianTrajMeasure Q κ (uniformAlgorithm hK)) κ
-    IT.action IT.reward n
+  IT.posteriorBestArm Q κ (uniformAlgorithm hK) n
 
 instance (n : ℕ) : IsMarkovKernel (tsPolicy hK Q κ n) := by
   unfold tsPolicy
@@ -36,14 +35,12 @@ instance (n : ℕ) : IsMarkovKernel (tsPolicy hK Q κ n) := by
 noncomputable
 def tsInitPolicy : Measure (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  Q.map (measurableArgmax (fun e k ↦ (κ (k, e))[id]))
+  IT.priorBestArm Q κ (uniformAlgorithm hK)
 
 instance : IsProbabilityMeasure (tsInitPolicy hK Q κ) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  apply Measure.isProbabilityMeasure_map
-  apply Measurable.aemeasurable
-  exact (measurable_measurableArgmax fun k =>
-    (stronglyMeasurable_id.integral_kernel (κ := κ.comap (k, ·) (by fun_prop))).measurable)
+  unfold tsInitPolicy
+  infer_instance
 
 /-- The Thompson Sampling (TS) algorithm: actions are chosen according to the probability that they
 are optimal given prior knowledge represented by a prior distribution `Q` and a data generation
@@ -59,11 +56,11 @@ variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → E × ℝ}
 variable {P : Measure Ω} [IsFiniteMeasure P]
 
 def bayesian_regret_le [Nonempty (Fin K)]
-    (h : IsBayesianAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
+    (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) :
     ∃ C > 0, ∀ n : ℕ,
-      (IsBayesianAlgEnvSeq.bayesianRegret P κ A R' n) ≤ C * √(K * n * Real.log n) :=
+      (IsBayesAlgEnvSeq.bayesRegret κ A R' P n) ≤ C * √(K * n * Real.log n) :=
   sorry
 
 end TS

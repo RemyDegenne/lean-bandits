@@ -767,6 +767,14 @@ noncomputable
 def empMean' (n : ℕ) (h : Iic n → α × ℝ) (a : α) :=
   (sumRewards' n h a) / (pullCount' n h a)
 
+@[simp]
+lemma sumRewards_zero {R' : ℕ → Ω → ℝ} : sumRewards A R' a 0 = 0 := by ext; simp [sumRewards]
+
+lemma sumRewards_add_one {R' : ℕ → Ω → ℝ} :
+    sumRewards A R' a (t + 1) ω = sumRewards A R' a t ω + if A t ω = a then R' t ω else 0 := by
+  unfold sumRewards
+  rw [sum_range_succ]
+
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :
     sumRewards A R' a t ω = pullCount A a t ω * empMean A R' a t ω := by unfold empMean; field_simp
@@ -811,6 +819,25 @@ lemma empMean_eq_empMean' {R' : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} (hn : n 
   unfold empMean empMean'
   rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
 
+lemma sumRewards_sub_pullCount_mul_eq_sum {R' : ℕ → Ω → ℝ} (c : α → ℝ) :
+    sumRewards A R' a (n + 1) ω - pullCount A a (n + 1) ω * c a =
+      ∑ i ∈ range (n + 1), (if A i ω = a then R' i ω - c a else 0) := by
+  induction n with
+  | zero =>
+    simp_rw [sumRewards_add_one, pullCount_add_one]
+    simp only [sumRewards_zero, Pi.zero_apply, zero_add, pullCount_zero, Nat.cast_ite, Nat.cast_one,
+      CharP.cast_eq_zero, ite_mul, one_mul, zero_mul, range_one, sum_singleton]
+    grind
+  | succ n hn =>
+    simp_rw [sumRewards_add_one (t := n + 1), pullCount_add_one (t := n + 1)]
+    split_ifs with ha
+    · conv_rhs => rw [sum_range_succ]
+      simp only [Nat.cast_add, Nat.cast_one, ha, ↓reduceIte, add_mul, one_mul]
+      grind
+    · simp only [add_zero, hn]
+      conv_rhs => rw [sum_range_succ]
+      simp [ha]
+
 @[fun_prop]
 lemma measurable_sumRewards [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (t : ℕ) :
@@ -842,6 +869,34 @@ lemma measurable_empMean' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     Measurable (fun h ↦ empMean' n h a) := by
   unfold empMean'
   fun_prop
+
+lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm α ℝ} {env : Environment α ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : α) :
+    IsPredictable (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) (sumRewards A R' a) := by
+  rw [isPredictable_iff_measurable_add_one]
+  constructor
+  · simp only [sumRewards_zero]
+    fun_prop
+  refine fun n ↦ measurable_fun_sum _ fun i hi ↦ Measurable.ite ?_ ?_ (by fun_prop)
+  · refine (measurableSet_singleton a).preimage ?_
+    have h_meas_i := IsAlgEnvSeq.measurable_action_filtration h.measurable_A h.measurable_R i
+    simp only [mem_range] at hi
+    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_A h.measurable_R).mono (by lia))
+      le_rfl
+  · have h_meas_i := IsAlgEnvSeq.measurable_reward_filtration h.measurable_A h.measurable_R i
+    simp only [mem_range] at hi
+    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_A h.measurable_R).mono (by lia))
+      le_rfl
+
+lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm α ℝ} {env : Environment α ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : α) :
+    Adapted (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R)
+      (fun n ↦ sumRewards A R' a (n + 1)) := by
+  have h_predictable := h.isPredictable_sumRewards a
+  rw [isPredictable_iff_measurable_add_one] at h_predictable
+  exact fun n ↦ Measurable.stronglyMeasurable (h_predictable.2 n)
 
 end SumRewards
 

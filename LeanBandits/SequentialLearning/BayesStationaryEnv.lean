@@ -7,6 +7,8 @@ import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.Bandit.Regret
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 
+/-! # Bayesian stationary environments -/
+
 open MeasureTheory ProbabilityTheory Finset
 
 namespace Learning
@@ -90,6 +92,7 @@ variable {alg : Algorithm α ℝ}
 noncomputable
 def armMean (κ : Kernel (α × E) ℝ) (R' : ℕ → Ω → E × ℝ) (a : α) (ω : Ω) : ℝ := (κ (a, env R' ω))[id]
 
+@[fun_prop]
 lemma measurable_armMean (h : IsBayesAlgEnvSeq Q κ A R' alg P) (a : α) :
     Measurable (armMean κ R' a) :=
   stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_const.prodMk h.measurable_env)
@@ -99,6 +102,7 @@ noncomputable
 def bestArm [Fintype α] [Encodable α] (κ : Kernel (α × E) ℝ) (R' : ℕ → Ω → E × ℝ) :=
   measurableArgmax (fun ω a ↦ armMean κ R' a ω)
 
+@[fun_prop]
 lemma measurable_bestArm [Fintype α] [Encodable α] (h : IsBayesAlgEnvSeq Q κ A R' alg P) :
     Measurable (bestArm κ R') :=
   measurable_measurableArgmax h.measurable_armMean
@@ -144,7 +148,7 @@ lemma hasCondDistrib_reward' (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
   simp_rw [bayesStationaryEnv, Kernel.snd_prod] at hr
   exact hr.comp_left (by fun_prop)
 
--- Auxiliar lemma for `condIndepFun_action_env_hist` (Claude)
+-- Auxiliary lemma for `condIndepFun_action_env_hist` (Claude)
 lemma hasCondDistrib_action_env_hist (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
     HasCondDistrib (A (n + 1)) (fun ω ↦ (env R' ω, hist A R' n ω))
       ((alg.policy n).prodMkLeft E) P := by
@@ -154,7 +158,7 @@ lemma hasCondDistrib_action_env_hist (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n :
       (((alg.policy n).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P from h'.comp_left
   exact h.hasCondDistrib_action n
 
--- Auxiliar lemma for `condIndepFun_reward_hist_action_env` (Claude)
+-- Auxiliary lemma for `condIndepFun_reward_hist_action_env` (Claude)
 lemma hasCondDistrib_reward_hist_action_env (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
     HasCondDistrib (reward R' (n + 1)) (fun ω ↦ (hist A R' n ω, A (n + 1) ω, env R' ω))
       (κ.prodMkLeft _) P := by

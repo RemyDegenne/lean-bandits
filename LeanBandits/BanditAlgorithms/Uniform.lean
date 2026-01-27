@@ -6,6 +6,8 @@ Authors: Rémy Degenne, Paulo Rauber
 import Mathlib.Probability.UniformOn
 import LeanBandits.SequentialLearning.Algorithm
 
+/-! # The Uniform Algorithm -/
+
 open MeasureTheory ProbabilityTheory Learning
 
 namespace Bandits

@@ -8,6 +8,8 @@ import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 
+/-! # The Thompson Sampling Algorithm -/
+
 open MeasureTheory ProbabilityTheory Finset Learning
 
 namespace Bandits

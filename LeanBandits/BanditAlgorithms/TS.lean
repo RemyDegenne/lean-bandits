@@ -4,63 +4,66 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.ForMathlib.MeasurableArgMax
+import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.SequentialLearning.BayesStationaryEnv
-import LeanBandits.ForMathlib.SubGaussian
 
 open MeasureTheory ProbabilityTheory Finset Learning
 
 namespace Bandits
 
-variable {K : ℕ}
-variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
-
-variable (hK : 0 < K)
-variable (Q : Measure E) [IsProbabilityMeasure Q]
-variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
-
 namespace TS
+
+variable {K : ℕ} (hK : 0 < K)
+variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
+variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
 
 /-- The distribution over actions for every given history for TS. -/
 noncomputable
-def tsPolicy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
+def policy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   IT.posteriorBestArm Q κ (uniformAlgorithm hK) n
-
-instance (n : ℕ) : IsMarkovKernel (tsPolicy hK Q κ n) := by
-  unfold tsPolicy
-  infer_instance
+deriving IsMarkovKernel
 
 /-- The initial distribution over actions for TS. -/
 noncomputable
-def tsInitPolicy : Measure (Fin K) :=
+def initialPolicy : Measure (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   IT.priorBestArm Q κ (uniformAlgorithm hK)
 
-instance : IsProbabilityMeasure (tsInitPolicy hK Q κ) := by
-  unfold tsInitPolicy
+instance : IsProbabilityMeasure (initialPolicy hK Q κ) := by
+  unfold initialPolicy
   infer_instance
+
+end TS
+
+variable {K : ℕ}
+variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
 
 /-- The Thompson Sampling (TS) algorithm: actions are chosen according to the probability that they
 are optimal given prior knowledge represented by a prior distribution `Q` and a data generation
 model represented by a kernel `κ`. -/
 noncomputable
-def tsAlgorithm : Algorithm (Fin K) ℝ where
-  policy := tsPolicy hK Q κ
-  p0 := tsInitPolicy hK Q κ
+def tsAlgorithm (hK : 0 < K) (Q : Measure E) [IsProbabilityMeasure Q]
+    (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
+  policy := TS.policy hK Q κ
+  p0 := TS.initialPolicy hK Q κ
 
+section Regret
+
+variable (hK : 0 < K)
 variable {Ω : Type*} [MeasurableSpace Ω]
-variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → E × ℝ}
-variable {P : Measure Ω} [IsFiniteMeasure P]
+variable (A : ℕ → Ω → (Fin K)) (R' : ℕ → Ω → E × ℝ)
+variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
+variable (P : Measure Ω) [IsFiniteMeasure P]
 
-def bayesian_regret_le [Nonempty (Fin K)]
+lemma TS.bayesRegret_le [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) :
-    ∃ C > 0, ∀ n : ℕ,
-      (IsBayesAlgEnvSeq.bayesRegret κ A R' P n) ≤ C * √(K * n * Real.log n) :=
+    ∃ C, ∀ n, (IsBayesAlgEnvSeq.bayesRegret κ A R' P n) ≤ C * √(K * n * Real.log n) :=
   sorry
 
-end TS
+end Regret
 
 end Bandits

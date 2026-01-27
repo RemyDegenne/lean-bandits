@@ -182,7 +182,7 @@ lemma hasCondDistrib_prod_right_iff [IsFiniteMeasure μ] [IsFiniteKernel κ] (X 
     rw [← Measure.map_prod_map _ _ (by fun_prop) (by fun_prop), Measure.map_id,
       Measure.map_dirac (by fun_prop)]
 
--- Revise (Claude)
+-- Claude
 lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
     [IsProbabilityMeasure μ] [IsProbabilityMeasure Q]
     (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ where
@@ -206,7 +206,7 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFi
   rw [← h1.map_eq]
   exact h2.condDistrib_eq
 
--- Revise (Claude)
+-- Claude
 lemma HasCondDistrib.of_compProd [IsFiniteMeasure μ] [IsFiniteKernel κ]
     {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsMarkovKernel η]
     (h : HasCondDistrib (fun ω ↦ (Y ω, Z ω)) X (κ ⊗ₖ η) μ) :
@@ -255,7 +255,7 @@ lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
--- Revise (Claude)
+-- Claude
 lemma HasCondDistrib.comp_left [IsFiniteMeasure μ] [IsFiniteKernel κ] {f : γ → β}
     (hf : Measurable f) {Z : α → γ} (h : HasCondDistrib Y Z (κ.comap f hf) μ) :
     HasCondDistrib Y (f ∘ Z) κ μ where

@@ -220,8 +220,7 @@ def priorBestArm [Fintype α] [Encodable α] (Q : Measure E) [IsProbabilityMeasu
     (κ : Kernel (α × E) ℝ) [IsMarkovKernel κ] (alg : Algorithm α ℝ) : Measure α :=
   (bayesTrajMeasure Q κ alg).map (IsBayesAlgEnvSeq.bestArm κ IT.reward)
 
-instance [Fintype α] [Encodable α] [MeasurableSingletonClass α]
-    (Q : Measure E) [IsProbabilityMeasure Q]
+instance [Fintype α] [Encodable α] (Q : Measure E) [IsProbabilityMeasure Q]
     (κ : Kernel (α × E) ℝ) [IsMarkovKernel κ] (alg : Algorithm α ℝ) :
     IsProbabilityMeasure (priorBestArm Q κ alg) :=
   Measure.isProbabilityMeasure_map

@@ -38,7 +38,6 @@ def tsInitPolicy : Measure (Fin K) :=
   IT.priorBestArm Q κ (uniformAlgorithm hK)
 
 instance : IsProbabilityMeasure (tsInitPolicy hK Q κ) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   unfold tsInitPolicy
   infer_instance
 
@@ -49,7 +48,6 @@ noncomputable
 def tsAlgorithm : Algorithm (Fin K) ℝ where
   policy := tsPolicy hK Q κ
   p0 := tsInitPolicy hK Q κ
-
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → E × ℝ}

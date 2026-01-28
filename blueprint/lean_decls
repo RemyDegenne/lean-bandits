@@ -9,6 +9,10 @@ Learning.IsAlgEnvSeq.hasLaw_step_zero
 Learning.IsAlgEnvSeq.hasCondDistrib_step
 Learning.IsAlgEnvSeq.filtration
 Learning.IsAlgEnvSeq.filtrationAction
+Learning.IsAlgEnvSeq.adapted_step
+Learning.IsAlgEnvSeq.adapted_hist
+Learning.IsAlgEnvSeq.adapted_action
+Learning.IsAlgEnvSeq.adapted_reward
 Learning.isAlgEnvSeq_unique
 Learning.IsAlgEnvSeq.condDistrib_reward_stationaryEnv
 Learning.IsAlgEnvSeq.condIndepFun_reward_hist_action
@@ -50,6 +54,8 @@ Learning.rewardByCount
 Learning.rewardByCount_pullCount_add_one_eq_reward
 Learning.sumRewards
 Learning.empMean
+Learning.IsAlgEnvSeq.isPredictable_sumRewards
+Learning.IsAlgEnvSeq.isPredictable_empMean
 Learning.sum_rewardByCount_eq_sumRewards
 Bandits.ArrayModel.probSpace
 Bandits.ArrayModel.arrayMeasure

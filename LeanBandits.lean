@@ -5,7 +5,9 @@ import LeanBandits.Bandit.SumRewards
 import LeanBandits.BanditAlgorithms.AuxSums
 import LeanBandits.BanditAlgorithms.ETC
 import LeanBandits.BanditAlgorithms.RoundRobin
+import LeanBandits.BanditAlgorithms.TS
 import LeanBandits.BanditAlgorithms.UCB
+import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.CondIndepFun
 import LeanBandits.ForMathlib.HasCondDistrib
@@ -20,6 +22,7 @@ import LeanBandits.ForMathlib.StandardBorel
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
 import LeanBandits.SequentialLearning.Algorithm
+import LeanBandits.SequentialLearning.BayesStationaryEnv
 import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.FiniteActions
 import LeanBandits.SequentialLearning.IonescuTulceaSpace

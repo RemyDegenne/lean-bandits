@@ -898,6 +898,48 @@ lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace α] [Nonempty �
   rw [isPredictable_iff_measurable_add_one] at h_predictable
   exact fun n ↦ Measurable.stronglyMeasurable (h_predictable.2 n)
 
+section CopiedFromPR
+
+open Set
+
+theorem _root_.MeasureTheory.StronglyMeasurable.div₀' {α β : Type*}
+    {mα : MeasurableSpace α} [TopologicalSpace β]
+    [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β]
+    [TopologicalSpace.PseudoMetrizableSpace β]
+    [MeasurableSpace β] [BorelSpace β] [MeasurableSingletonClass β]
+    {f g : α → β} (hf : StronglyMeasurable f) (hg : StronglyMeasurable g) :
+    StronglyMeasurable (f / g) := by
+  refine ⟨fun n => hf.approx n / (hg.approx n).restrict {x | g x ≠ 0}, fun x => ?_⟩
+  have : MeasurableSet {x | g x ≠ 0} := ((MeasurableSet.singleton 0).preimage hg.measurable).compl
+  by_cases h : g x = 0
+  · simp_all only [ne_eq, SimpleFunc.coe_div, SimpleFunc.coe_restrict, Pi.div_apply, mem_setOf_eq,
+      not_true_eq_false, not_false_eq_true, indicator_of_notMem, _root_.div_zero]
+    exact tendsto_const_nhds
+  · simp_all only [ne_eq, SimpleFunc.coe_div, SimpleFunc.coe_restrict,
+      Pi.div_apply, mem_setOf_eq, not_false_eq_true, indicator_of_mem]
+    exact (hf.tendsto_approx x).div (hg.tendsto_approx x) h
+
+end CopiedFromPR
+
+lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm α ℝ} {env : Environment α ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : α) :
+    IsPredictable (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) (empMean A R' a) := by
+  unfold empMean
+  refine StronglyMeasurable.div₀' ?_ ?_
+  · exact h.isPredictable_sumRewards a
+  · have h_meas := (isPredictable_pullCount h.measurable_A h.measurable_R a).measurable
+    fun_prop
+
+lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm α ℝ} {env : Environment α ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : α) :
+    Adapted (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R)
+      (fun n ↦ empMean A R' a (n + 1)) := by
+  have h_predictable := h.isPredictable_empMean a
+  rw [isPredictable_iff_measurable_add_one] at h_predictable
+  exact fun n ↦ Measurable.stronglyMeasurable (h_predictable.2 n)
+
 end SumRewards
 
 end Learning

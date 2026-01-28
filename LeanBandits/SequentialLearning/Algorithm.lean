@@ -183,6 +183,36 @@ def IsAlgEnvSeq.filtration (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurab
     rw [← measurable_iff_comap_le]
     exact measurable_hist hA hR' i
 
+lemma IsAlgEnvSeq.measurable_hist_filtration
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (n : ℕ) :
+    Measurable[IsAlgEnvSeq.filtration hA hR' n] (IsAlgEnvSeq.hist A R' n) :=
+  measurable_iff_comap_le.mpr le_rfl
+
+lemma IsAlgEnvSeq.adapted_hist [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α]
+    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R]
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) :
+    Adapted (filtration hA hR') (IsAlgEnvSeq.hist A R') :=
+  fun n ↦ (IsAlgEnvSeq.measurable_hist_filtration hA hR' n).stronglyMeasurable
+
+lemma IsAlgEnvSeq.measurable_step_filtration
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (n : ℕ) :
+    Measurable[IsAlgEnvSeq.filtration hA hR' n] (IsAlgEnvSeq.step A R' n) := by
+  have : step A R' n = (fun h ↦ (h ⟨n, by simp⟩)) ∘ (hist A R' n) := by
+    ext ω : 1
+    simp [hist, step]
+  rw [this]
+  exact measurable_comp_comap _ (by fun_prop)
+
+lemma IsAlgEnvSeq.adapted_step [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
+    [SecondCountableTopology α] [OpensMeasurableSpace α]
+    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
+    [SecondCountableTopology R] [OpensMeasurableSpace R]
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) :
+    Adapted (filtration hA hR') (step A R') :=
+  fun n ↦ (IsAlgEnvSeq.measurable_step_filtration hA hR' n).stronglyMeasurable
+
 lemma IsAlgEnvSeq.measurable_action_filtration
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (n : ℕ) :
     Measurable[IsAlgEnvSeq.filtration hA hR' n] (A n) := by

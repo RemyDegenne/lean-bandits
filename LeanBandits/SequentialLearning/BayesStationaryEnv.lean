@@ -119,8 +119,8 @@ lemma measurable_regret [Encodable α] (h : IsBayesAlgEnvSeq Q κ A R' alg P) (t
   · exact Finset.measurable_sum _ fun s _ ↦
       stronglyMeasurable_id.integral_kernel.measurable.comp (h.measurable_action_env s)
 
-/-- The expected regret according to `P`, implicitly assuming that `IsBayesAlgEnvSeq Q κ A R' alg P`
- for some prior distribution over "environments" `Q` and some algorithm `alg`. -/
+/-- If `IsBayesAlgEnvSeq Q κ A R' alg P`, then `bayesRegret κ A R' P t` is the expected
+regret at time `t` of the algorithm `alg` given a prior distribution over "environments" `Q`. -/
 noncomputable
 def bayesRegret (κ : Kernel (α × E) ℝ) (A : ℕ → Ω → α) (R' : ℕ → Ω → E × ℝ) (P : Measure Ω)
     (t : ℕ) : ℝ :=
@@ -162,13 +162,12 @@ lemma hasCondDistrib_action_env_hist (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n :
 lemma hasCondDistrib_reward_hist_action_env (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
     HasCondDistrib (reward R' (n + 1)) (fun ω ↦ (hist A R' n ω, A (n + 1) ω, env R' ω))
       (κ.prodMkLeft _) P := by
-  let f : (Iic n → α × (E × R)) × α → (Iic n → α × R) × α × E :=
+  let f : (Iic n → α × E × R) × α → (Iic n → α × R) × α × E :=
     fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), p.2, (p.1 ⟨0, by simp⟩).2.1)
   have hf : Measurable f := by fun_prop
   suffices h' : HasCondDistrib (reward R' (n + 1))
       (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
-      ((κ.comap Prod.snd (by fun_prop)).comap f hf) P from by
-    convert h'.comp_left hf
+      ((κ.comap Prod.snd (by fun_prop)).comap f hf) P from h'.comp_left hf
   simpa [bayesStationaryEnv, Kernel.snd_prod] using (h.hasCondDistrib_reward n).snd
 
 end Laws

@@ -61,8 +61,8 @@ variable (P : Measure Ω) [IsFiniteMeasure P]
 lemma TS.bayesRegret_le [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
-    (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) :
-    ∃ C, ∀ n, (IsBayesAlgEnvSeq.bayesRegret κ A R' P n) ≤ C * √(K * n * Real.log n) :=
+    (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc 0 1)) (t : ℕ) :
+    IsBayesAlgEnvSeq.bayesRegret κ A R' P t ≤ 4 * K + 8 * √(K * t * Real.log t) :=
   sorry
 
 end Regret

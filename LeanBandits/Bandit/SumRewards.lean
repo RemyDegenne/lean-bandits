@@ -488,6 +488,38 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 
 section Subgaussian
 
+open Real
+
+lemma superMartingale_exp_sumRewards_sub (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {c : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (t : ℝ) :
+    Supermartingale (fun n ω ↦
+        exp (t * (sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω * (ν a)[id])))
+      (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) P := by
+  refine supermartingale_nat (fun n ↦ ?_) (fun n ↦ ?_) (fun n ↦ ?_)
+  · change StronglyMeasurable[IsAlgEnvSeq.filtration h.measurable_A h.measurable_R _] (exp ∘ _)
+    refine StronglyMeasurable.comp_measurable (by fun_prop) ?_
+    refine Measurable.const_mul ?_ _
+    refine Measurable.sub ?_ ?_
+    · exact (h.adapted_sumRewards_add_one a n).measurable
+    · have := adapted_pullCount_add_one h.measurable_A h.measurable_R a n
+      fun_prop
+  · sorry
+  · simp_rw [sumRewards_sub_pullCount_mul_eq_sum (n := n + 1) (fun a ↦ (ν a)[id]),
+      sum_range_succ (n := n + 1),
+      ← sumRewards_sub_pullCount_mul_eq_sum (n := n) (fun a ↦ (ν a)[id]), mul_add, exp_add]
+    calc P[fun ω ↦ exp (t * (sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω * (ν a)[id])) *
+      exp (t * if A (n + 1) ω = a then R (n + 1) ω - (ν a)[id] else 0)|
+        IsAlgEnvSeq.filtration h.measurable_A h.measurable_R n]
+    _ =ᵐ[P] (fun ω ↦ exp (t * (sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω * (ν a)[id]))) *
+      P[fun ω ↦ exp (t * if A (n + 1) ω = a then R (n + 1) ω - (ν a)[id] else 0)|
+        IsAlgEnvSeq.filtration h.measurable_A h.measurable_R n] := by
+      apply condExp_mul_of_aestronglyMeasurable_left
+      · sorry
+      · sorry
+      · sorry
+    _ ≤ᵐ[P] fun ω ↦ exp (t * (sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω * (ν a)[id])) :=
+    sorry
+
 omit [DecidableEq α] [StandardBorelSpace α] in
 lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (a : α) (m : ℕ) :

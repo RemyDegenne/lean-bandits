@@ -51,6 +51,39 @@ lemma integrable_exp_mul_sub (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) :
   simp_rw [exp_sub]
   exact h_int.div_const _
 
+lemma aux {X : ℕ → Ω → ℝ} {c : ℕ → ℝ≥0} {ℱ : Filtration ℕ mΩ}
+    {p : ℕ → Ω → Prop} [∀ n, DecidablePred (p n)]
+    (h0 : HasSubgaussianMGF (X 0) (c 0) μ)
+    (h_subG : ∀ n, HasCondSubgaussianMGF (ℱ n) (ℱ.le n) (X (n + 1)) (c (n + 1)) μ)
+    (hp : IsPredictable ℱ p) (t : ℝ) (n : ℕ) :
+    ∀ q, 1 < q → MemLp (fun ω ↦ exp (∑ i ∈ Finset.range n,
+      t * if p i ω then (X i ω - c i * t ^ 2 / 2) else 0)) q μ := by
+  induction n with
+  | zero =>
+    simp only [Finset.range_zero, mul_ite, mul_zero, Finset.sum_empty, exp_zero]
+    exact fun _ _ ↦ memLp_const _
+  | succ n hn =>
+    intro q hq
+    simp_rw [Finset.sum_range_succ, exp_add]
+    obtain ⟨p1, p2, hp1, hp2, h_triple⟩ :
+        ∃ p1 p2, 1 < p1 ∧ 1 < p2 ∧ ENNReal.HolderTriple p1 p2 q := by
+      refine ⟨2 * q, 2 * q, ?_, ?_, ?_⟩
+      · sorry
+      · sorry
+      · constructor
+        sorry
+    refine MemLp.mul (q := p2) ?_ (hn p1 hp1)
+    sorry
+
+lemma todo_supermartingale_optional {X : ℕ → Ω → ℝ} {c : ℕ → ℝ≥0} {ℱ : Filtration ℕ mΩ}
+    {p : ℕ → Ω → Prop} [∀ n, DecidablePred (p n)]
+    (h0 : HasSubgaussianMGF (X 0) (c 0) μ)
+    (h_subG : ∀ n, HasCondSubgaussianMGF (ℱ n) (ℱ.le n) (X (n + 1)) (c (n + 1)) μ)
+    (hp : IsPredictable ℱ p) (t : ℝ) :
+    Supermartingale (fun n ω ↦ exp (∑ i ∈ Finset.range n,
+      if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) ℱ μ :=
+  sorry
+
 end HasCondSubgaussianMGF
 
 namespace HasSubgaussianMGF

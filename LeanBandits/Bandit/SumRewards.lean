@@ -17,6 +17,15 @@ namespace Bandits
 
 namespace ArrayModel
 
+lemma sum_Icc_one_eq_sum_range {m : ℕ} {f : ℕ → ℝ} :
+    ∑ i ∈ Icc 1 m, f (i - 1) = ∑ i ∈ range m, f i := by
+  have h : Icc 1 m = (range m).image (· + 1) := by
+    ext x; simp only [mem_Icc, mem_image, mem_range]; constructor
+    · intro ⟨h1, h2⟩; exact ⟨x - 1, by omega, by omega⟩
+    · rintro ⟨a, ha, rfl⟩; omega
+  rw [h, Finset.sum_image (fun _ _ _ _ h => by omega)]
+  simp
+
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [Countable α]
   [StandardBorelSpace α] [Nonempty α]
   {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
@@ -76,15 +85,6 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount' (n : ℕ) :
     rw [measurable_pi_iff]
     refine fun a ↦ Measurable.prod (by fun_prop) ?_
     exact measurable_sum_Icc_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-
-private lemma sum_Icc_one_eq_sum_range {m : ℕ} {f : ℕ → ℝ} :
-    ∑ i ∈ Icc 1 m, f (i - 1) = ∑ i ∈ range m, f i := by
-  have h : Icc 1 m = (range m).image (· + 1) := by
-    ext x; simp only [mem_Icc, mem_image, mem_range]; constructor
-    · intro ⟨h1, h2⟩; exact ⟨x - 1, by omega, by omega⟩
-    · rintro ⟨a, ha, rfl⟩; omega
-  rw [h, Finset.sum_image (fun _ _ _ _ h => by omega)]
-  simp
 
 lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω.1,

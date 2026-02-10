@@ -201,8 +201,7 @@ section Posterior
 
 /-- The posterior on the environment given history equals Mathlib's `posterior` applied to the
 likelihood kernel and prior. This is the measure-theoretic formulation of Bayes' rule. -/
-lemma condDistrib_env_hist_eq_posterior [StandardBorelSpace Ω]
-    (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
+lemma condDistrib_env_hist_eq_posterior (h : IsBayesAlgEnvSeq Q κ A R' alg P) (n : ℕ) :
     condDistrib (env R') (hist A R' n) P
       =ᵐ[P.map (hist A R' n)] posterior (condDistrib (hist A R' n) (env R') P) Q := by
   -- The key is to show P.map (env, hist) = Q ⊗ₘ condDistrib hist env P
@@ -382,8 +381,7 @@ lemma hasCondDistrib_reward_condDistrib (h : IsBayesAlgEnvSeq Q κ A R' alg P) (
   ext s _
   rw [Kernel.sectR_apply, ha, Kernel.comap_apply, Kernel.prodMkLeft_apply, Kernel.comap_apply]
 
-lemma condDistrib_traj_isAlgEnvSeq [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ A R' alg P) :
+lemma condDistrib_traj_isAlgEnvSeq (h : IsBayesAlgEnvSeq Q κ A R' alg P) :
     ∀ᵐ e ∂(P.map (env R')),
       IsAlgEnvSeq IT.action IT.reward alg
         (stationaryEnv (κ.comap (·, e) (by fun_prop)))

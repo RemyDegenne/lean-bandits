@@ -401,7 +401,7 @@ lemma streamMeasure_concentration_ge_delta {α : Type*} [MeasurableSpace α]
       rw [mul_div_assoc, mul_div_cancel₀ _ (by positivity : (2 * k : ℝ) ≠ 0)]
       rw [Real.exp_log (by positivity), one_div, inv_inv]
 
-lemma prob_concentration_single_delta_cond [StandardBorelSpace Ω] [Nonempty Ω] [Nonempty (Fin K)]
+lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc 0 1)
@@ -536,7 +536,7 @@ lemma prob_concentration_single_delta_cond [StandardBorelSpace Ω] [Nonempty Ω]
         rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast s, ← ENNReal.ofReal_mul (Nat.cast_nonneg s)]
         congr 1; ring
 
-lemma prob_concentration_single_delta [StandardBorelSpace Ω] [Nonempty Ω] [Nonempty (Fin K)]
+lemma prob_concentration_single_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc 0 1)
@@ -595,7 +595,7 @@ lemma prob_concentration_single_delta [StandardBorelSpace Ω] [Nonempty Ω] [Non
         rw [lintegral_const, Measure.map_apply h.measurable_env MeasurableSet.univ]
         simp [measure_univ]
 
-lemma prob_concentration_fail_delta [StandardBorelSpace Ω] [Nonempty Ω] [Nonempty (Fin K)]
+lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ A R' (tsAlgorithm hK Q κ) P)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) 1 (κ (a, e)))
     (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc 0 1)

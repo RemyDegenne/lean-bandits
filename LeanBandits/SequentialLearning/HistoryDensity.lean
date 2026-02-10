@@ -48,9 +48,8 @@ lemma uniformAlgorithm_policy_pos (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fi
 
 /-- Any measure on a finite type is absolutely continuous wrt any measure giving positive mass
     to all singletons. -/
-lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} [MeasurableSpace α]
-    [MeasurableSingletonClass α] [Finite α]
-    {μ ν : Measure α} [IsFiniteMeasure μ]
+lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} {mα : MeasurableSpace α}
+    {μ ν : Measure α}
     (hν : ∀ a : α, ν {a} > 0) : μ ≪ ν := by
   intro s hs
   have h_empty : s = ∅ := by
@@ -62,8 +61,7 @@ lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} [MeasurableSpace
 
 /-- `rnDeriv` is pointwise finite when the reference measure has full support on singletons. -/
 lemma rnDeriv_ne_top_of_forall_singleton_pos {α : Type*} [MeasurableSpace α]
-    [MeasurableSingletonClass α] [Finite α]
-    {μ ν : Measure α} [IsFiniteMeasure μ] [IsFiniteMeasure ν]
+    {μ ν : Measure α} [SigmaFinite μ]
     (hν : ∀ a, ν {a} > 0) (a : α) : μ.rnDeriv ν a ≠ ⊤ := by
   intro h_eq
   have h_mem : a ∈ {x | ¬ (μ.rnDeriv ν x < ⊤)} := by simp [h_eq]
@@ -76,7 +74,6 @@ lemma rnDeriv_ne_top_of_forall_singleton_pos {α : Type*} [MeasurableSpace α]
     on singletons. -/
 lemma kernel_rnDeriv_ne_top_of_forall_singleton_pos
     {α' β' : Type*} [MeasurableSpace α'] [MeasurableSpace β']
-    [MeasurableSingletonClass β'] [Finite β']
     [MeasurableSpace.CountableOrCountablyGenerated α' β']
     {κ η : Kernel α' β'} [IsFiniteKernel κ] [IsFiniteKernel η]
     (hη : ∀ a b, η a {b} > 0) (a : α') (b : β') :

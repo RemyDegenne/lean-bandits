@@ -25,5 +25,6 @@ import LeanBandits.SequentialLearning.Algorithm
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.FiniteActions
+import LeanBandits.SequentialLearning.HistoryDensity
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 import LeanBandits.SequentialLearning.StationaryEnv

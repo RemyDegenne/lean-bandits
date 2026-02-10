@@ -1100,9 +1100,9 @@ lemma TS.bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
           nlinarith [show (1 : ℝ) ≤ K from Nat.one_le_cast.mpr (Nat.one_le_of_lt hK)]
   -- For t ≥ 2, we have δ = 1/t² < 1
   · have ht2 : 2 ≤ t := by omega
-    have htpos : (0 : ℝ) < t := Nat.cast_pos.mpr (Nat.pos_of_ne_zero ht)
+    have htpos : (0 : ℝ) < t := by positivity
     have _ht1 : (1 : ℝ) ≤ t := Nat.one_le_cast.mpr (Nat.pos_of_ne_zero ht)
-    have hδ : (0 : ℝ) < 1 / (t : ℝ) ^ 2 := div_pos one_pos (pow_pos htpos 2)
+    have hδ : (0 : ℝ) < 1 / (t : ℝ) ^ 2 := by positivity
     have hδ1 : 1 / (t : ℝ) ^ 2 < 1 := by
       rw [div_lt_one (pow_pos htpos 2)]
       have ht2_real : (2 : ℝ) ≤ t := Nat.ofNat_le_cast.mpr ht2

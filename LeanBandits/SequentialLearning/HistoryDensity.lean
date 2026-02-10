@@ -32,20 +32,6 @@ section UniformFullSupport
 
 variable {K : ℕ} (hK : 0 < K)
 
-/-- The uniform algorithm gives positive probability to every action. -/
-lemma uniformAlgorithm_p0_pos (a : Fin K) :
-    (Bandits.uniformAlgorithm hK).p0 {a} > 0 := by
-  simp only [Bandits.uniformAlgorithm, uniformOn]
-  refine cond_pos_of_inter_ne_zero MeasurableSet.univ ?_
-  simp only [Set.univ_inter, Measure.count_singleton, ne_eq, one_ne_zero, not_false_eq_true]
-
-/-- The uniform algorithm's policy gives positive probability to every action. -/
-lemma uniformAlgorithm_policy_pos (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) :
-    (Bandits.uniformAlgorithm hK).policy n h {a} > 0 := by
-  simp only [Bandits.uniformAlgorithm, Kernel.const_apply, uniformOn]
-  refine cond_pos_of_inter_ne_zero MeasurableSet.univ ?_
-  simp only [Set.univ_inter, Measure.count_singleton, ne_eq, one_ne_zero, not_false_eq_true]
-
 /-- Any measure on a finite type is absolutely continuous wrt any measure giving positive mass
     to all singletons. -/
 lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} {mα : MeasurableSpace α}
@@ -193,7 +179,7 @@ private lemma absolutelyContinuous_stepKernel_stationary
     simp only [Kernel.compProd_apply hs, Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
   rw [h1, h2]
   exact Measure.AbsolutelyContinuous.compProd_left
-    (absolutelyContinuous_of_forall_singleton_pos (uniformAlgorithm_policy_pos hK n h)) _
+    (absolutelyContinuous_of_forall_singleton_pos (Bandits.uniformAlgorithm_policy_pos h)) _
 
 -- `compProd` unfolding requires extra heartbeats
 /-- The history distribution at time `n + 1` decomposes as a compProd of the history at time `n`
@@ -235,8 +221,7 @@ private lemma absolutelyContinuous_map_hist_stationary
       Kernel.trajMeasure_map_frestrictLe, Kernel.partialTraj_self,
       Measure.id_comp, stationaryEnv_ν0]
     exact (Measure.AbsolutelyContinuous.compProd_left
-      (absolutelyContinuous_of_forall_singleton_pos
-        (uniformAlgorithm_p0_pos hK)) _).map
+      (absolutelyContinuous_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos) _).map
       (MeasurableEquiv.piUnique _).symm.measurable
   | succ n ih =>
     rw [map_hist_succ_eq_compProd_map, map_hist_succ_eq_compProd_map]
@@ -337,10 +322,10 @@ private lemma exists_density_independent_of_env
     set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
     refine ⟨(alg.p0.rnDeriv unif.p0 ∘ Prod.fst) ∘ e,
       (Measure.measurable_rnDeriv _ _).comp (measurable_fst.comp e.measurable),
-      fun h => rnDeriv_ne_top_of_forall_singleton_pos (uniformAlgorithm_p0_pos hK) _, ?_⟩
+      fun h => rnDeriv_ne_top_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos _, ?_⟩
     intro ν _
     have h_ac : alg.p0 ≪ unif.p0 :=
-      absolutelyContinuous_of_forall_singleton_pos (uniformAlgorithm_p0_pos hK)
+      absolutelyContinuous_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos
     simp only [IT.hist_eq_frestrictLe, trajMeasure,
       Kernel.trajMeasure_map_frestrictLe, Kernel.partialTraj_self,
       Measure.id_comp, stationaryEnv_ν0]
@@ -361,7 +346,7 @@ private lemma exists_density_independent_of_env
     · intro h
       exact ENNReal.mul_ne_top (hρ_n_ne_top _)
         (kernel_rnDeriv_ne_top_of_forall_singleton_pos
-          (fun h' a => uniformAlgorithm_policy_pos hK n h' a) _ _)
+          (fun h' a => Bandits.uniformAlgorithm_policy_pos h' a) _ _)
     · intro ν _inst
       have h_step : stepKernel alg (stationaryEnv ν) n =
           (stepKernel unif (stationaryEnv ν) n).withDensity σ := by
@@ -379,7 +364,7 @@ private lemma exists_density_independent_of_env
             (Kernel.rnDeriv (alg.policy n) (unif.policy n) h) = alg.policy n h := by
           rw [← Kernel.withDensity_apply _ (Kernel.measurable_rnDeriv _ _)]
           exact Kernel.withDensity_rnDeriv_eq (κ := alg.policy n) (η := unif.policy n)
-            (absolutelyContinuous_of_forall_singleton_pos (uniformAlgorithm_policy_pos hK n h))
+            (absolutelyContinuous_of_forall_singleton_pos (Bandits.uniformAlgorithm_policy_pos h))
         rw [h_alg, h_unif, ← h_wd]
         haveI : SFinite ((unif.policy n h).withDensity
             (Kernel.rnDeriv (alg.policy n) (unif.policy n) h)) := by

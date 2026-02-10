@@ -26,17 +26,14 @@ open scoped ENNReal NNReal
 
 namespace Learning
 
-variable {K : ℕ}
+variable {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {μ ν : Measure α} {K : ℕ}
 
 section UniformFullSupport
 
-variable {K : ℕ} (hK : 0 < K)
+variable (hK : 0 < K)
 
-/-- Any measure on a finite type is absolutely continuous wrt any measure giving positive mass
-    to all singletons. -/
-lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} {mα : MeasurableSpace α}
-    {μ ν : Measure α}
-    (hν : ∀ a : α, ν {a} > 0) : μ ≪ ν := by
+/-- Any measure is absolutely continuous wrt any measure giving positive mass to all singletons. -/
+lemma absolutelyContinuous_of_forall_singleton_pos (hν : ∀ a : α, ν {a} > 0) : μ ≪ ν := by
   intro s hs
   have h_empty : s = ∅ := by
     by_contra h
@@ -46,8 +43,7 @@ lemma absolutelyContinuous_of_forall_singleton_pos {α : Type*} {mα : Measurabl
   rw [h_empty, measure_empty]
 
 /-- `rnDeriv` is pointwise finite when the reference measure has full support on singletons. -/
-lemma rnDeriv_ne_top_of_forall_singleton_pos {α : Type*} [MeasurableSpace α]
-    {μ ν : Measure α} [SigmaFinite μ]
+lemma rnDeriv_ne_top_of_forall_singleton_pos [SigmaFinite μ]
     (hν : ∀ a, ν {a} > 0) (a : α) : μ.rnDeriv ν a ≠ ⊤ := by
   intro h_eq
   have h_mem : a ∈ {x | ¬ (μ.rnDeriv ν x < ⊤)} := by simp [h_eq]
@@ -59,10 +55,9 @@ lemma rnDeriv_ne_top_of_forall_singleton_pos {α : Type*} [MeasurableSpace α]
 /-- Kernel `rnDeriv` is pointwise finite when the reference kernel has full support
     on singletons. -/
 lemma kernel_rnDeriv_ne_top_of_forall_singleton_pos
-    {α' β' : Type*} [MeasurableSpace α'] [MeasurableSpace β']
-    [MeasurableSpace.CountableOrCountablyGenerated α' β']
-    {κ η : Kernel α' β'} [IsFiniteKernel κ] [IsFiniteKernel η]
-    (hη : ∀ a b, η a {b} > 0) (a : α') (b : β') :
+    [MeasurableSpace.CountableOrCountablyGenerated α β]
+    {κ η : Kernel α β} [IsFiniteKernel κ] [IsFiniteKernel η]
+    (hη : ∀ a b, η a {b} > 0) (a : α) (b : β) :
     Kernel.rnDeriv κ η a b ≠ ⊤ := by
   intro h_eq
   have h_mem : b ∈ {x | ¬ (Kernel.rnDeriv κ η a x < ⊤)} := by simp [h_eq]
@@ -75,13 +70,11 @@ end UniformFullSupport
 
 section WithDensityHelpers
 
-variable {α' β' : Type*} {mα' : MeasurableSpace α'} {mβ' : MeasurableSpace β'}
-
 /-- Composing `withDensity` on the measure side of a `compProd`:
 `(μ.withDensity f) ⊗ₘ κ = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst)`. -/
 private lemma withDensity_compProd_left
-    {μ : Measure α'} [SFinite μ] {κ : Kernel α' β'} [IsSFiniteKernel κ]
-    {f : α' → ENNReal} (hf : Measurable f) [SFinite (μ.withDensity f)] :
+    {μ : Measure α} [SFinite μ] {κ : Kernel α β} [IsSFiniteKernel κ]
+    {f : α → ℝ≥0∞} (hf : Measurable f) [SFinite (μ.withDensity f)] :
     (μ.withDensity f) ⊗ₘ κ = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst) := by
   ext s hs
   rw [Measure.compProd_apply hs, withDensity_apply _ hs,
@@ -98,7 +91,7 @@ private lemma withDensity_compProd_left
 /-- Mapping a `withDensity` through `MeasurableEquiv.symm`:
 `(μ.withDensity f).map e.symm = (μ.map e.symm).withDensity (f ∘ e)`. -/
 private lemma withDensity_map_equiv_symm
-    {μ : Measure β'} {e : α' ≃ᵐ β'} {f : β' → ENNReal} (hf : Measurable f) :
+    {μ : Measure β} {e : α ≃ᵐ β} {f : β → ℝ≥0∞} (hf : Measurable f) :
     (μ.withDensity f).map e.symm = (μ.map e.symm).withDensity (f ∘ e) := by
   ext s hs
   rw [Measure.map_apply e.symm.measurable hs,
@@ -109,8 +102,8 @@ private lemma withDensity_map_equiv_symm
 
 /-- Mapping a `withDensity` through a `MeasurableEquiv` from the snd component. -/
 private lemma map_swap_withDensity_fst
-    {μ : Measure (α' × β')} [SFinite μ]
-    {f : β' → ENNReal} (hf : Measurable f) :
+    {μ : Measure (α × β)} [SFinite μ]
+    {f : β → ℝ≥0∞} (hf : Measurable f) :
     (μ.withDensity (f ∘ Prod.snd)).map Prod.swap
       = (μ.map Prod.swap).withDensity (f ∘ Prod.fst) := by
   ext s hs
@@ -121,7 +114,7 @@ private lemma map_swap_withDensity_fst
 /-- `(μ.withDensity (h ∘ g)).map g = (μ.map g).withDensity h`. -/
 private lemma withDensity_map_eq'
     {γ' : Type*} {mγ' : MeasurableSpace γ'}
-    {μ : Measure α'} {g : α' → γ'} {h : γ' → ENNReal}
+    {μ : Measure α} {g : α → γ'} {h : γ' → ℝ≥0∞}
     (hg : Measurable g) (hh : Measurable h) :
     (μ.withDensity (h ∘ g)).map g = (μ.map g).withDensity h := by
   ext s hs
@@ -132,13 +125,13 @@ private lemma withDensity_map_eq'
 /-- `(κ.withDensity (fun _ => ρ)) ∘ₘ Q = (κ ∘ₘ Q).withDensity ρ`. -/
 private lemma comp_withDensity_const
     {γ' : Type*} {mγ' : MeasurableSpace γ'}
-    {Q : Measure α'} [SFinite Q]
-    {κ : Kernel α' γ'} [IsSFiniteKernel κ]
-    {ρ : γ' → ENNReal} (hρ : Measurable ρ)
+    {Q : Measure α} [SFinite Q]
+    {κ : Kernel α γ'} [IsSFiniteKernel κ]
+    {ρ : γ' → ℝ≥0∞} (hρ : Measurable ρ)
     [IsSFiniteKernel (κ.withDensity (fun _ => ρ))] :
     (κ.withDensity (fun _ => ρ)) ∘ₘ Q = (κ ∘ₘ Q).withDensity ρ := by
   rw [← Measure.snd_compProd Q (κ.withDensity (fun _ => ρ)),
-    Measure.compProd_withDensity (show Measurable (Function.uncurry (fun (_ : α') => ρ)) from
+    Measure.compProd_withDensity (show Measurable (Function.uncurry (fun (_ : α) => ρ)) from
       hρ.comp measurable_snd),
     ← Measure.snd_compProd Q κ, Measure.snd, Measure.snd]
   exact withDensity_map_eq' measurable_snd hρ
@@ -146,9 +139,9 @@ private lemma comp_withDensity_const
 /-- `(μ.withDensity f) ⊗ₘ (κ.withDensity g) = (μ ⊗ₘ κ).withDensity (f ∘ fst * uncurry g)`. -/
 private lemma withDensity_compProd_withDensity
     {γ' : Type*} {mγ' : MeasurableSpace γ'}
-    {μ : Measure α'} [SFinite μ]
-    {κ : Kernel α' γ'} [IsSFiniteKernel κ]
-    {f : α' → ENNReal} {g : α' → γ' → ENNReal}
+    {μ : Measure α} [SFinite μ]
+    {κ : Kernel α γ'} [IsSFiniteKernel κ]
+    {f : α → ℝ≥0∞} {g : α → γ' → ℝ≥0∞}
     (hf : Measurable f) (hg : Measurable (Function.uncurry g))
     [SFinite (μ.withDensity f)] [IsSFiniteKernel (κ.withDensity g)] :
     (μ.withDensity f) ⊗ₘ (κ.withDensity g)
@@ -160,7 +153,7 @@ end WithDensityHelpers
 
 section AbsolutelyContinuousHist
 
-variable {K : ℕ} [Nonempty (Fin K)]
+variable [Nonempty (Fin K)]
 
 omit [Nonempty (Fin K)] in
 /-- The step kernel for a stationary environment decomposes as a product of the policy
@@ -277,7 +270,7 @@ private theorem posterior_eq_of_withDensity_ae_eq
     [StandardBorelSpace E'] [Nonempty E']
     {Q : Measure E'} [IsFiniteMeasure Q]
     {κ₁ κ₂ : Kernel E' X'} [IsFiniteKernel κ₁] [IsFiniteKernel κ₂]
-    {ρ : X' → ENNReal} (hρ : Measurable ρ)
+    {ρ : X' → ℝ≥0∞} (hρ : Measurable ρ)
     [IsSFiniteKernel (κ₂.withDensity (fun _ => ρ))]
     [SFinite ((κ₂ ∘ₘ Q).withDensity ρ)]
     (h_ae : κ₁ =ᵐ[Q] κ₂.withDensity (fun _ => ρ)) :
@@ -311,7 +304,7 @@ under the uniform algorithm, with a density that does not depend on the reward k
 This is the key factorization property: the density ratio only involves action probabilities. -/
 private lemma exists_density_independent_of_env
     (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) (t : ℕ) :
-    ∃ ρ : (Iic t → Fin K × ℝ) → ENNReal, Measurable ρ ∧ (∀ h, ρ h ≠ ⊤) ∧
+    ∃ ρ : (Iic t → Fin K × ℝ) → ℝ≥0∞, Measurable ρ ∧ (∀ h, ρ h ≠ ⊤) ∧
     ∀ (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν],
     (trajMeasure alg (stationaryEnv ν)).map (IT.hist t) =
     ((trajMeasure (Bandits.uniformAlgorithm hK) (stationaryEnv ν)).map
@@ -335,7 +328,7 @@ private lemma exists_density_independent_of_env
       ((Measure.measurable_rnDeriv _ _).comp measurable_fst)
   | succ n ih =>
     obtain ⟨ρ_n, hρ_n_meas, hρ_n_ne_top, hρ_n⟩ := ih
-    let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ENNReal :=
+    let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ℝ≥0∞ :=
       fun h ar => Kernel.rnDeriv (alg.policy n) (unif.policy n) h ar.1
     let e := MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
     have hσ_meas : Measurable (Function.uncurry σ) :=

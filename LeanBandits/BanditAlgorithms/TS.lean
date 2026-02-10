@@ -8,6 +8,7 @@ import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 import LeanBandits.SequentialLearning.HistoryDensity
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! # The Thompson Sampling Algorithm -/
 

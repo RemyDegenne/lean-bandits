@@ -19,7 +19,7 @@ noncomputable
 def uniformAlgorithm (hK : 0 < K) : Algorithm (Fin K) ℝ :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   have : IsProbabilityMeasure (uniformOn (Set.univ : Set (Fin K))) :=
-    uniformOn_isProbabilityMeasure Set.finite_univ Set.univ_nonempty
+    isProbabilityMeasure_uniformOn Set.finite_univ Set.univ_nonempty
   { policy _ := Kernel.const _ (uniformOn Set.univ)
     p0 := uniformOn Set.univ }
 

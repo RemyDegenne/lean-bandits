@@ -266,9 +266,10 @@ lemma stepsUntil_zero_of_ne (hka : A 0 ω ≠ a) : stepsUntil A a 0 ω = 0 := by
 
 lemma stepsUntil_zero_of_eq (hka : A 0 ω = a) : stepsUntil A a 0 ω = ⊤ := by
   rw [stepsUntil_eq_top_iff]
-  suffices 0 < pullCount A a 1 ω by
-    intro n; exact (this.trans_le (monotone_pullCount _ _ (by omega))).ne'
-  rw [← hka, ← zero_add 1, pullCount_action_eq_pullCount_add_one]; simp
+  suffices 0 < pullCount A a 1 ω from
+    fun _ ↦ (this.trans_le (monotone_pullCount _ _ (by omega))).ne'
+  rw [← hka, ← zero_add 1, pullCount_action_eq_pullCount_add_one]
+  simp
 
 lemma stepsUntil_eq_dite (a : α) (m : ℕ) (ω : Ω)
     [Decidable (∃ s, pullCount A a (s + 1) ω = m)] :
@@ -749,6 +750,7 @@ noncomputable
 def empMean' (n : ℕ) (h : Iic n → α × ℝ) (a : α) :=
   (sumRewards' n h a) / (pullCount' n h a)
 
+@[simp]
 lemma sumRewards_zero {R' : ℕ → Ω → ℝ} : sumRewards A R' a 0 = 0 := by ext; simp [sumRewards]
 
 lemma sumRewards_add_one {R' : ℕ → Ω → ℝ} :
@@ -772,7 +774,6 @@ lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ} (hst :
     simp only [sumRewards, sum_range_succ, if_neg hne, add_zero]
     exact ih h_eq_t
 
-@[simp]
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :
     sumRewards A R' a t ω = pullCount A a t ω * empMean A R' a t ω := by unfold empMean; field_simp

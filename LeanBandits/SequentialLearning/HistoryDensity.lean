@@ -70,11 +70,12 @@ end UniformFullSupport
 
 section WithDensityHelpers
 
+variable {γ : Type*} {mγ : MeasurableSpace γ}
+
 /-- Composing `withDensity` on the measure side of a `compProd`:
 `(μ.withDensity f) ⊗ₘ κ = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst)`. -/
-private lemma withDensity_compProd_left
-    {μ : Measure α} [SFinite μ] {κ : Kernel α β} [IsSFiniteKernel κ]
-    {f : α → ℝ≥0∞} (hf : Measurable f) [SFinite (μ.withDensity f)] :
+private lemma withDensity_compProd_left [SFinite μ] {κ : Kernel α β} [IsSFiniteKernel κ]
+    {f : α → ℝ≥0∞} (hf : Measurable f) :
     (μ.withDensity f) ⊗ₘ κ = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst) := by
   ext s hs
   rw [Measure.compProd_apply hs, withDensity_apply _ hs,
@@ -82,9 +83,11 @@ private lemma withDensity_compProd_left
       (Kernel.measurable_kernel_prodMk_left hs).aemeasurable,
     ← lintegral_indicator hs,
     Measure.lintegral_compProd ((hf.comp measurable_fst).indicator hs)]
-  congr 1; ext a; simp_rw [Pi.mul_apply]
-  have : (fun b => s.indicator (f ∘ Prod.fst) (a, b)) =
-      fun b => (Prod.mk a ⁻¹' s).indicator (fun _ => f a) b := by
+  congr 1
+  ext a
+  simp_rw [Pi.mul_apply]
+  have : (fun b ↦ s.indicator (f ∘ Prod.fst) (a, b)) =
+      fun b ↦ (Prod.mk a ⁻¹' s).indicator (fun _ ↦ f a) b := by
     ext b; simp only [Function.comp, Set.indicator, Set.mem_preimage]; rfl
   rw [this, lintegral_indicator_const (hs.preimage (by fun_prop))]
 
@@ -113,8 +116,7 @@ private lemma map_swap_withDensity_fst
 
 /-- `(μ.withDensity (h ∘ g)).map g = (μ.map g).withDensity h`. -/
 private lemma withDensity_map_eq'
-    {γ' : Type*} {mγ' : MeasurableSpace γ'}
-    {μ : Measure α} {g : α → γ'} {h : γ' → ℝ≥0∞}
+    {μ : Measure α} {g : α → γ} {h : γ → ℝ≥0∞}
     (hg : Measurable g) (hh : Measurable h) :
     (μ.withDensity (h ∘ g)).map g = (μ.map g).withDensity h := by
   ext s hs
@@ -124,10 +126,9 @@ private lemma withDensity_map_eq'
 
 /-- `(κ.withDensity (fun _ => ρ)) ∘ₘ Q = (κ ∘ₘ Q).withDensity ρ`. -/
 private lemma comp_withDensity_const
-    {γ' : Type*} {mγ' : MeasurableSpace γ'}
     {Q : Measure α} [SFinite Q]
-    {κ : Kernel α γ'} [IsSFiniteKernel κ]
-    {ρ : γ' → ℝ≥0∞} (hρ : Measurable ρ)
+    {κ : Kernel α γ} [IsSFiniteKernel κ]
+    {ρ : γ → ℝ≥0∞} (hρ : Measurable ρ)
     [IsSFiniteKernel (κ.withDensity (fun _ => ρ))] :
     (κ.withDensity (fun _ => ρ)) ∘ₘ Q = (κ ∘ₘ Q).withDensity ρ := by
   rw [← Measure.snd_compProd Q (κ.withDensity (fun _ => ρ)),
@@ -137,15 +138,13 @@ private lemma comp_withDensity_const
   exact withDensity_map_eq' measurable_snd hρ
 
 /-- `(μ.withDensity f) ⊗ₘ (κ.withDensity g) = (μ ⊗ₘ κ).withDensity (f ∘ fst * uncurry g)`. -/
-private lemma withDensity_compProd_withDensity
-    {γ' : Type*} {mγ' : MeasurableSpace γ'}
-    {μ : Measure α} [SFinite μ]
-    {κ : Kernel α γ'} [IsSFiniteKernel κ]
-    {f : α → ℝ≥0∞} {g : α → γ' → ℝ≥0∞}
+private lemma withDensity_compProd_withDensity [SFinite μ]
+    {κ : Kernel α γ} [IsSFiniteKernel κ]
+    {f : α → ℝ≥0∞} {g : α → γ → ℝ≥0∞}
     (hf : Measurable f) (hg : Measurable (Function.uncurry g))
-    [SFinite (μ.withDensity f)] [IsSFiniteKernel (κ.withDensity g)] :
-    (μ.withDensity f) ⊗ₘ (κ.withDensity g)
-      = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst * Function.uncurry g) := by
+    [IsSFiniteKernel (κ.withDensity g)] :
+    (μ.withDensity f) ⊗ₘ (κ.withDensity g) =
+      (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst * Function.uncurry g) := by
   rw [Measure.compProd_withDensity hg, withDensity_compProd_left hf]
   exact (withDensity_mul _ (hf.comp measurable_fst) hg).symm
 

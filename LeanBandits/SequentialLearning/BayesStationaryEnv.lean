@@ -5,7 +5,6 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.Bandit.Regret
-import LeanBandits.SequentialLearning.IonescuTulceaSpace
 import LeanBandits.SequentialLearning.StationaryEnv
 import Mathlib.Probability.Kernel.Posterior
 
@@ -40,8 +39,8 @@ def IsBayesAlgEnvSeq
     [StandardBorelSpace R] [Nonempty R]
     (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (α × E) R) [IsMarkovKernel κ]
     (A : ℕ → Ω → α) (R' : ℕ → Ω → E × R) (alg : Algorithm α R)
-    (P : Measure Ω) [IsFiniteMeasure P]
-    := IsAlgEnvSeq A R' (alg.prod_left E) (bayesStationaryEnv Q κ) P
+    (P : Measure Ω) [IsFiniteMeasure P] :=
+  IsAlgEnvSeq A R' (alg.prod_left E) (bayesStationaryEnv Q κ) P
 
 namespace IsBayesAlgEnvSeq
 

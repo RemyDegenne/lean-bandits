@@ -764,15 +764,14 @@ lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ} (hst :
   induction t, hst using Nat.le_induction with
   | base => rfl
   | succ t hst' ih =>
-    have h_mono : pullCount A a s ω ≤ pullCount A a t ω := pullCount_mono a hst' ω
     have h_mono' : pullCount A a t ω ≤ pullCount A a (t + 1) ω := pullCount_mono a (Nat.le_succ t) ω
-    have h_eq_t : pullCount A a s ω = pullCount A a t ω := le_antisymm h_mono (h_eq ▸ h_mono')
+    have h_eq_t : pullCount A a s ω = pullCount A a t ω :=
+      le_antisymm (pullCount_mono a hst' ω) (h_eq ▸ h_mono')
     have hne : A t ω ≠ a := by
       intro ha
       have h1 := ha ▸ pullCount_action_eq_pullCount_add_one (A := A) t ω
       omega
-    simp only [sumRewards, sum_range_succ, if_neg hne, add_zero]
-    exact ih h_eq_t
+    rw [sumRewards_add_one, if_neg hne, add_zero, ih h_eq_t]
 
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :

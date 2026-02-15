@@ -405,8 +405,7 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
       P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
-  ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp
-    (u := fun f ↦ f a) (by fun_prop)).map_eq
+  ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]

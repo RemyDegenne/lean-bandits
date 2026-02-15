@@ -266,8 +266,7 @@ lemma stepsUntil_zero_of_ne (hka : A 0 ω ≠ a) : stepsUntil A a 0 ω = 0 := by
 
 lemma stepsUntil_zero_of_eq (hka : A 0 ω = a) : stepsUntil A a 0 ω = ⊤ := by
   rw [stepsUntil_eq_top_iff]
-  suffices 0 < pullCount A a 1 ω from
-    fun _ ↦ (this.trans_le (monotone_pullCount _ _ (by omega))).ne'
+  suffices 0 < pullCount A a 1 ω from fun _ ↦ (this.trans_le (monotone_pullCount _ _ (by lia))).ne'
   rw [← hka, ← zero_add 1, pullCount_action_eq_pullCount_add_one]
   simp
 
@@ -758,9 +757,12 @@ lemma sumRewards_add_one {R' : ℕ → Ω → ℝ} :
   unfold sumRewards
   rw [sum_range_succ]
 
-lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ} (hst : s ≤ t)
+lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ}
     (h_eq : pullCount A a s ω = pullCount A a t ω) :
     sumRewards A R' a s ω = sumRewards A R' a t ω := by
+  wlog hst : s ≤ t
+  · have hts : t ≤ s := by lia
+    exact (this h_eq.symm hts).symm
   induction t, hst using Nat.le_induction with
   | base => rfl
   | succ t hst' ih =>
@@ -770,7 +772,7 @@ lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ} (hst :
     have hne : A t ω ≠ a := by
       intro ha
       have h1 := ha ▸ pullCount_action_eq_pullCount_add_one (A := A) t ω
-      omega
+      lia
     rw [sumRewards_add_one, if_neg hne, add_zero, ih h_eq_t]
 
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}

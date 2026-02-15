@@ -17,6 +17,15 @@ namespace Bandits
 
 namespace ArrayModel
 
+lemma sum_Icc_one_eq_sum_range {m : ℕ} {f : ℕ → ℝ} :
+    ∑ i ∈ Icc 1 m, f (i - 1) = ∑ i ∈ range m, f i := by
+  have h : Icc 1 m = (range m).image (· + 1) := by
+    ext x; simp only [mem_Icc, mem_image, mem_range]; constructor
+    · intro ⟨h1, h2⟩; exact ⟨x - 1, by omega, by omega⟩
+    · rintro ⟨a, ha, rfl⟩; omega
+  rw [h, Finset.sum_image (fun _ _ _ _ h => by omega)]
+  simp
+
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [Countable α]
   [StandardBorelSpace α] [Nonempty α]
   {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
@@ -88,19 +97,7 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
   · infer_instance
   ext a : 1
   congr 1
-  let e : Icc 1 (pullCount A a n ω) ≃ range (pullCount A a n ω) :=
-  { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
-    invFun x := ⟨x + 1, by
-      have h := x.2
-      simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
-      simp only [mem_range] at h
-      grind⟩
-    left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
-    right_inv x := by have h := x.2; grind }
-  rw [← sum_coe_sort (Icc 1 (pullCount A a n ω)), ← sum_coe_sort (range (pullCount A a n ω)),
-    sum_equiv e]
-  · simp
-  · simp [e]
+  exact sum_Icc_one_eq_sum_range.symm
 
 lemma identDistrib_pullCount_prod_sumRewards (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
@@ -363,38 +360,8 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) := by
-  have hA := h1.measurable_A
-  have hR := h1.measurable_R
-  have hA2 := h2.measurable_A
-  have hR2 := h2.measurable_R
-  have h_unique := isAlgEnvSeq_unique h1 h2
-  let f := fun p : ℕ → α × ℝ ↦ (∑ i ∈ range n, if (p i).1 = a then 1 else 0,
-    ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0)
-  have hf : Measurable f := by
-    refine Measurable.prod ?_ ?_
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-  have h_eq_comp : (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      = f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
-    ext ω : 1
-    rw [pullCount_eq_comp (R := R), sumRewards_eq_comp]
-    grind
-  have h_eq_comp2 : (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω))
-      = f ∘ (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
-    ext ω : 1
-    rw [pullCount_eq_comp (R := R₂), sumRewards_eq_comp]
-    grind
-  rw [h_eq_comp, h_eq_comp2, ← Measure.map_map hf, h_unique, Measure.map_map hf,
-    ← h_eq_comp2]
-  · rw [measurable_pi_iff]
-    exact fun n ↦ Measurable.prodMk (hA2 n) (hR2 n)
-  · rw [measurable_pi_iff]
-    exact fun n ↦ Measurable.prodMk (hA n) (hR n)
+      P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
+  ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]

@@ -760,7 +760,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
                 refine ⟨h_eq, ?_⟩
                 have h_pc_eq : pullCount IT.action a s ω = pullCount IT.action a (n - 1) ω :=
                   hpc.symm ▸ h_eq.symm
-                rw [← sumRewards_eq_of_pullCount_eq hs' h_pc_eq]
+                rw [← sumRewards_eq_of_pullCount_eq h_pc_eq]
                 exact hB
               · right
                 exact ⟨by omega, s, hs, hpc, hB⟩

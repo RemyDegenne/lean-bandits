@@ -86,44 +86,24 @@ lemma action_eq_eval_comp_hist (n : ℕ) :
 lemma reward_eq_eval_comp_hist (n : ℕ) :
     reward (α := α) (R := R) n = (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (hist n) := rfl
 
-lemma measurable_step_filtration (n : ℕ) : Measurable[IT.filtration α R n] (step n) := by
+lemma adapted_step : Adapted (IT.filtration α R) (step (α := α) (R := R)) := by
+  intro n
   rw [filtration_eq_comap, step_eq_eval_comp_hist]
   exact measurable_comp_comap _ (by fun_prop)
 
-lemma adapted_step [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
-    [SecondCountableTopology α] [OpensMeasurableSpace α]
-    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
-    [SecondCountableTopology R] [OpensMeasurableSpace R] :
-    Adapted (IT.filtration α R) (step (α := α) (R := R)) :=
-  fun n ↦ (measurable_step_filtration n).stronglyMeasurable
-
-lemma measurable_hist_filtration (n : ℕ) : Measurable[IT.filtration α R n] (hist n) := by
+lemma adapted_hist : Adapted (IT.filtration α R) hist := by
+  intro n
   simp [filtration_eq_comap, measurable_iff_comap_le]
 
-lemma adapted_hist [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
-    [SecondCountableTopology α] [OpensMeasurableSpace α]
-    [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
-    [SecondCountableTopology R] [OpensMeasurableSpace R] :
-    Adapted (IT.filtration α R) hist :=
-  fun n ↦ (measurable_hist_filtration n).stronglyMeasurable
-
-lemma measurable_action_filtration (n : ℕ) : Measurable[IT.filtration α R n] (action n) := by
+lemma adapted_action : Adapted (IT.filtration α R) action := by
+  intro n
   rw [filtration_eq_comap, action_eq_eval_comp_hist]
   exact measurable_comp_comap _ (by fun_prop)
 
-lemma adapted_action [TopologicalSpace α] [TopologicalSpace.PseudoMetrizableSpace α]
-    [SecondCountableTopology α] [OpensMeasurableSpace α] :
-    Adapted (IT.filtration α R) action :=
-  fun n ↦ (measurable_action_filtration n).stronglyMeasurable
-
-lemma measurable_reward_filtration (n : ℕ) : Measurable[IT.filtration α R n] (reward n) := by
+lemma adapted_reward : Adapted (IT.filtration α R) reward := by
+  intro n
   rw [filtration_eq_comap, reward_eq_eval_comp_hist]
   exact measurable_comp_comap _ (by fun_prop)
-
-lemma adapted_reward [TopologicalSpace R] [TopologicalSpace.PseudoMetrizableSpace R]
-    [SecondCountableTopology R] [OpensMeasurableSpace R] :
-    Adapted (IT.filtration α R) reward :=
-  fun n ↦ (measurable_reward_filtration n).stronglyMeasurable
 
 section FiltrationAction
 
@@ -142,7 +122,7 @@ def filtrationAction (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
         rw [← measurable_iff_comap_le]
         suffices Measurable[IT.filtration α R 0] (action 0) from
           this.mono ((IT.filtration α R).mono zero_le') le_rfl
-        exact measurable_action_filtration 0
+        exact adapted_action 0
     have hm : m ≠ 0 := by grind
     simp only [hn, hm, ↓reduceIte]
     have hnm' : n - 1 ≤ m - 1 := by grind
@@ -157,7 +137,7 @@ def filtrationAction (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] :
       have h_le : n ≤ m - 1 := by grind
       suffices Measurable[IT.filtration α R n] (action n) from
         this.mono ((IT.filtration α R).mono h_le) le_rfl
-      exact measurable_action_filtration n
+      exact adapted_action n
   le' n := by
     by_cases hn : n = 0
     · simp only [hn, ↓reduceIte]
@@ -192,12 +172,12 @@ lemma filtrationAction_le_filtration_self (n : ℕ) :
   by_cases hn : n = 0
   · simp only [hn, filtrationAction_zero_eq_comap]
     rw [← measurable_iff_comap_le]
-    exact measurable_action_filtration 0
+    exact adapted_action 0
   simp only [filtrationAction, hn, ↓reduceIte, sup_le_iff]
   constructor
   · exact (IT.filtration α R).mono (by grind)
   · rw [← measurable_iff_comap_le]
-    exact measurable_action_filtration _
+    exact adapted_action _
 
 lemma filtrationAction_le_filtration {m n : ℕ} (h : m ≤ n) :
     filtrationAction α R m ≤ IT.filtration α R n :=

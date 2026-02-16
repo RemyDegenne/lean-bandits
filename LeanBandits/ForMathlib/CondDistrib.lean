@@ -457,7 +457,7 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
         · simp only [hZ, Set.setOf_true, Set.mem_setOf_eq, Set.indicator_of_mem]
           exact κ.measure_le_bound _ _
         · simp [hZ]
-      refine le_antisymm (h_le.trans ?_) zero_le'
+      refine le_antisymm (h_le.trans ?_) (zero_le _)
       rw [lintegral_indicator]
       swap; · exact (measurableSet_singleton _).preimage (by fun_prop)
       simp only [lintegral_const, MeasurableSet.univ, Measure.restrict_apply, Set.univ_inter,

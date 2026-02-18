@@ -173,87 +173,75 @@ private lemma absolutelyContinuous_stepKernel_stationary
   exact Measure.AbsolutelyContinuous.compProd_left
     (absolutelyContinuous_of_forall_singleton_pos (Bandits.uniformAlgorithm_policy_pos h)) _
 
--- `compProd` unfolding requires extra heartbeats
 /-- The history distribution at time `n + 1` decomposes as a compProd of the history at time `n`
     and the step kernel, composed with `IicSuccProd.symm`. -/
 private lemma map_hist_succ_eq_compProd_map
-    (alg : Algorithm (Fin K) ℝ) (env : Environment (Fin K) ℝ) (n : ℕ) :
-    (trajMeasure alg env).map (IT.hist (n + 1)) =
-    ((trajMeasure alg env).map (IT.hist n) ⊗ₘ stepKernel alg env n).map
+    {Ω : Type*} [MeasurableSpace Ω]
+    {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm (Fin K) ℝ} {env : Environment (Fin K) ℝ}
+    {P : Measure Ω} [IsFiniteMeasure P]
+    (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
+    P.map (IsAlgEnvSeq.hist A R' (n + 1)) =
+    (P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ stepKernel alg env n).map
       (MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n).symm := by
-  set P := trajMeasure alg env
   set e := MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
-  have h_func : IT.hist (α := Fin K) (R := ℝ) (n + 1) = e.symm ∘
-      (fun (ω : ℕ → Fin K × ℝ) => (IT.hist n ω, IT.step (n + 1) ω)) := by
-    funext ω
-    change frestrictLe (n + 1) ω = e.symm (frestrictLe n ω, IT.step (n + 1) ω)
-    rw [show IT.step (n + 1) ω = ω (n + 1) from Prod.mk.eta]
-    change frestrictLe (n + 1) ω = e.symm (e (frestrictLe (n + 1) ω))
+  have hA := h.measurable_A; have hR := h.measurable_R
+  have h_func : IsAlgEnvSeq.hist A R' (n + 1) = e.symm ∘
+      (fun ω => (IsAlgEnvSeq.hist A R' n ω, IsAlgEnvSeq.step A R' (n + 1) ω)) := by
+    funext ω; simp only [Function.comp_apply]
+    change frestrictLe (n + 1) (fun k => IsAlgEnvSeq.step A R' k ω) =
+      e.symm (frestrictLe n (fun k => IsAlgEnvSeq.step A R' k ω),
+              IsAlgEnvSeq.step A R' (n + 1) ω)
+    change frestrictLe (n + 1) (fun k => IsAlgEnvSeq.step A R' k ω) =
+      e.symm (e (frestrictLe (n + 1) (fun k => IsAlgEnvSeq.step A R' k ω)))
     rw [e.symm_apply_apply]
-  rw [h_func, (Measure.map_map e.symm.measurable (by fun_prop :
-      Measurable (fun (ω : ℕ → Fin K × ℝ) =>
-        (IT.hist n ω, IT.step (n + 1) ω)))).symm]
+  rw [h_func, (Measure.map_map e.symm.measurable
+    ((IsAlgEnvSeq.measurable_hist hA hR n).prodMk
+      (IsAlgEnvSeq.measurable_step (n + 1) (hA _) (hR _)))).symm]
   congr 1
-  have h_cd := (IT.isAlgEnvSeq_trajMeasure alg env).hasCondDistrib_step n
+  have h_cd := h.hasCondDistrib_step n
   exact ((condDistrib_ae_eq_iff_measure_eq_compProd _
-    (by fun_prop : AEMeasurable (IsAlgEnvSeq.step IT.action IT.reward (n + 1)) P)
+    (IsAlgEnvSeq.measurable_step (n + 1) (hA _) (hR _)).aemeasurable
     (stepKernel alg env n)).mp h_cd.condDistrib_eq)
 
 /-- The history distribution under any algorithm is absolutely continuous w.r.t. the
     history distribution under the uniform algorithm, for a stationary environment. -/
 private lemma absolutelyContinuous_map_hist_stationary
     (hK : 0 < K) (alg : Algorithm (Fin K) ℝ)
-    (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] (t : ℕ) :
-    (trajMeasure alg (stationaryEnv ν)).map (IT.hist t) ≪
-    (trajMeasure (Bandits.uniformAlgorithm hK) (stationaryEnv ν)).map
-      (IT.hist t) := by
+    (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
+    {Ω₁ : Type*} [MeasurableSpace Ω₁]
+    {A₁ : ℕ → Ω₁ → Fin K} {R₁ : ℕ → Ω₁ → ℝ}
+    {P₁ : Measure Ω₁} [IsProbabilityMeasure P₁]
+    (h₁ : IsAlgEnvSeq A₁ R₁ alg (stationaryEnv ν) P₁)
+    {Ω₂ : Type*} [MeasurableSpace Ω₂]
+    {A₂ : ℕ → Ω₂ → Fin K} {R₂ : ℕ → Ω₂ → ℝ}
+    {P₂ : Measure Ω₂} [IsProbabilityMeasure P₂]
+    (h₂ : IsAlgEnvSeq A₂ R₂ (Bandits.uniformAlgorithm hK) (stationaryEnv ν) P₂)
+    (t : ℕ) :
+    P₁.map (IsAlgEnvSeq.hist A₁ R₁ t) ≪ P₂.map (IsAlgEnvSeq.hist A₂ R₂ t) := by
   induction t with
   | zero =>
-    simp only [IT.hist_eq_frestrictLe, trajMeasure,
-      Kernel.trajMeasure_map_frestrictLe, Kernel.partialTraj_self,
-      Measure.id_comp, stationaryEnv_ν0]
+    set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
+    have h_hist₁ : IsAlgEnvSeq.hist A₁ R₁ 0 = e.symm ∘ IsAlgEnvSeq.step A₁ R₁ 0 := by
+      funext ω ⟨i, hi⟩; have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
+    have h_hist₂ : IsAlgEnvSeq.hist A₂ R₂ 0 = e.symm ∘ IsAlgEnvSeq.step A₂ R₂ 0 := by
+      funext ω ⟨i, hi⟩; have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
+    rw [h_hist₁, h_hist₂,
+        ← Measure.map_map e.symm.measurable
+          (IsAlgEnvSeq.measurable_step 0 (h₁.measurable_A _) (h₁.measurable_R _)),
+        ← Measure.map_map e.symm.measurable
+          (IsAlgEnvSeq.measurable_step 0 (h₂.measurable_A _) (h₂.measurable_R _)),
+        h₁.hasLaw_step_zero.map_eq, h₂.hasLaw_step_zero.map_eq]
+    simp only [stationaryEnv_ν0]
     exact (Measure.AbsolutelyContinuous.compProd_left
       (absolutelyContinuous_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos) _).map
-      (MeasurableEquiv.piUnique _).symm.measurable
+      e.symm.measurable
   | succ n ih =>
-    rw [map_hist_succ_eq_compProd_map, map_hist_succ_eq_compProd_map]
+    rw [map_hist_succ_eq_compProd_map h₁, map_hist_succ_eq_compProd_map h₂]
     exact (Measure.AbsolutelyContinuous.compProd ih
       (Filter.Eventually.of_forall fun h =>
         absolutelyContinuous_stepKernel_stationary hK alg ν n h)).map
       (MeasurableEquiv.IicSuccProd _ n).symm.measurable
-
--- `condDistrib_comp` + `eq_trajMeasure` chain requires extra heartbeats
-/-- The conditional distribution of the history given the environment equals the trajectory
-    measure's history marginal (for Bayesian stationary environments). -/
-private lemma condDistrib_hist_env_eq_traj
-    {E : Type*} [MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
-    (Q : Measure E) [IsProbabilityMeasure Q]
-    (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
-    {Ω : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
-    {E' : Ω → E} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-    {alg : Algorithm (Fin K) ℝ} {P : Measure Ω} [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ E' A R' alg P) (t : ℕ) :
-    ∀ᵐ e ∂Q,
-      condDistrib (IsAlgEnvSeq.hist A R' t) E' P e =
-      (trajMeasure alg
-        (stationaryEnv (κ.comap (·, e) (by fun_prop)))).map (IT.hist t) := by
-  rw [← h.hasLaw_env.map_eq]
-  have h_comp : condDistrib (IT.hist t ∘ IsBayesAlgEnvSeq.traj A R')
-      E' P
-      =ᵐ[P.map E']
-      (condDistrib (IsBayesAlgEnvSeq.traj A R')
-        E' P).map (IT.hist t) :=
-    condDistrib_comp E'
-      h.measurable_traj.aemeasurable (IT.measurable_hist t)
-  rw [IsBayesAlgEnvSeq.IT_hist_comp_traj t] at h_comp
-  filter_upwards [h_comp, h.condDistrib_traj_isAlgEnvSeq] with e hc he
-  rw [hc, Kernel.map_apply _ (IT.measurable_hist t)]
-  congr 1
-  have h' := eq_trajMeasure_of_isAlgEnvSeq he
-  have hid :
-      (fun (ω : ℕ → Fin K × ℝ) n => (IT.action n ω, IT.reward n ω)) = id := by
-    funext ω n; exact Prod.mk.eta
-  rw [hid, Measure.map_id] at h'; exact h'
 
 end AbsolutelyContinuousHist
 
@@ -297,79 +285,118 @@ section DensityIndependence
 
 variable {K : ℕ} [Nonempty (Fin K)]
 
-/-- The history distribution under any algorithm is a `withDensity` of the history distribution
-under the uniform algorithm, with a density that does not depend on the reward kernel `ν`.
-This is the key factorization property: the density ratio only involves action probabilities. -/
-private lemma exists_density_independent_of_env
-    (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) (t : ℕ) :
-    ∃ ρ : (Iic t → Fin K × ℝ) → ℝ≥0∞, Measurable ρ ∧ (∀ h, ρ h ≠ ⊤) ∧
-    ∀ (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν],
-    (trajMeasure alg (stationaryEnv ν)).map (IT.hist t) =
-    ((trajMeasure (Bandits.uniformAlgorithm hK) (stationaryEnv ν)).map
-      (IT.hist t)).withDensity ρ := by
+/-- The density of the history distribution under `alg` w.r.t. the uniform algorithm.
+This density depends only on the algorithm's action probabilities, not on the reward kernel. -/
+private noncomputable def historyDensity
+    (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) :
+    (t : ℕ) → (Iic t → Fin K × ℝ) → ℝ≥0∞
+  | 0 => (alg.p0.rnDeriv (Bandits.uniformAlgorithm hK).p0 ∘ Prod.fst) ∘
+        MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
+  | n + 1 =>
+    let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ℝ≥0∞ :=
+      fun h ar => Kernel.rnDeriv (alg.policy n)
+        ((Bandits.uniformAlgorithm hK).policy n) h ar.1
+    (historyDensity hK alg n ∘ Prod.fst * Function.uncurry σ) ∘
+      MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
+
+omit [Nonempty (Fin K)] in
+private lemma measurable_historyDensity (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) (t : ℕ) :
+    Measurable (historyDensity hK alg t) := by
+  induction t with
+  | zero =>
+    exact (Measure.measurable_rnDeriv _ _).comp
+      (measurable_fst.comp (MeasurableEquiv.piUnique _).measurable)
+  | succ n ih =>
+    exact ((ih.comp measurable_fst).mul
+      ((Kernel.measurable_rnDeriv _ _).comp
+        (measurable_fst.prodMk (measurable_fst.comp measurable_snd)))).comp
+      (MeasurableEquiv.IicSuccProd _ n).measurable
+
+omit [Nonempty (Fin K)] in
+private lemma historyDensity_ne_top (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) (t : ℕ)
+    (h : Iic t → Fin K × ℝ) : historyDensity hK alg t h ≠ ⊤ := by
+  induction t with
+  | zero => exact rnDeriv_ne_top_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos _
+  | succ n ih =>
+    exact ENNReal.mul_ne_top (ih _)
+      (kernel_rnDeriv_ne_top_of_forall_singleton_pos
+        (fun h' a => Bandits.uniformAlgorithm_policy_pos h' a) _ _)
+
+/-- The history distribution under any algorithm equals the uniform algorithm's history
+distribution weighted by `historyDensity`, for any stationary environment. -/
+private lemma map_hist_eq_withDensity_historyDensity
+    (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) (t : ℕ)
+    (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
+    {Ω₁ : Type*} [MeasurableSpace Ω₁]
+    {A₁ : ℕ → Ω₁ → Fin K} {R₁ : ℕ → Ω₁ → ℝ}
+    {P₁ : Measure Ω₁} [IsProbabilityMeasure P₁]
+    (h₁ : IsAlgEnvSeq A₁ R₁ alg (stationaryEnv ν) P₁)
+    {Ω₂ : Type*} [MeasurableSpace Ω₂]
+    {A₂ : ℕ → Ω₂ → Fin K} {R₂ : ℕ → Ω₂ → ℝ}
+    {P₂ : Measure Ω₂} [IsProbabilityMeasure P₂]
+    (h₂ : IsAlgEnvSeq A₂ R₂ (Bandits.uniformAlgorithm hK) (stationaryEnv ν) P₂) :
+    P₁.map (IsAlgEnvSeq.hist A₁ R₁ t) =
+    (P₂.map (IsAlgEnvSeq.hist A₂ R₂ t)).withDensity (historyDensity hK alg t) := by
   set unif := Bandits.uniformAlgorithm hK
   induction t with
   | zero =>
     set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
-    refine ⟨(alg.p0.rnDeriv unif.p0 ∘ Prod.fst) ∘ e,
-      (Measure.measurable_rnDeriv _ _).comp (measurable_fst.comp e.measurable),
-      fun h => rnDeriv_ne_top_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos _, ?_⟩
-    intro ν _
     have h_ac : alg.p0 ≪ unif.p0 :=
       absolutelyContinuous_of_forall_singleton_pos Bandits.uniformAlgorithm_p0_pos
-    simp only [IT.hist_eq_frestrictLe, trajMeasure,
-      Kernel.trajMeasure_map_frestrictLe, Kernel.partialTraj_self,
-      Measure.id_comp, stationaryEnv_ν0]
+    have h_hist₁ : IsAlgEnvSeq.hist A₁ R₁ 0 = e.symm ∘ IsAlgEnvSeq.step A₁ R₁ 0 := by
+      funext ω ⟨i, hi⟩
+      have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
+    have h_hist₂ : IsAlgEnvSeq.hist A₂ R₂ 0 = e.symm ∘ IsAlgEnvSeq.step A₂ R₂ 0 := by
+      funext ω ⟨i, hi⟩
+      have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
+    rw [h_hist₁, h_hist₂,
+        ← Measure.map_map e.symm.measurable
+          (IsAlgEnvSeq.measurable_step 0 (h₁.measurable_A _) (h₁.measurable_R _)),
+        ← Measure.map_map e.symm.measurable
+          (IsAlgEnvSeq.measurable_step 0 (h₂.measurable_A _) (h₂.measurable_R _)),
+        h₁.hasLaw_step_zero.map_eq, h₂.hasLaw_step_zero.map_eq]
+    simp only [stationaryEnv_ν0]
     conv_lhs => rw [← Measure.withDensity_rnDeriv_eq _ _ h_ac]
     rw [withDensity_compProd_left (Measure.measurable_rnDeriv _ _)]
     exact withDensity_map_equiv_symm
       ((Measure.measurable_rnDeriv _ _).comp measurable_fst)
   | succ n ih =>
-    obtain ⟨ρ_n, hρ_n_meas, hρ_n_ne_top, hρ_n⟩ := ih
     let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ℝ≥0∞ :=
       fun h ar => Kernel.rnDeriv (alg.policy n) (unif.policy n) h ar.1
-    let e := MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
     have hσ_meas : Measurable (Function.uncurry σ) :=
       (Kernel.measurable_rnDeriv _ _).comp
         (measurable_fst.prodMk (measurable_fst.comp measurable_snd))
-    refine ⟨(ρ_n ∘ Prod.fst * Function.uncurry σ) ∘ e, ?_, ?_, ?_⟩
-    · exact ((hρ_n_meas.comp measurable_fst).mul hσ_meas).comp e.measurable
-    · intro h
-      exact ENNReal.mul_ne_top (hρ_n_ne_top _)
-        (kernel_rnDeriv_ne_top_of_forall_singleton_pos
-          (fun h' a => Bandits.uniformAlgorithm_policy_pos h' a) _ _)
-    · intro ν _inst
-      have h_step : stepKernel alg (stationaryEnv ν) n =
-          (stepKernel unif (stationaryEnv ν) n).withDensity σ := by
-        ext h : 1
-        rw [Kernel.withDensity_apply _ hσ_meas]
-        have h_alg : stepKernel alg (stationaryEnv ν) n h = (alg.policy n h) ⊗ₘ ν := by
-          ext s hs
-          simp only [stepKernel, stationaryEnv, Kernel.compProd_apply hs,
-            Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
-        have h_unif : stepKernel unif (stationaryEnv ν) n h = (unif.policy n h) ⊗ₘ ν := by
-          ext s hs
-          simp only [stepKernel, stationaryEnv, Kernel.compProd_apply hs,
-            Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
-        have h_wd : ((unif.policy n) h).withDensity
-            (Kernel.rnDeriv (alg.policy n) (unif.policy n) h) = alg.policy n h := by
-          rw [← Kernel.withDensity_apply _ (Kernel.measurable_rnDeriv _ _)]
-          exact Kernel.withDensity_rnDeriv_eq (κ := alg.policy n) (η := unif.policy n)
-            (absolutelyContinuous_of_forall_singleton_pos (Bandits.uniformAlgorithm_policy_pos h))
-        rw [h_alg, h_unif, ← h_wd]
-        haveI : SFinite ((unif.policy n h).withDensity
-            (Kernel.rnDeriv (alg.policy n) (unif.policy n) h)) := by
-          rw [h_wd]; infer_instance
-        exact withDensity_compProd_left
-          (Kernel.measurable_rnDeriv (alg.policy n) (unif.policy n)).of_uncurry_left
-      haveI : IsSFiniteKernel ((stepKernel unif (stationaryEnv ν) n).withDensity σ) := by
-        rw [← h_step]; infer_instance
-      rw [map_hist_succ_eq_compProd_map alg (stationaryEnv ν) n,
-          map_hist_succ_eq_compProd_map unif (stationaryEnv ν) n,
-          hρ_n ν, h_step,
-          withDensity_compProd_withDensity hρ_n_meas hσ_meas]
-      exact withDensity_map_equiv_symm
-        ((hρ_n_meas.comp measurable_fst).mul hσ_meas)
+    have h_step : stepKernel alg (stationaryEnv ν) n =
+        (stepKernel unif (stationaryEnv ν) n).withDensity σ := by
+      ext h : 1
+      rw [Kernel.withDensity_apply _ hσ_meas]
+      have h_alg : stepKernel alg (stationaryEnv ν) n h = (alg.policy n h) ⊗ₘ ν := by
+        ext s hs
+        simp only [stepKernel, stationaryEnv, Kernel.compProd_apply hs,
+          Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
+      have h_unif : stepKernel unif (stationaryEnv ν) n h = (unif.policy n h) ⊗ₘ ν := by
+        ext s hs
+        simp only [stepKernel, stationaryEnv, Kernel.compProd_apply hs,
+          Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
+      have h_wd : ((unif.policy n) h).withDensity
+          (Kernel.rnDeriv (alg.policy n) (unif.policy n) h) = alg.policy n h := by
+        rw [← Kernel.withDensity_apply _ (Kernel.measurable_rnDeriv _ _)]
+        exact Kernel.withDensity_rnDeriv_eq (κ := alg.policy n) (η := unif.policy n)
+          (absolutelyContinuous_of_forall_singleton_pos (Bandits.uniformAlgorithm_policy_pos h))
+      rw [h_alg, h_unif, ← h_wd]
+      haveI : SFinite ((unif.policy n h).withDensity
+          (Kernel.rnDeriv (alg.policy n) (unif.policy n) h)) := by
+        rw [h_wd]; infer_instance
+      exact withDensity_compProd_left
+        (Kernel.measurable_rnDeriv (alg.policy n) (unif.policy n)).of_uncurry_left
+    haveI : IsSFiniteKernel ((stepKernel unif (stationaryEnv ν) n).withDensity σ) := by
+      rw [← h_step]; infer_instance
+    rw [map_hist_succ_eq_compProd_map h₁ n,
+        map_hist_succ_eq_compProd_map h₂ n,
+        ih, h_step,
+        withDensity_compProd_withDensity (measurable_historyDensity hK alg n) hσ_meas]
+    exact withDensity_map_equiv_symm
+      (((measurable_historyDensity hK alg n).comp measurable_fst).mul hσ_meas)
 
 end DensityIndependence
 
@@ -449,10 +476,38 @@ lemma absolutelyContinuous_map_hist_uniform
     ← Measure.snd_compProd, ← Measure.snd_compProd]
   exact (Measure.AbsolutelyContinuous.compProd_right
     (show ∀ᵐ e ∂Q, κ_alg e ≪ κ_unif e from by
-      filter_upwards [condDistrib_hist_env_eq_traj Q κ h t,
-        condDistrib_hist_env_eq_traj Q κ hu t] with e he_alg he_unif
-      rw [he_alg, he_unif]
-      exact absolutelyContinuous_map_hist_stationary hK alg _ t)).map
+      have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
+          (ℕ → Fin K × ℝ) → (Iic t → Fin K × ℝ)) = IT.hist t :=
+        funext fun ω => funext fun i => Prod.mk.eta
+      have h_cd₁ : ∀ᵐ e ∂Q,
+          κ_alg e = (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e).map (IT.hist t) := by
+        rw [← h.hasLaw_env.map_eq]
+        have h_comp : condDistrib (IT.hist t ∘ IsBayesAlgEnvSeq.traj A R') E' P
+            =ᵐ[P.map E'] (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P).map (IT.hist t) :=
+          condDistrib_comp E' h.measurable_traj.aemeasurable (IT.measurable_hist t)
+        rw [IsBayesAlgEnvSeq.IT_hist_comp_traj] at h_comp
+        filter_upwards [h_comp] with e he
+        rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
+      have h_cd₂ : ∀ᵐ e ∂Q,
+          κ_unif e = (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu e).map (IT.hist t) := by
+        rw [← hu.hasLaw_env.map_eq]
+        have h_comp : condDistrib (IT.hist t ∘ IsBayesAlgEnvSeq.traj Au Ru) Eu Pu
+            =ᵐ[Pu.map Eu] (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu).map (IT.hist t) :=
+          condDistrib_comp Eu hu.measurable_traj.aemeasurable (IT.measurable_hist t)
+        rw [IsBayesAlgEnvSeq.IT_hist_comp_traj] at h_comp
+        filter_upwards [h_comp] with e he
+        rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
+      have hae₁ : ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward alg
+          (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+          (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e) := by
+        rw [← h.hasLaw_env.map_eq]; exact h.condDistrib_traj_isAlgEnvSeq
+      have hae₂ : ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward (Bandits.uniformAlgorithm hK)
+          (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+          (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu e) := by
+        rw [← hu.hasLaw_env.map_eq]; exact hu.condDistrib_traj_isAlgEnvSeq
+      filter_upwards [h_cd₁, h_cd₂, hae₁, hae₂] with e he₁ he₂ hae₁ hae₂
+      rw [he₁, he₂, ← h_IT_hist]
+      exact absolutelyContinuous_map_hist_stationary hK alg _ hae₁ hae₂ t)).map
     measurable_snd
 
 /-- The posterior on the environment given history is algorithm-independent. -/
@@ -468,15 +523,45 @@ lemma condDistrib_env_hist_alg_indep
     condDistrib Eu (IsAlgEnvSeq.hist Au Ru t) Pu := by
   set κ_alg := condDistrib (IsAlgEnvSeq.hist A R' t) E' P
   set κ_unif := condDistrib (IsAlgEnvSeq.hist Au Ru t) Eu Pu
-  obtain ⟨ρ, hρ_meas, hρ_ne_top, hρ⟩ := exists_density_independent_of_env hK alg t
+  set ρ := historyDensity hK alg t
+  have hρ_meas := measurable_historyDensity hK alg t
+  have hρ_ne_top := historyDensity_ne_top hK alg t
   -- Key factorization: κ_alg =ᵐ[Q] κ_unif.withDensity (fun _ => ρ)
   have h_wd_ae : κ_alg =ᵐ[Q] κ_unif.withDensity (fun _ => ρ) := by
-    filter_upwards [condDistrib_hist_env_eq_traj Q κ h t,
-      condDistrib_hist_env_eq_traj Q κ hu t] with e he_alg he_unif
+    have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
+        (ℕ → Fin K × ℝ) → (Iic t → Fin K × ℝ)) = IT.hist t :=
+      funext fun ω => funext fun i => Prod.mk.eta
+    have h_cd₁ : ∀ᵐ e ∂Q,
+        κ_alg e = (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e).map (IT.hist t) := by
+      rw [← h.hasLaw_env.map_eq]
+      have h_comp : condDistrib (IT.hist t ∘ IsBayesAlgEnvSeq.traj A R') E' P
+          =ᵐ[P.map E'] (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P).map (IT.hist t) :=
+        condDistrib_comp E' h.measurable_traj.aemeasurable (IT.measurable_hist t)
+      rw [IsBayesAlgEnvSeq.IT_hist_comp_traj] at h_comp
+      filter_upwards [h_comp] with e he
+      rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
+    have h_cd₂ : ∀ᵐ e ∂Q,
+        κ_unif e = (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu e).map (IT.hist t) := by
+      rw [← hu.hasLaw_env.map_eq]
+      have h_comp : condDistrib (IT.hist t ∘ IsBayesAlgEnvSeq.traj Au Ru) Eu Pu
+          =ᵐ[Pu.map Eu] (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu).map (IT.hist t) :=
+        condDistrib_comp Eu hu.measurable_traj.aemeasurable (IT.measurable_hist t)
+      rw [IsBayesAlgEnvSeq.IT_hist_comp_traj] at h_comp
+      filter_upwards [h_comp] with e he
+      rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
+    have hae₁ : ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward alg
+        (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+        (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e) := by
+      rw [← h.hasLaw_env.map_eq]; exact h.condDistrib_traj_isAlgEnvSeq
+    have hae₂ : ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward (Bandits.uniformAlgorithm hK)
+        (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+        (condDistrib (IsBayesAlgEnvSeq.traj Au Ru) Eu Pu e) := by
+      rw [← hu.hasLaw_env.map_eq]; exact hu.condDistrib_traj_isAlgEnvSeq
+    filter_upwards [h_cd₁, h_cd₂, hae₁, hae₂] with e he₁ he₂ hae₁ hae₂
     rw [Kernel.withDensity_apply _
       (show Measurable (Function.uncurry (fun (_ : E) => ρ)) from hρ_meas.comp measurable_snd),
-      he_alg, he_unif]
-    exact hρ _
+      he₁, he₂, ← h_IT_hist]
+    exact map_hist_eq_withDensity_historyDensity hK alg t _ hae₁ hae₂
   haveI : IsSFiniteKernel (κ_unif.withDensity (fun _ => ρ)) :=
     Kernel.IsSFiniteKernel.withDensity _ (fun _ b => hρ_ne_top b)
   -- Posterior equality via density factorization
@@ -485,11 +570,11 @@ lemma condDistrib_env_hist_alg_indep
     rw [map_hist_eq_condDistrib_comp Q κ h t]
     exact posterior_eq_of_withDensity_ae_eq hρ_meas h_wd_ae
   -- Bayes' rule for both algorithms
-  have h1 := h.condDistrib_env_hist_eq_posterior t
+  have h1 := (h.hasCondDistrib_env_hist t).condDistrib_eq
   have h2' : condDistrib Eu (IsAlgEnvSeq.hist Au Ru t) Pu
       =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)] posterior κ_unif Q :=
     (absolutelyContinuous_map_hist_uniform Q κ h hK hu t).ae_le
-      (hu.condDistrib_env_hist_eq_posterior t)
+      (hu.hasCondDistrib_env_hist t).condDistrib_eq
   exact h1.trans (h_post.symm.trans h2'.symm)
 
 /-- The posterior on the best arm equals the uniform algorithm's posterior. -/

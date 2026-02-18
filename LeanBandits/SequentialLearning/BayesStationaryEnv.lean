@@ -169,25 +169,29 @@ variable [StandardBorelSpace E] [Nonempty E]
 
 /-- The posterior on the environment given history equals Mathlib's `posterior` applied to the
 likelihood kernel and prior. This is the measure-theoretic formulation of Bayes' rule. -/
-lemma condDistrib_env_hist_eq_posterior (h : IsBayesAlgEnvSeq Q κ E' A R' alg P) (n : ℕ) :
-    condDistrib E' (IsAlgEnvSeq.hist A R' n) P
-      =ᵐ[P.map (IsAlgEnvSeq.hist A R' n)]
-        posterior (condDistrib (IsAlgEnvSeq.hist A R' n) E' P) Q := by
-  have h_env_meas : Measurable E' := h.measurable_E
-  have h_hist_meas : Measurable (IsAlgEnvSeq.hist A R' n) :=
-    IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n
-  set κ' := condDistrib (IsAlgEnvSeq.hist A R' n) E' P with hκ'
-  have h_disint : P.map (fun ω => (E' ω, IsAlgEnvSeq.hist A R' n ω)) = Q ⊗ₘ κ' := by
-    rw [← h.hasLaw_env.map_eq, compProd_map_condDistrib (h_hist_meas.aemeasurable)]
-  have h_marg : P.map (IsAlgEnvSeq.hist A R' n) = κ' ∘ₘ Q := by
-    have : P.map (IsAlgEnvSeq.hist A R' n) =
-        (P.map (fun ω => (E' ω, IsAlgEnvSeq.hist A R' n ω))).snd := by
-      rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]; rfl
-    rw [this, h_disint, Measure.snd_compProd]
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)]
-  rw [show P.map (fun ω => (IsAlgEnvSeq.hist A R' n ω, E' ω)) = (Q ⊗ₘ κ').map Prod.swap from by
-    rw [← h_disint, Measure.map_map (by fun_prop) (by fun_prop)]; rfl]
-  rw [← compProd_posterior_eq_map_swap (κ := κ') (μ := Q), h_marg]
+lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ E' A R' alg P) (n : ℕ) :
+    HasCondDistrib E' (IsAlgEnvSeq.hist A R' n)
+      (posterior (condDistrib (IsAlgEnvSeq.hist A R' n) E' P) Q) P where
+  aemeasurable_fst := h.measurable_E.aemeasurable
+  aemeasurable_snd :=
+    (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  condDistrib_eq := by
+    have h_env_meas : Measurable E' := h.measurable_E
+    have h_hist_meas : Measurable (IsAlgEnvSeq.hist A R' n) :=
+      IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n
+    set κ' := condDistrib (IsAlgEnvSeq.hist A R' n) E' P with hκ'
+    have h_disint : P.map (fun ω => (E' ω, IsAlgEnvSeq.hist A R' n ω)) = Q ⊗ₘ κ' := by
+      rw [← h.hasLaw_env.map_eq, compProd_map_condDistrib (h_hist_meas.aemeasurable)]
+    have h_marg : P.map (IsAlgEnvSeq.hist A R' n) = κ' ∘ₘ Q := by
+      have : P.map (IsAlgEnvSeq.hist A R' n) =
+          (P.map (fun ω => (E' ω, IsAlgEnvSeq.hist A R' n ω))).snd := by
+        rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]; rfl
+      rw [this, h_disint, Measure.snd_compProd]
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h_env_meas.aemeasurable]
+    rw [show P.map (fun ω => (IsAlgEnvSeq.hist A R' n ω, E' ω)) =
+        (Q ⊗ₘ κ').map Prod.swap from by
+      rw [← h_disint, Measure.map_map (by fun_prop) (by fun_prop)]; rfl]
+    rw [← compProd_posterior_eq_map_swap (κ := κ') (μ := Q), h_marg]
 
 end Posterior
 

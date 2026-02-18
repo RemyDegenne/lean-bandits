@@ -44,7 +44,10 @@ instance : IsProbabilityMeasure (initialPolicy hK Q κ) := by
 end TS
 
 variable {K : ℕ}
-variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
+
+section Algorithm
+
+variable {E : Type*} [MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
 
 /-- The Thompson Sampling (TS) algorithm: actions are chosen according to the probability that they
 are optimal given prior knowledge represented by a prior distribution `Q` and a data generation
@@ -55,8 +58,11 @@ def tsAlgorithm (hK : 0 < K) (Q : Measure E) [IsProbabilityMeasure Q]
   policy := TS.policy hK Q κ
   p0 := TS.initialPolicy hK Q κ
 
+end Algorithm
+
 section Regret
 
+variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
 variable (hK : 0 < K)
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable (E' : Ω → E) (A : ℕ → Ω → (Fin K)) (R' : ℕ → Ω → ℝ)
@@ -248,13 +254,11 @@ lemma bayesRegret_eq_sum_integral_gap [Nonempty (Fin K)]
   refine ⟨hmeas.aestronglyMeasurable, HasFiniteIntegral.of_bounded (C := 2 * C)
     (Filter.Eventually.of_forall fun ω => ?_)⟩
   simp only [Real.norm_eq_abs, gap, Kernel.comap_apply]
-  set e := E' ω
-  have hbdd : BddAbove (Set.range fun i => (κ (i, e))[id]) :=
-    ⟨C, by rintro _ ⟨i, rfl⟩; exact le_of_abs_le (hm i e)⟩
+  have hbdd : BddAbove (Set.range fun i => (κ (i, E' ω))[id]) :=
+    ⟨C, by rintro _ ⟨i, rfl⟩; exact le_of_abs_le (hm i _)⟩
   rw [abs_of_nonneg (sub_nonneg.mpr (le_ciSup hbdd _))]
-  have h1 : (⨆ i, (κ (i, e))[id]) ≤ C := ciSup_le fun i => le_of_abs_le (hm i e)
-  have h2 : -C ≤ (κ (A s ω, e))[id] := neg_le_of_abs_le (hm (A s ω) e)
-  linarith
+  linarith [ciSup_le fun i => le_of_abs_le (hm i (E' ω)),
+    neg_le_of_abs_le (hm (A s ω) (E' ω))]
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsProbabilityMeasure Q]
     [IsMarkovKernel κ] [IsProbabilityMeasure P] in
@@ -494,6 +498,30 @@ lemma streamMeasure_concentration_ge_delta {α : Type*} [MeasurableSpace α]
         Real.log (1 / δ) from by field_simp [ne_of_gt hσ2_pos, ne_of_gt hk_pos]]
       rw [Real.exp_log (by positivity : (0 : ℝ) < 1 / δ), one_div, inv_inv]
 
+private lemma streamMeasure_concentration_bound {α : Type*} [MeasurableSpace α]
+    {ν : Kernel α ℝ} [IsMarkovKernel ν] {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) (m : ℕ) (hm : m ≠ 0) :
+    streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
+        {x | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} ∪
+        {x | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}} ≤
+      ENNReal.ofReal (2 * δ) :=
+  calc streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
+        {x | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} ∪
+        {x | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}}
+      ≤ streamMeasure ν {ω | (∑ i ∈ range m, ω i a) / m +
+            √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} +
+          streamMeasure ν {ω | (ν a)[id] ≤ (∑ i ∈ range m, ω i a) / m -
+            √(2 * ↑σ2 * Real.log (1 / δ) / m)} := by
+        apply (measure_mono (fun ω hω ↦ ?_)).trans (measure_union_le _ _)
+        simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
+    _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
+        gcongr
+        · exact streamMeasure_concentration_le_delta hσ2 hν a m hm δ hδ hδ1
+        · exact streamMeasure_concentration_ge_delta hσ2 hν a m hm δ hδ hδ1
+    _ = ENNReal.ofReal (2 * δ) := by
+        rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
+
 lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ E' A R' (tsAlgorithm hK Q κ) P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
@@ -521,29 +549,8 @@ lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
     {x : ℝ | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}
   have h_stream_bound : ∀ m : ℕ, m ≠ 0 →
       streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ≤
-        ENNReal.ofReal (2 * δ) := by
-    intro m hm0
-    calc streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m}
-        ≤ streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m} +
-          streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-          have h_union : {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ⊆
-              {ω | ∑ i ∈ range m, ω i a ∈ B_low m} ∪ {ω | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-            intro ω hω; simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
-          exact (measure_mono h_union).trans (measure_union_le _ _)
-      _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
-          gcongr
-          · have h_eq : {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m} =
-                {ω | (∑ i ∈ range m, ω i a) / m +
-                  √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} := by
-              ext ω; simp only [Set.mem_setOf_eq, B_low]
-            rw [h_eq]; exact streamMeasure_concentration_le_delta hσ2 h_subG a m hm0 δ hδ hδ1
-          · have h_eq : {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_high m} =
-                {ω | (ν a)[id] ≤ (∑ i ∈ range m, ω i a) / m -
-                  √(2 * ↑σ2 * Real.log (1 / δ) / m)} := by
-              ext ω; simp only [Set.mem_setOf_eq, B_high]
-            rw [h_eq]; exact streamMeasure_concentration_ge_delta hσ2 h_subG a m hm0 δ hδ hδ1
-      _ = ENNReal.ofReal (2 * δ) := by
-          rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
+        ENNReal.ofReal (2 * δ) :=
+    fun m hm0 ↦ streamMeasure_concentration_bound hσ2 h_subG a hδ hδ1 m hm0
   let badSet := {ω : ℕ → (Fin K) × ℝ |
     √(2 * ↑σ2 * Real.log (1 / δ) / (max 1 (pullCount IT.action a s ω) : ℝ)) ≤
       |empMean IT.action IT.reward a s ω - (ν a)[id]|}
@@ -566,49 +573,24 @@ lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
     set m := pullCount IT.action a s ω with hm_def
     have hms : m ≤ s := pullCount_le (A := IT.action) a s ω
     by_cases hm0 : m = 0
-    · have h_empMean_zero : empMean IT.action IT.reward a s ω = 0 := by
+    · exfalso
+      have h_empMean_zero : empMean IT.action IT.reward a s ω = 0 := by
         simp only [empMean, ← hm_def, hm0, Nat.cast_zero, div_zero]
-      simp only [hm0, Nat.cast_zero, h_empMean_zero] at hω
-      exfalso
-      have h_mu := hm a e
-      simp only [max_eq_left (zero_le_one' ℝ), div_one] at hω
+      simp only [hm0, Nat.cast_zero, h_empMean_zero, max_eq_left (zero_le_one' ℝ), div_one] at hω
       rw [h_mean, zero_sub, abs_neg] at hω
-      have h_abs : |(κ (a, e))[id]| ≤ max |lo| |hi| := by
-        apply abs_le.mpr
-        constructor
-        · calc -max |lo| |hi| ≤ -|lo| := neg_le_neg (le_max_left _ _)
-            _ ≤ lo := neg_abs_le lo
-            _ ≤ (κ (a, e))[id] := h_mu.1
-        · calc (κ (a, e))[id] ≤ hi := h_mu.2
-            _ ≤ |hi| := le_abs_self _
-            _ ≤ max |lo| |hi| := le_max_right _ _
-      linarith
+      linarith [abs_le_max_abs_abs (hm a e).1 (hm a e).2]
     · -- Case: m ≥ 1
       use m
       refine ⟨⟨Nat.lt_succ_of_le hms, hm0⟩, rfl, ?_⟩
       simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq]
-      have hm_pos : (0 : ℝ) < m := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm0)
       have hmax_eq : (max 1 (m : ℕ) : ℝ) = m := by
         simp only [Nat.one_le_cast, Nat.one_le_iff_ne_zero.mpr hm0, max_eq_right]
       rw [hmax_eq] at hω
-      have h_empMean : empMean IT.action IT.reward a s ω =
-          sumRewards IT.action IT.reward a s ω / m := by
-        simp only [empMean, hm_def]
-      rw [h_empMean] at hω
+      rw [show empMean IT.action IT.reward a s ω =
+          sumRewards IT.action IT.reward a s ω / m from by simp only [empMean, hm_def]] at hω
       by_cases h_le : sumRewards IT.action IT.reward a s ω / m ≤ (ν a)[id]
-      · left
-        have habs : |sumRewards IT.action IT.reward a s ω / ↑m - (ν a)[id]| =
-            (ν a)[id] - sumRewards IT.action IT.reward a s ω / m := by
-          rw [abs_of_nonpos (sub_nonpos.mpr h_le), neg_sub]
-        rw [habs] at hω
-        linarith
-      · right
-        have h_gt : (ν a)[id] < sumRewards IT.action IT.reward a s ω / m := not_le.mp h_le
-        have habs : |sumRewards IT.action IT.reward a s ω / ↑m - (ν a)[id]| =
-            sumRewards IT.action IT.reward a s ω / m - (ν a)[id] :=
-          abs_of_pos (sub_pos.mpr h_gt)
-        rw [habs] at hω
-        linarith
+      · left; rw [abs_of_nonpos (sub_nonpos.mpr h_le), neg_sub] at hω; linarith
+      · right; rw [abs_of_pos (sub_pos.mpr (not_le.mp h_le))] at hω; linarith
   calc P' badSet
       ≤ P' (⋃ m ∈ (Finset.range (s + 1)).filter (· ≠ 0),
           {ω | pullCount IT.action a s ω = m ∧
@@ -619,17 +601,11 @@ lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
             sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} :=
         measure_biUnion_finset_le _ _
     _ ≤ ∑ m ∈ (Finset.range (s + 1)).filter (· ≠ 0),
-          streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} := by
-        apply Finset.sum_le_sum
-        intro m hm
-        have hm0 : m ≠ 0 := (Finset.mem_filter.mp hm).2
-        have hms : m ≤ s := Nat.lt_succ_iff.mp (Finset.mem_range.mp (Finset.mem_filter.mp hm).1)
-        exact h_bound_per_m m hm0 hms
-    _ ≤ ∑ _m ∈ (Finset.range (s + 1)).filter (· ≠ 0), ENNReal.ofReal (2 * δ) := by
-        apply Finset.sum_le_sum
-        intro m hm
-        have hm0 : m ≠ 0 := (Finset.mem_filter.mp hm).2
-        exact h_stream_bound m hm0
+          streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} :=
+        Finset.sum_le_sum fun m hm ↦ h_bound_per_m m (Finset.mem_filter.mp hm).2
+          (Nat.lt_succ_iff.mp (Finset.mem_range.mp (Finset.mem_filter.mp hm).1))
+    _ ≤ ∑ _m ∈ (Finset.range (s + 1)).filter (· ≠ 0), ENNReal.ofReal (2 * δ) :=
+        Finset.sum_le_sum fun m hm ↦ h_stream_bound m (Finset.mem_filter.mp hm).2
     _ = ((Finset.range (s + 1)).filter (· ≠ 0)).card • ENNReal.ofReal (2 * δ) := by
         simp only [Finset.sum_const]
     _ = s • ENNReal.ofReal (2 * δ) := by
@@ -703,6 +679,118 @@ lemma prob_concentration_single_delta [Nonempty (Fin K)]
         rw [lintegral_const, Measure.map_apply h.measurable_E MeasurableSet.univ]
         simp [measure_univ]
 
+private lemma concentration_cond_bound [Nonempty (Fin K)]
+    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
+    {n : ℕ} (hn : 0 < n) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1)
+    (e : E) (h_isAlgEnvSeq : IsAlgEnvSeq IT.action IT.reward (tsAlgorithm hK Q κ)
+      (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+      (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e))
+    (a : Fin K) :
+    (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e)
+      (⋃ s ∈ Finset.range n, {ω | pullCount IT.action a s ω ≠ 0 ∧
+        √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
+          |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}) ≤
+      ENNReal.ofReal (2 * n * δ) := by
+  let ν := κ.comap (·, e) (by fun_prop)
+  let P' := condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e
+  have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
+    simp only [ν, Kernel.comap_apply]; exact hs a' e
+  have h_mean : (ν a)[id] = (κ (a, e))[id] := by simp only [ν, Kernel.comap_apply]
+  let B_low := fun m : ℕ ↦
+    {x : ℝ | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]}
+  let B_high := fun m : ℕ ↦
+    {x : ℝ | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}
+  have h_stream_bound : ∀ m : ℕ, m ≠ 0 →
+      streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ≤
+        ENNReal.ofReal (2 * δ) :=
+    fun m hm0 ↦ streamMeasure_concentration_bound hσ2 h_subG a hδ hδ1 m hm0
+  have hB_meas : ∀ m, MeasurableSet (B_low m ∪ B_high m) := fun m ↦
+    MeasurableSet.union (measurableSet_le (by fun_prop) (by fun_prop))
+      (measurableSet_le (by fun_prop) (by fun_prop))
+  let badSetIT := fun (s : ℕ) ↦ {ω : ℕ → (Fin K) × ℝ |
+    pullCount IT.action a s ω ≠ 0 ∧
+      √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
+        |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}
+  let S := Finset.Icc 1 (n - 1)
+  have hS_card : S.card = n - 1 := by simp only [Nat.card_Icc, S]; omega
+  have h_decomp : ⋃ s ∈ Finset.range n, badSetIT s =
+      ⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+        sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
+    ext ω
+    simp only [Set.mem_iUnion, Finset.mem_range, exists_prop, badSetIT, Set.mem_setOf_eq,
+      Finset.mem_Icc, S]
+    constructor
+    · rintro ⟨s, hs, hbad⟩
+      let m := pullCount IT.action a s ω
+      have hm_pos : 0 < m := Nat.pos_of_ne_zero hbad.1
+      have hm_le : m ≤ n - 1 := by
+        have h1 : m ≤ s := pullCount_le (A := IT.action) a s ω
+        omega
+      refine ⟨m, ⟨hm_pos, hm_le⟩, s, hs, rfl, ?_⟩
+      simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq]
+      simp only [empMean] at hbad
+      rcases le_abs'.mp hbad.2 with h | h <;> [left; right] <;> linarith
+    · rintro ⟨m, ⟨hm_pos, hm_le⟩, s, hs, hpc, hB⟩
+      refine ⟨s, hs, ?_⟩
+      simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq] at hB
+      simp only [empMean, hpc]
+      refine ⟨Nat.one_le_iff_ne_zero.mp hm_pos, ?_⟩
+      rcases hB with h | h
+      · exact le_abs.mpr (.inr (by linarith))
+      · exact le_abs.mpr (.inl (by linarith))
+  rw [h_decomp]
+  calc P' (⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+          sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m})
+      ≤ ∑ m ∈ S, P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+          sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} :=
+        measure_biUnion_finset_le S _
+    _ ≤ ∑ m ∈ S, streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} := by
+        apply Finset.sum_le_sum
+        intro m hm
+        have hm_pos : m ≠ 0 := Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1
+        have hm_le : m ≤ n - 1 := (Finset.mem_Icc.mp hm).2
+        have h_contain : {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+            sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} ⊆
+            {ω | pullCount IT.action a (n - 1) ω = m ∧
+              sumRewards IT.action IT.reward a (n - 1) ω ∈ B_low m ∪ B_high m} ∪
+            {ω | pullCount IT.action a (n - 1) ω > m ∧
+              ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+                sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
+          intro ω ⟨s, hs, hpc, hB⟩
+          simp only [Set.mem_union, Set.mem_setOf_eq]
+          have hs' : s ≤ n - 1 := Nat.le_sub_one_of_lt hs
+          have h_pc_mono := pullCount_mono (A := IT.action) a hs' ω
+          by_cases h_eq : pullCount IT.action a (n - 1) ω = m
+          · left
+            refine ⟨h_eq, ?_⟩
+            have h_pc_eq : pullCount IT.action a s ω = pullCount IT.action a (n - 1) ω :=
+              hpc.symm ▸ h_eq.symm
+            rw [← sumRewards_eq_of_pullCount_eq h_pc_eq]
+            exact hB
+          · right
+            exact ⟨by omega, s, hs, hpc, hB⟩
+        calc P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
+                sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m}
+            ≤ P' {ω | ∃ s, s ≤ n - 1 ∧ pullCount IT.action a s ω = m ∧
+                sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
+              apply measure_mono
+              intro ω ⟨s, hs, hpc, hB⟩
+              exact ⟨s, Nat.le_sub_one_of_lt hs, hpc, hB⟩
+          _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} :=
+              prob_exists_pullCount_eq_and_sumRewards_mem_le (n := n - 1)
+                h_isAlgEnvSeq (hB_meas m)
+    _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) :=
+        Finset.sum_le_sum fun m hm ↦
+          h_stream_bound m (Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1)
+    _ = (n - 1) • ENNReal.ofReal (2 * δ) := by
+        simp only [Finset.sum_const, hS_card]
+    _ ≤ ENNReal.ofReal (2 * n * δ) := by
+        rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (n - 1),
+          ← ENNReal.ofReal_mul (Nat.cast_nonneg (n - 1))]
+        exact ENNReal.ofReal_le_ofReal (by
+          nlinarith [(Nat.cast_le (α := ℝ)).mpr (Nat.sub_le n 1), hδ.le])
+
 lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ E' A R' (tsAlgorithm hK Q κ) P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
@@ -755,143 +843,8 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
         (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e)
           (⋃ s ∈ Finset.range n, badSetIT s e) ≤ ENNReal.ofReal (2 * n * δ) := by
       filter_upwards [IsBayesAlgEnvSeq.condDistrib_traj_isAlgEnvSeq h] with e h_isAlgEnvSeq
-      let ν := κ.comap (·, e) (by fun_prop)
-      let P' := condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e
-      have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
-        simp only [ν, Kernel.comap_apply]; exact hs a' e
-      have h_mean : (ν a)[id] = (κ (a, e))[id] := by simp only [ν, Kernel.comap_apply]
-      let B_low := fun m : ℕ ↦
-        {x : ℝ | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]}
-      let B_high := fun m : ℕ ↦
-        {x : ℝ | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}
-      have h_stream_bound : ∀ m : ℕ, m ≠ 0 →
-          streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ≤
-            ENNReal.ofReal (2 * δ) := by
-        intro m hm0
-        calc streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m}
-            ≤ streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m} +
-              streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-              have h_union : {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ⊆
-                  {ω | ∑ i ∈ range m, ω i a ∈ B_low m} ∪
-                  {ω | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-                intro ω hω; simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
-              exact (measure_mono h_union).trans (measure_union_le _ _)
-          _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
-              gcongr
-              · have h_eq : {ω : ℕ → Fin K → ℝ |
-                      ∑ i ∈ range m, ω i a ∈ B_low m} =
-                    {ω | (∑ i ∈ range m, ω i a) / m +
-                      √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} := by
-                  ext ω; simp only [Set.mem_setOf_eq, B_low]
-                rw [h_eq]
-                exact streamMeasure_concentration_le_delta hσ2 h_subG a m hm0 δ hδ hδ1
-              · have h_eq : {ω : ℕ → Fin K → ℝ |
-                      ∑ i ∈ range m, ω i a ∈ B_high m} =
-                    {ω | (ν a)[id] ≤ (∑ i ∈ range m, ω i a) / m -
-                      √(2 * ↑σ2 * Real.log (1 / δ) / m)} := by
-                  ext ω; simp only [Set.mem_setOf_eq, B_high]
-                rw [h_eq]
-                exact streamMeasure_concentration_ge_delta hσ2 h_subG a m hm0 δ hδ hδ1
-          _ = ENNReal.ofReal (2 * δ) := by
-              rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
-      have hB_meas : ∀ m, MeasurableSet (B_low m ∪ B_high m) := fun m ↦
-        MeasurableSet.union (measurableSet_le (by fun_prop) (by fun_prop))
-          (measurableSet_le (by fun_prop) (by fun_prop))
-      let S := Finset.Icc 1 (n - 1)
-      have hS_card : S.card = n - 1 := by simp only [Nat.card_Icc, S]; omega
-      have h_decomp : ⋃ s ∈ Finset.range n, badSetIT s e =
-          ⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-            sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-        ext ω
-        simp only [Set.mem_iUnion, Finset.mem_range, exists_prop, badSetIT, Set.mem_setOf_eq,
-          Finset.mem_Icc, S]
-        constructor
-        · rintro ⟨s, hs, hbad⟩
-          let m := pullCount IT.action a s ω
-          have hm_pos : 0 < m := Nat.pos_of_ne_zero hbad.1
-          have hm_le : m ≤ n - 1 := by
-            have h1 : m ≤ s := pullCount_le (A := IT.action) a s ω
-            omega
-          refine ⟨m, ⟨hm_pos, hm_le⟩, s, hs, rfl, ?_⟩
-          simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq]
-          have h_pc_pos : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
-          simp only [empMean] at hbad
-          have h_abs := le_abs'.mp hbad.2
-          rcases h_abs with h_neg | h_pos
-          · left; linarith
-          · right; linarith
-        · rintro ⟨m, ⟨hm_pos, hm_le⟩, s, hs, hpc, hB⟩
-          refine ⟨s, hs, ?_⟩
-          simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq] at hB
-          have h_pc_pos : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
-          simp only [empMean, hpc]
-          refine ⟨Nat.one_le_iff_ne_zero.mp hm_pos, ?_⟩
-          cases hB with
-          | inl h =>
-            have h1 : sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id] ≤
-                -√(2 * ↑σ2 * Real.log (1 / δ) / m) := by linarith
-            calc √(2 * ↑σ2 * Real.log (1 / δ) / m)
-                ≤ -(sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id]) := by linarith
-              _ ≤ |sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id]| := neg_le_abs _
-          | inr h =>
-            have h1 : √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤
-                sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id] := by linarith
-            exact h1.trans (le_abs_self _)
-      rw [h_decomp]
-      calc P' (⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-              sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m})
-          ≤ ∑ m ∈ S, P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-              sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} :=
-            measure_biUnion_finset_le S _
-        _ ≤ ∑ m ∈ S, streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} := by
-            apply Finset.sum_le_sum
-            intro m hm
-            have hm_pos : m ≠ 0 := Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1
-            have hm_le : m ≤ n - 1 := (Finset.mem_Icc.mp hm).2
-            have h_contain : {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-                sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} ⊆
-                {ω | pullCount IT.action a (n - 1) ω = m ∧
-                  sumRewards IT.action IT.reward a (n - 1) ω ∈ B_low m ∪ B_high m} ∪
-                {ω | pullCount IT.action a (n - 1) ω > m ∧
-                  ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-                    sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-              intro ω ⟨s, hs, hpc, hB⟩
-              simp only [Set.mem_union, Set.mem_setOf_eq]
-              have hs' : s ≤ n - 1 := Nat.le_sub_one_of_lt hs
-              have h_pc_mono := pullCount_mono (A := IT.action) a hs' ω
-              by_cases h_eq : pullCount IT.action a (n - 1) ω = m
-              · left
-                refine ⟨h_eq, ?_⟩
-                have h_pc_eq : pullCount IT.action a s ω = pullCount IT.action a (n - 1) ω :=
-                  hpc.symm ▸ h_eq.symm
-                rw [← sumRewards_eq_of_pullCount_eq h_pc_eq]
-                exact hB
-              · right
-                exact ⟨by omega, s, hs, hpc, hB⟩
-            calc P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-                    sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m}
-                ≤ P' {ω | ∃ s, s ≤ n - 1 ∧ pullCount IT.action a s ω = m ∧
-                    sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-                  apply measure_mono
-                  intro ω ⟨s, hs, hpc, hB⟩
-                  exact ⟨s, Nat.le_sub_one_of_lt hs, hpc, hB⟩
-              _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} :=
-                  prob_exists_pullCount_eq_and_sumRewards_mem_le (n := n - 1)
-                    h_isAlgEnvSeq (hB_meas m)
-        _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) := by
-            apply Finset.sum_le_sum
-            intro m hm
-            have hm_pos : m ≠ 0 := Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1
-            exact h_stream_bound m hm_pos
-        _ = S.card • ENNReal.ofReal (2 * δ) := by simp only [Finset.sum_const]
-        _ = (n - 1) • ENNReal.ofReal (2 * δ) := by rw [hS_card]
-        _ ≤ ENNReal.ofReal (2 * n * δ) := by
-            rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (n - 1),
-              ← ENNReal.ofReal_mul (Nat.cast_nonneg (n - 1))]
-            apply ENNReal.ofReal_le_ofReal
-            have h1 : (n - 1 : ℕ) ≤ n := Nat.sub_le n 1
-            have h2 : (↑(n - 1) : ℝ) ≤ (↑n : ℝ) := Nat.cast_le.mpr h1
-            nlinarith [h2, hδ.le]
+      exact concentration_cond_bound (hK := hK) (E' := E') (A := A) (R' := R')
+        (Q := Q) (κ := κ) (P := P) hσ2 hs hn' hδ hδ1 e h_isAlgEnvSeq a
     have h_kernel : Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (a, p.1))[id]) :=
       stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_const.prodMk measurable_fst)
     have h_meas_set : MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
@@ -931,8 +884,8 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
           simp [measure_univ]
   calc P (⋃ a : Fin K, ⋃ s ∈ Finset.range n, badSet s a)
       ≤ ∑ a : Fin K, P (⋃ s ∈ Finset.range n, badSet s a) := measure_iUnion_fintype_le _ _
-    _ ≤ ∑ _a : Fin K, ENNReal.ofReal (2 * n * δ) := by
-        apply Finset.sum_le_sum; intro a _; exact h_arm_bound a
+    _ ≤ ∑ _a : Fin K, ENNReal.ofReal (2 * n * δ) :=
+        Finset.sum_le_sum fun a _ ↦ h_arm_bound a
     _ = K • ENNReal.ofReal (2 * n * δ) := by simp [Finset.sum_const]
     _ = ENNReal.ofReal (2 * K * n * δ) := by
         simp only [nsmul_eq_mul]
@@ -982,143 +935,8 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
         (⋃ s ∈ Finset.range n, badSetIT a s e) ≤ ENNReal.ofReal (2 * n * δ) := by
     filter_upwards [IsBayesAlgEnvSeq.condDistrib_traj_isAlgEnvSeq h] with e h_isAlgEnvSeq
     intro a
-    let ν := κ.comap (·, e) (by fun_prop)
-    let P' := condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e
-    have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
-      simp only [ν, Kernel.comap_apply]; exact hs a' e
-    have h_mean : (ν a)[id] = (κ (a, e))[id] := by simp only [ν, Kernel.comap_apply]
-    let B_low := fun m : ℕ ↦
-      {x : ℝ | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]}
-    let B_high := fun m : ℕ ↦
-      {x : ℝ | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}
-    have h_stream_bound : ∀ m : ℕ, m ≠ 0 →
-        streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ≤
-          ENNReal.ofReal (2 * δ) := by
-      intro m hm0
-      calc streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m}
-          ≤ streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m} +
-            streamMeasure ν {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-            have h_union : {ω : ℕ → Fin K → ℝ | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} ⊆
-                {ω | ∑ i ∈ range m, ω i a ∈ B_low m} ∪
-                {ω | ∑ i ∈ range m, ω i a ∈ B_high m} := by
-              intro ω hω; simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
-            exact (measure_mono h_union).trans (measure_union_le _ _)
-        _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
-            gcongr
-            · have h_eq : {ω : ℕ → Fin K → ℝ |
-                    ∑ i ∈ range m, ω i a ∈ B_low m} =
-                  {ω | (∑ i ∈ range m, ω i a) / m +
-                    √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} := by
-                ext ω; simp only [Set.mem_setOf_eq, B_low]
-              rw [h_eq]
-              exact streamMeasure_concentration_le_delta hσ2 h_subG a m hm0 δ hδ hδ1
-            · have h_eq : {ω : ℕ → Fin K → ℝ |
-                    ∑ i ∈ range m, ω i a ∈ B_high m} =
-                  {ω | (ν a)[id] ≤ (∑ i ∈ range m, ω i a) / m -
-                    √(2 * ↑σ2 * Real.log (1 / δ) / m)} := by
-                ext ω; simp only [Set.mem_setOf_eq, B_high]
-              rw [h_eq]
-              exact streamMeasure_concentration_ge_delta hσ2 h_subG a m hm0 δ hδ hδ1
-        _ = ENNReal.ofReal (2 * δ) := by
-            rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
-    have hB_meas : ∀ m, MeasurableSet (B_low m ∪ B_high m) := fun m ↦
-      MeasurableSet.union (measurableSet_le (by fun_prop) (by fun_prop))
-        (measurableSet_le (by fun_prop) (by fun_prop))
-    let S := Finset.Icc 1 (n - 1)
-    have hS_card : S.card = n - 1 := by simp only [Nat.card_Icc, S]; omega
-    have h_decomp : ⋃ s ∈ Finset.range n, badSetIT a s e =
-        ⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-          sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-      ext ω
-      simp only [Set.mem_iUnion, Finset.mem_range, exists_prop, badSetIT, Set.mem_setOf_eq,
-        Finset.mem_Icc, S]
-      constructor
-      · rintro ⟨s, hs, hbad⟩
-        let m := pullCount IT.action a s ω
-        have hm_pos : 0 < m := Nat.pos_of_ne_zero hbad.1
-        have hm_le : m ≤ n - 1 := by
-          have h1 : m ≤ s := pullCount_le (A := IT.action) a s ω
-          omega
-        refine ⟨m, ⟨hm_pos, hm_le⟩, s, hs, rfl, ?_⟩
-        simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq]
-        have h_pc_pos : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
-        simp only [empMean] at hbad
-        have h_abs := le_abs'.mp hbad.2
-        rcases h_abs with h_neg | h_pos
-        · left; linarith
-        · right; linarith
-      · rintro ⟨m, ⟨hm_pos, hm_le⟩, s, hs, hpc, hB⟩
-        refine ⟨s, hs, ?_⟩
-        simp only [Set.mem_union, B_low, B_high, Set.mem_setOf_eq] at hB
-        have h_pc_pos : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
-        simp only [empMean, hpc]
-        refine ⟨Nat.one_le_iff_ne_zero.mp hm_pos, ?_⟩
-        cases hB with
-        | inl h =>
-          have h1 : sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id] ≤
-              -√(2 * ↑σ2 * Real.log (1 / δ) / m) := by linarith
-          calc √(2 * ↑σ2 * Real.log (1 / δ) / m)
-              ≤ -(sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id]) := by linarith
-            _ ≤ |sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id]| := neg_le_abs _
-        | inr h =>
-          have h1 : √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤
-              sumRewards IT.action IT.reward a s ω / m - (κ (a, e))[id] := by linarith
-          exact h1.trans (le_abs_self _)
-    rw [h_decomp]
-    calc P' (⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-            sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m})
-        ≤ ∑ m ∈ S, P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-            sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} :=
-          measure_biUnion_finset_le S _
-      _ ≤ ∑ m ∈ S, streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} := by
-          apply Finset.sum_le_sum
-          intro m hm
-          have hm_pos : m ≠ 0 := Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1
-          have hm_le : m ≤ n - 1 := (Finset.mem_Icc.mp hm).2
-          have h_contain : {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-              sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} ⊆
-              {ω | pullCount IT.action a (n - 1) ω = m ∧
-                sumRewards IT.action IT.reward a (n - 1) ω ∈ B_low m ∪ B_high m} ∪
-              {ω | pullCount IT.action a (n - 1) ω > m ∧
-                ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-                  sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-            intro ω ⟨s, hs, hpc, hB⟩
-            simp only [Set.mem_union, Set.mem_setOf_eq]
-            have hs' : s ≤ n - 1 := Nat.le_sub_one_of_lt hs
-            have h_pc_mono := pullCount_mono (A := IT.action) a hs' ω
-            by_cases h_eq : pullCount IT.action a (n - 1) ω = m
-            · left
-              refine ⟨h_eq, ?_⟩
-              have h_pc_eq : pullCount IT.action a s ω = pullCount IT.action a (n - 1) ω :=
-                hpc.symm ▸ h_eq.symm
-              rw [← sumRewards_eq_of_pullCount_eq h_pc_eq]
-              exact hB
-            · right
-              exact ⟨by omega, s, hs, hpc, hB⟩
-          calc P' {ω | ∃ s, s < n ∧ pullCount IT.action a s ω = m ∧
-                  sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m}
-              ≤ P' {ω | ∃ s, s ≤ n - 1 ∧ pullCount IT.action a s ω = m ∧
-                  sumRewards IT.action IT.reward a s ω ∈ B_low m ∪ B_high m} := by
-                apply measure_mono
-                intro ω ⟨s, hs, hpc, hB⟩
-                exact ⟨s, Nat.le_sub_one_of_lt hs, hpc, hB⟩
-            _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B_low m ∪ B_high m} :=
-                prob_exists_pullCount_eq_and_sumRewards_mem_le (n := n - 1)
-                  h_isAlgEnvSeq (hB_meas m)
-      _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) := by
-          apply Finset.sum_le_sum
-          intro m hm
-          have hm_pos : m ≠ 0 := Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1
-          exact h_stream_bound m hm_pos
-      _ = S.card • ENNReal.ofReal (2 * δ) := by simp only [Finset.sum_const]
-      _ = (n - 1) • ENNReal.ofReal (2 * δ) := by rw [hS_card]
-      _ ≤ ENNReal.ofReal (2 * n * δ) := by
-          rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (n - 1),
-            ← ENNReal.ofReal_mul (Nat.cast_nonneg (n - 1))]
-          apply ENNReal.ofReal_le_ofReal
-          have h1 : (n - 1 : ℕ) ≤ n := Nat.sub_le n 1
-          have h2 : (↑(n - 1) : ℝ) ≤ (↑n : ℝ) := Nat.cast_le.mpr h1
-          nlinarith [h2, hδ.le]
+    exact concentration_cond_bound (hK := hK) (E' := E') (A := A) (R' := R')
+      (Q := Q) (κ := κ) (P := P) hσ2 hs hn' hδ hδ1 e h_isAlgEnvSeq a
   have h_cond_best : ∀ᵐ e ∂(P.map E'),
       (condDistrib (IsBayesAlgEnvSeq.traj A R') E' P e)
         (⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ e) s e) ≤
@@ -1240,22 +1058,19 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
         (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)] +
       P[fun ω ↦ ∑ s ∈ range n,
         (ucb (A s ω) s ω - armMean (A s ω) ω)] := by
-    have hC : ∀ a e, |(κ (a, e))[id]| ≤ max |lo| |hi| := fun a e ↦
-      abs_le_max_abs_abs (hm a e).1 (hm a e).2
-    have h_regret_gap := bayesRegret_eq_sum_integral_gap (h := h) (hm := hC) (t := n)
     have h_regret_eq : IsBayesAlgEnvSeq.bayesRegret κ A E' P n =
         ∑ s ∈ range n, P[fun ω ↦ armMean (bestArm ω) ω - armMean (A s ω) ω] := by
-      rw [h_regret_gap]; congr 1 with s
+      rw [bayesRegret_eq_sum_integral_gap (h := h)
+        (hm := fun a e ↦ abs_le_max_abs_abs (hm a e).1 (hm a e).2) (t := n)]
+      congr 1 with s
       exact integral_congr_ae (ae_of_all _ fun ω ↦ gap_eq_armMean_sub E' A κ hm s ω)
-    have h_int_ucb_sub : ∀ s, Integrable (fun ω ↦ ucb (A s ω) s ω - ucb (bestArm ω) s ω) P := by
-      intro s
-      apply Integrable.sub
-      · exact ⟨(measurable_apply_fin (fun a ↦ hm_ucb a s) (h.measurable_A s)).aestronglyMeasurable,
-          HasFiniteIntegral.of_bounded (ae_of_all _ fun ω ↦
-            norm_ucbIndex_le A R' (↑σ2) lo hi δ hlo _ _ _)⟩
-      · exact ⟨(measurable_apply_fin (fun a ↦ hm_ucb a s) hm_best).aestronglyMeasurable,
-          HasFiniteIntegral.of_bounded (ae_of_all _ fun ω ↦
-            norm_ucbIndex_le A R' (↑σ2) lo hi δ hlo _ _ _)⟩
+    have h_int_ucb : ∀ s {f : Ω → Fin K}, Measurable f →
+        Integrable (fun ω ↦ ucb (f ω) s ω) P := fun s {_} hf ↦
+      ⟨(measurable_apply_fin (fun a ↦ hm_ucb a s) hf).aestronglyMeasurable,
+        HasFiniteIntegral.of_bounded (ae_of_all _ fun ω ↦
+          norm_ucbIndex_le A R' (↑σ2) lo hi δ hlo _ _ _)⟩
+    have h_int_ucb_sub : ∀ s, Integrable (fun ω ↦ ucb (A s ω) s ω - ucb (bestArm ω) s ω) P :=
+      fun s ↦ (h_int_ucb s (h.measurable_A s)).sub (h_int_ucb s hm_best)
     have h_ucb_zero : ∀ a (ω : Ω), ucbIndex A R' (↑σ2) lo hi δ a 0 ω = hi := by
       intro a ω; unfold ucbIndex; simp [pullCount_zero]
     have h_ucb_swap : ∀ s, ∫ ω, (ucb (A s ω) s ω - ucb (bestArm ω) s ω) ∂P = 0 := by
@@ -1289,11 +1104,8 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
           fun p ↦ if pullCount' t p.1 p.2 = 0 then hi
             else max lo (min hi (empMean' t p.1 p.2 +
               √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount' t p.1 p.2 : ℝ))))
-        have h_hist_eq : ∀ (ω : Ω),
-            (fun (i : Iic t) ↦ (A (↑i) ω,
-              R' (↑i) ω)) =
-            IsAlgEnvSeq.hist A R' t ω := by
-          intro ω; rfl
+        have h_hist_eq : ∀ ω : Ω, (fun (i : Iic t) ↦ (A (↑i) ω, R' (↑i) ω)) =
+            IsAlgEnvSeq.hist A R' t ω := fun ω ↦ rfl
         have hg_eq : ∀ a (ω : Ω), ucbIndex A R' (↑σ2) lo hi δ a (t + 1) ω =
             g (IsAlgEnvSeq.hist A R' t ω, a) := by
           intro a ω
@@ -1323,24 +1135,13 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
               exact measurable_apply_fin
                 (fun a ↦ measurable_from_top.comp ((measurable_pullCount' t a).comp measurable_fst))
                 measurable_snd
-        have h_eq_g1 : (fun ω ↦ ucb (A (t + 1) ω) (t + 1) ω) =
-            fun ω ↦ g (IsAlgEnvSeq.hist A R' t ω, A (t + 1) ω) :=
-          funext fun ω ↦ hg_eq _ _
-        have h_eq_g2 : (fun ω ↦ ucb (bestArm ω) (t + 1) ω) =
-            fun ω ↦ g (IsAlgEnvSeq.hist A R' t ω, IsBayesAlgEnvSeq.bestArm κ E' ω) :=
-          funext fun ω ↦ hg_eq _ _
-        have h_int_ucb : ∀ {f : Ω → Fin K}, Measurable f →
-            Integrable (fun ω ↦ ucb (f ω) (t + 1) ω) P := fun hf ↦
-          ⟨(measurable_apply_fin (fun a ↦ hm_ucb a (t + 1)) hf).aestronglyMeasurable,
-            HasFiniteIntegral.of_bounded (ae_of_all _ fun ω ↦
-              norm_ucbIndex_le A R' (↑σ2) lo hi δ hlo _ _ _)⟩
-        have h_int1 := h_int_ucb (h.measurable_A (t + 1))
-        have h_int2 := h_int_ucb hm_best
         rw [show (fun ω ↦ ucb (A (t + 1) ω) (t + 1) ω -
             ucb (bestArm ω) (t + 1) ω) =
             fun ω ↦ (fun ω ↦ ucb (A (t + 1) ω) (t + 1) ω) ω -
               (fun ω ↦ ucb (bestArm ω) (t + 1) ω) ω from rfl,
-          integral_sub h_int1 h_int2, h_eq_g1, h_eq_g2,
+          integral_sub (h_int_ucb (t + 1) (h.measurable_A (t + 1)))
+            (h_int_ucb (t + 1) hm_best),
+          funext fun ω ↦ hg_eq _ _, funext fun ω ↦ hg_eq _ _,
           h_int_eq g hg_meas, sub_self]
     have h_ucb_sum_zero : ∫ ω, ∑ s ∈ range n,
         (ucb (A s ω) s ω - ucb (bestArm ω) s ω) ∂P = 0 := by
@@ -1408,18 +1209,15 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
       |empMean A R' a s ω - armMean a ω|
         < √(2 * ↑σ2 * Real.log (1 / δ) / ↑(pullCount A a s ω))} := by
     intro s a
-    have h_eq : {ω : Ω | pullCount A a s ω ≠ 0 →
+    have : {ω : Ω | pullCount A a s ω ≠ 0 →
         |empMean A R' a s ω - armMean a ω|
           < √(2 * ↑σ2 * Real.log (1 / δ) / ↑(pullCount A a s ω))} =
-        {ω | pullCount A a s ω = 0} ∪ {ω |
+        {ω | (pullCount A a s ω : ℝ) = 0} ∪ {ω |
           |empMean A R' a s ω - armMean a ω|
             < √(2 * ↑σ2 * Real.log (1 / δ) / ↑(pullCount A a s ω))} := by
-      ext ω; simp only [Set.mem_setOf_eq, Set.mem_union]; tauto
-    rw [h_eq]
-    have h_eq0 : {ω : Ω | pullCount A a s ω = 0} =
-        {ω : Ω | (pullCount A a s ω : ℝ) = 0} := by
-      ext ω; simp [Nat.cast_eq_zero]
-    exact MeasurableSet.union (h_eq0 ▸ hm_pc a s (measurableSet_singleton (0 : ℝ)))
+      ext ω; simp only [Set.mem_setOf_eq, Set.mem_union, Nat.cast_eq_zero]; tauto
+    rw [this]
+    exact MeasurableSet.union (hm_pc a s (measurableSet_singleton (0 : ℝ)))
       (measurableSet_lt
         ((hm_emp a s).sub (h.measurable_armMean a)).abs
         ((measurable_const.div (hm_pc a s)).sqrt))
@@ -1458,8 +1256,6 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
   set f2 : Ω → ℝ := fun ω ↦ ∑ s ∈ range n,
     (ucb (A s ω) s ω - armMean (A s ω) ω)
   set B := (hi - lo) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n)
-  have s1 := (integral_add_compl hFδ_meas h_int_sum1).symm
-  have s2 := (integral_add_compl hEδ_meas h_int_sum2).symm
   have h1g : ∫ ω in Fδ, f1 ω ∂P ≤ 0 :=
     setIntegral_nonpos hFδ_meas fun ω hω ↦ h_first_Fδ ω hω
   have h1b : ∫ ω in Fδᶜ, f1 ω ∂P ≤ ↑n * (hi - lo) * P.real Fδᶜ := by
@@ -1482,15 +1278,14 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     ENNReal.toReal_le_of_le_ofReal (by positivity) h_prob_F
   have hPE : P.real Eδᶜ ≤ 2 * ↑K * ↑n * δ :=
     ENNReal.toReal_le_of_le_ofReal (by positivity) h_prob
-  rw [s1, s2]
-  have hPF0 : 0 ≤ P.real Fδᶜ := by positivity
-  have hPE0 : 0 ≤ P.real Eδᶜ := by positivity
-  have hhi_lo : (0 : ℝ) ≤ hi - lo := sub_nonneg.mpr hlo
-  have h_key_F := mul_le_mul_of_nonneg_left hPF
-    (mul_nonneg (Nat.cast_nonneg n) hhi_lo)
-  have h_key_E := mul_le_mul_of_nonneg_left hPE
-    (mul_nonneg (Nat.cast_nonneg n) hhi_lo)
-  nlinarith
+  rw [(integral_add_compl hFδ_meas h_int_sum1).symm,
+    (integral_add_compl hEδ_meas h_int_sum2).symm]
+  nlinarith [mul_le_mul_of_nonneg_left hPF
+      (mul_nonneg (Nat.cast_nonneg n) (sub_nonneg.mpr hlo)),
+    mul_le_mul_of_nonneg_left hPE
+      (mul_nonneg (Nat.cast_nonneg n) (sub_nonneg.mpr hlo)),
+    measureReal_nonneg (μ := P) (s := Fδᶜ),
+    measureReal_nonneg (μ := P) (s := Eδᶜ)]
 
 lemma TS.bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ E' A R' (tsAlgorithm hK Q κ) P)

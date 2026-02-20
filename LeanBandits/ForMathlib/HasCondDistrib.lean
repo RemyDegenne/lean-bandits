@@ -184,7 +184,7 @@ lemma hasCondDistrib_prod_right_iff [IsFiniteMeasure μ] [IsFiniteKernel κ] (X 
 
 -- Claude
 lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
-    [IsProbabilityMeasure μ] [IsProbabilityMeasure Q]
+    [IsProbabilityMeasure μ] [IsFiniteMeasure Q]
     (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ where
   aemeasurable := h.aemeasurable_fst
   map_eq := by

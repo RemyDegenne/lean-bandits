@@ -21,25 +21,32 @@ namespace Bandits
 namespace TS
 
 variable {K : ℕ} (hK : 0 < K)
-variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
-variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
+variable {𝓔 : Type*} [mE : MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
+variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × 𝓔) ℝ) [IsMarkovKernel κ]
 
 /-- The distribution over actions for every given history for TS. -/
 noncomputable
 def policy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  IT.posteriorBestArm Q κ (uniformAlgorithm hK) n
-deriving IsMarkovKernel
+  (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map
+    (IsBayesAlgEnvSeq.bestAction κ id)
+
+instance (n : ℕ) : IsMarkovKernel (policy hK Q κ n) := by
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  unfold policy
+  exact Kernel.IsMarkovKernel.map _
+    (IsBayesAlgEnvSeq.measurable_bestAction measurable_id)
 
 /-- The initial distribution over actions for TS. -/
 noncomputable
 def initialPolicy : Measure (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  IT.priorBestArm Q κ (uniformAlgorithm hK)
+  Q.map (IsBayesAlgEnvSeq.bestAction κ id)
 
 instance : IsProbabilityMeasure (initialPolicy hK Q κ) := by
-  unfold initialPolicy
-  infer_instance
+  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+  exact Measure.isProbabilityMeasure_map
+    (IsBayesAlgEnvSeq.measurable_bestAction (by fun_prop)).aemeasurable
 
 end TS
 
@@ -47,14 +54,14 @@ variable {K : ℕ}
 
 section Algorithm
 
-variable {E : Type*} [MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
+variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 
 /-- The Thompson Sampling (TS) algorithm: actions are chosen according to the probability that they
 are optimal given prior knowledge represented by a prior distribution `Q` and a data generation
 model represented by a kernel `κ`. -/
 noncomputable
-def tsAlgorithm (hK : 0 < K) (Q : Measure E) [IsProbabilityMeasure Q]
-    (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
+def tsAlgorithm (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q]
+    (κ : Kernel (Fin K × 𝓔) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
   policy := TS.policy hK Q κ
   p0 := TS.initialPolicy hK Q κ
 
@@ -208,8 +215,22 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P
       =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
     condDistrib (IsBayesAlgEnvSeq.bestAction κ E') (IsAlgEnvSeq.hist A R' t) P :=
-  (h.hasCondDistrib_action' t).condDistrib_eq.trans
-    (posteriorBestArm_eq_uniform Q κ h hK t).symm
+  by
+  have h_ba_comp : IsBayesAlgEnvSeq.bestAction κ E'
+      = IsBayesAlgEnvSeq.bestAction κ id ∘ E' := by
+    rw [bestAction_eq_envToBestArm_comp_env κ (E' := E'),
+      bestAction_eq_envToBestArm_comp_env κ (E' := id), Function.comp_id]
+  rw [h_ba_comp]
+  have hm := IsBayesAlgEnvSeq.measurable_bestAction (κ := κ) measurable_id
+  have h_comp := condDistrib_comp (mβ := MeasurableSpace.pi) (μ := P)
+    (IsAlgEnvSeq.hist A R' t) h.measurable_E.aemeasurable hm
+  have h_map : (condDistrib E' (IsAlgEnvSeq.hist A R' t) P).map
+      (IsBayesAlgEnvSeq.bestAction κ id) =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
+      (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
+        (IsBayesAlgEnvSeq.bestAction κ id) := by
+    filter_upwards [posterior_eq_uniform Q κ h hK t] with x hx
+    simp only [Kernel.map_apply _ hm, hx]
+  exact (h.hasCondDistrib_action' t).condDistrib_eq.trans (h_comp.trans h_map).symm
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsMarkovKernel κ] in
 lemma le_armMean_bestArm [Nonempty (Fin K)] (ω : Ω) (i : Fin K) :
@@ -538,7 +559,7 @@ lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
   have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
       (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
       (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
-    rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.condDistrib_traj_isAlgEnvSeq h
+    rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
   filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
   let ν := κ.comap (·, e) (by fun_prop)
   have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
@@ -854,7 +875,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
       have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
           (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
           (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
-        rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.condDistrib_traj_isAlgEnvSeq h
+        rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
       filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
       exact concentration_cond_bound (hK := hK) (E' := E') (A := A) (R' := R')
         (Q := Q) (κ := κ) (P := P) hσ2 hs hn' hδ hδ1 e h_isAlgEnvSeq a
@@ -951,7 +972,7 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
     have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
         (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
         (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
-      rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.condDistrib_traj_isAlgEnvSeq h
+      rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
     filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
     intro a
     exact concentration_cond_bound (hK := hK) (E' := E') (A := A) (R' := R')

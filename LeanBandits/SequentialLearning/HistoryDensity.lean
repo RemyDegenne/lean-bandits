@@ -464,8 +464,8 @@ lemma absolutelyContinuous_map_hist_uniform
           condDistrib_comp Eu hWu_meas.aemeasurable (IT.measurable_hist t)
         filter_upwards [h_comp] with e he
         rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-      have hae₁ := h.condDistrib_traj_isAlgEnvSeq
-      have hae₂ := hu.condDistrib_traj_isAlgEnvSeq
+      have hae₁ := h.ae_IsAlgEnvSeq
+      have hae₂ := hu.ae_IsAlgEnvSeq
       filter_upwards [h_cd₁, h_cd₂, hae₁, hae₂] with e he₁ he₂ hae₁ hae₂
       rw [he₁, he₂, ← h_IT_hist]
       exact absolutelyContinuous_map_hist_stationary hK alg _ hae₁ hae₂ t)).map
@@ -513,8 +513,8 @@ lemma condDistrib_env_hist_alg_indep
         condDistrib_comp Eu hWu_meas.aemeasurable (IT.measurable_hist t)
       filter_upwards [h_comp] with e he
       rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-    have hae₁ := h.condDistrib_traj_isAlgEnvSeq
-    have hae₂ := hu.condDistrib_traj_isAlgEnvSeq
+    have hae₁ := h.ae_IsAlgEnvSeq
+    have hae₂ := hu.ae_IsAlgEnvSeq
     filter_upwards [h_cd₁, h_cd₂, hae₁, hae₂] with e he₁ he₂ hae₁ hae₂
     rw [Kernel.withDensity_apply _
       (show Measurable (Function.uncurry (fun (_ : E) => ρ)) from hρ_meas.comp measurable_snd),
@@ -583,48 +583,16 @@ lemma condDistrib_env_hist_alg_indep
   exact (condDistrib_ae_eq_iff_measure_eq_compProd _
     h.measurable_E.aemeasurable (condDistrib Eu (IsAlgEnvSeq.hist Au Ru t) Pu)).mpr h_swap
 
-/-- The posterior on the best arm equals the uniform algorithm's posterior. -/
-lemma posteriorBestArm_eq_uniform
+omit [StandardBorelSpace Ω] [Nonempty Ω] in
+/-- The environment posterior is algorithm-independent: it equals the posterior under the
+uniform algorithm, which is `IsBayesAlgEnvSeq.posterior`. -/
+lemma posterior_eq_uniform
     (h : IsBayesAlgEnvSeq Q κ alg E' A R' P) (hK : 0 < K) (t : ℕ) :
-    condDistrib (IsBayesAlgEnvSeq.bestAction κ E') (IsAlgEnvSeq.hist A R' t) P
+    condDistrib E' (IsAlgEnvSeq.hist A R' t) P
       =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-    IT.posteriorBestArm Q κ (Bandits.uniformAlgorithm hK) t := by
-  unfold IT.posteriorBestArm
-  set Pu := IT.bayesTrajMeasure Q κ (Bandits.uniformAlgorithm hK)
-  set histf := IsAlgEnvSeq.hist A R' t
-  set histfu := IsAlgEnvSeq.hist IT.action (fun n (ω : ℕ → Fin K × E × ℝ) ↦ (ω n).2.2) t
-  set envf := E'
-  set envfu : (ℕ → Fin K × E × ℝ) → E := fun ω ↦ (ω 0).2.1
-  set bau := IsBayesAlgEnvSeq.bestAction (Ω := ℕ → Fin K × E × ℝ) κ envfu
-  have h_ITu := IT.isBayesAlgEnvSeq_bayesianTrajMeasure Q κ (Bandits.uniformAlgorithm hK)
-  -- LHS: condDistrib (bestArm κ E') histf P
-  --   =ᵐ (condDistrib envf histf P).map (envToBestArm κ)
-  have h_comp_alg : condDistrib (IsBayesAlgEnvSeq.bestAction κ E') histf P
-      =ᵐ[P.map histf] (condDistrib envf histf P).map (envToBestArm κ) := by
-    rw [bestAction_eq_envToBestArm_comp_env κ]
-    exact condDistrib_comp (mβ := MeasurableSpace.pi) histf
-      h.measurable_E.aemeasurable (measurable_envToBestArm κ)
-  -- RHS: condDistrib bau histfu Pu
-  --   =ᵐ (condDistrib envfu histfu Pu).map (envToBestArm κ)
-  have h_comp_unif : condDistrib bau histfu Pu
-      =ᵐ[Pu.map histfu] (condDistrib envfu histfu Pu).map (envToBestArm κ) := by
-    change condDistrib (IsBayesAlgEnvSeq.bestAction κ envfu) histfu Pu
-      =ᵐ[Pu.map histfu] (condDistrib envfu histfu Pu).map (envToBestArm κ)
-    rw [bestAction_eq_envToBestArm_comp_env κ]
-    exact condDistrib_comp (mβ := MeasurableSpace.pi) histfu
-      h_ITu.measurable_E.aemeasurable (measurable_envToBestArm κ)
-  -- Environment posterior independence
-  have h_env_indep := condDistrib_env_hist_alg_indep Q κ h hK h_ITu t
-  -- Map both sides by envToBestArm
-  have h_map_indep : (condDistrib envf histf P).map (envToBestArm κ)
-      =ᵐ[P.map histf] (condDistrib envfu histfu Pu).map (envToBestArm κ) := by
-    filter_upwards [h_env_indep] with x hx
-    simp only [Kernel.map_apply _ (measurable_envToBestArm κ)]
-    rw [hx]
-  -- Transfer h_comp_unif from ae[Pu.map histfu] to ae[P.map histf]
-  exact h_comp_alg.trans (h_map_indep.trans
-    (h_comp_unif.filter_mono
-      (absolutelyContinuous_map_hist_uniform Q κ h hK h_ITu t).ae_le).symm)
+    IT.bayesTrajMeasurePosterior Q κ (Bandits.uniformAlgorithm hK) t :=
+  condDistrib_env_hist_alg_indep Q κ h hK
+    (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (Bandits.uniformAlgorithm hK)) t
 
 end PosteriorIndependence
 

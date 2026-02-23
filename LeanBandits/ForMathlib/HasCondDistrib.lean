@@ -195,6 +195,18 @@ lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
       (h.aemeasurable_snd.prodMk h.aemeasurable_fst)]
     rfl
 
+lemma HasCondDistrib.swap_const {Q : Measure Ω}
+    [StandardBorelSpace β] [Nonempty β]
+    [IsProbabilityMeasure μ] [IsFiniteMeasure Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) :
+    HasCondDistrib X Y (Kernel.const Ω (μ.map X)) μ := by
+  have h_indep : IndepFun X Y μ := by
+    rw [indepFun_iff_condDistrib_eq_const h.aemeasurable_snd h.aemeasurable_fst,
+      h.hasLaw_of_const.map_eq]
+    exact h.condDistrib_eq
+  exact ⟨h.aemeasurable_snd, h.aemeasurable_fst,
+    condDistrib_of_indepFun h_indep.symm h.aemeasurable_fst h.aemeasurable_snd⟩
+
 lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFiniteKernel κ]
     (h1 : HasLaw X P μ) (h2 : HasCondDistrib Y X κ μ) :
     HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ := by
@@ -278,5 +290,52 @@ lemma HasCondDistrib.comp_left [IsFiniteMeasure μ] [IsFiniteKernel κ] {f : γ 
         refine lintegral_congr fun x ↦ ?_
         rw [Kernel.comap_apply]
         congr 1
+
+/-- Transfer a `HasCondDistrib` from the outer probability space to the conditional distribution
+of `W` given `Z`. If `g ∘ W` is conditionally distributed as `η` given `(Z, f ∘ W)`, then in the
+conditional space given `Z = z`, `g` is conditionally distributed as `η.sectR z` given `f`. -/
+lemma HasCondDistrib.ae_hasCondDistrib_sectR [IsFiniteMeasure μ]
+    [StandardBorelSpace β] [Nonempty β]
+    {δ : Type*} [MeasurableSpace δ] [StandardBorelSpace δ] [Nonempty δ]
+    {W : α → δ} {Z : α → γ}
+    {f : δ → β} {g : δ → Ω}
+    {η : Kernel (γ × β) Ω} [IsFiniteKernel η]
+    (hf : Measurable f) (hg : Measurable g)
+    (hW : AEMeasurable W μ) (hZ : AEMeasurable Z μ)
+    (hcd : HasCondDistrib (g ∘ W) (fun ω ↦ (Z ω, (f ∘ W) ω)) η μ) :
+    ∀ᵐ z ∂(μ.map Z), HasCondDistrib g f (η.sectR z) (condDistrib W Z μ z) := by
+  have hfW := hf.comp_aemeasurable hW
+  have h_prod := condDistrib_prod_left hfW (hg.comp_aemeasurable hW) hZ (μ := μ)
+  have h_comp_pair : (condDistrib (fun ω ↦ ((f ∘ W) ω, (g ∘ W) ω)) Z μ)
+      =ᵐ[μ.map Z] (condDistrib W Z μ).map (fun w ↦ (f w, g w)) :=
+    condDistrib_comp Z hW (hf.prodMk hg)
+  have h_comp_fst : (condDistrib (f ∘ W) Z μ)
+      =ᵐ[μ.map Z] (condDistrib W Z μ).map f :=
+    condDistrib_comp Z hW hf
+  have h_nested := (Kernel.ae_eq_map_prod_iff_ae_condDistrib hfW).mp hcd.condDistrib_eq
+  filter_upwards [h_prod, h_comp_pair, h_comp_fst, h_nested]
+    with z h_prod_z h_pair_z h_fst_z h_nested_z
+  refine ⟨hg.aemeasurable, hf.aemeasurable, ?_⟩
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd f hg.aemeasurable,
+    ← Kernel.map_apply _ (hf.prodMk hg), ← h_pair_z,
+    ← Kernel.map_apply _ hf, ← h_fst_z,
+    h_prod_z, Kernel.compProd_apply_eq_compProd_sectR]
+  exact Measure.compProd_congr (h_nested_z.mono fun a ha ↦ by
+    simp only [Kernel.sectR_apply]; exact ha)
+
+/-- Variant of `ae_hasCondDistrib_sectR` where `Z` appears second in the conditioning pair.
+If `g ∘ W` is conditionally distributed as `η` given `(f ∘ W, Z)`, then in the conditional space
+given `Z = z`, `g` is conditionally distributed as `η.sectL z` given `f`. -/
+lemma HasCondDistrib.ae_hasCondDistrib_sectL [IsFiniteMeasure μ]
+    [StandardBorelSpace β] [Nonempty β]
+    {δ : Type*} [MeasurableSpace δ] [StandardBorelSpace δ] [Nonempty δ]
+    {W : α → δ} {Z : α → γ}
+    {f : δ → β} {g : δ → Ω}
+    {η : Kernel (β × γ) Ω} [IsFiniteKernel η]
+    (hf : Measurable f) (hg : Measurable g)
+    (hW : AEMeasurable W μ) (hZ : AEMeasurable Z μ)
+    (hcd : HasCondDistrib (g ∘ W) (fun ω ↦ ((f ∘ W) ω, Z ω)) η μ) :
+    ∀ᵐ z ∂(μ.map Z), HasCondDistrib g f (η.sectL z) (condDistrib W Z μ z) :=
+  (hcd.comp_right .prodComm).ae_hasCondDistrib_sectR hf hg hW hZ
 
 end ProbabilityTheory

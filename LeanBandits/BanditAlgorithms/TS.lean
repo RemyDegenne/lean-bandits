@@ -22,7 +22,7 @@ namespace TS
 
 variable {K : ℕ} (hK : 0 < K)
 variable {𝓔 : Type*} [mE : MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × 𝓔) ℝ) [IsMarkovKernel κ]
+variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ]
 
 /-- The distribution over actions for every given history for TS. -/
 noncomputable
@@ -61,7 +61,7 @@ are optimal given prior knowledge represented by a prior distribution `Q` and a 
 model represented by a kernel `κ`. -/
 noncomputable
 def tsAlgorithm (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q]
-    (κ : Kernel (Fin K × 𝓔) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
+    (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
   policy := TS.policy hK Q κ
   p0 := TS.initialPolicy hK Q κ
 
@@ -73,7 +73,7 @@ variable {E : Type*} [mE : MeasurableSpace E] [StandardBorelSpace E] [Nonempty E
 variable (hK : 0 < K)
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable (E' : Ω → E) (A : ℕ → Ω → (Fin K)) (R' : ℕ → Ω → ℝ)
-variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
+variable (Q : Measure E) [IsProbabilityMeasure Q] (κ : Kernel (E × Fin K) ℝ) [IsMarkovKernel κ]
 variable (P : Measure Ω) [IsProbabilityMeasure P]
 
 noncomputable
@@ -176,7 +176,7 @@ lemma measurable_ucbIndex [Nonempty (Fin K)]
       (measurable_const.div hpc).sqrt)))
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsMarkovKernel κ] in
-lemma armMean_le_ucbIndex {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc lo hi))
+lemma armMean_le_ucbIndex {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
     (σ2 δ : ℝ) (a : Fin K) (t : ℕ) (ω : Ω)
     (hconc : pullCount A a t ω ≠ 0 →
       |empMean A R' a t ω - IsBayesAlgEnvSeq.actionMean κ E' a ω|
@@ -192,7 +192,7 @@ lemma armMean_le_ucbIndex {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.
     linarith [habs.2]
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsMarkovKernel κ] in
-lemma ucbIndex_sub_armMean_le {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc lo hi))
+lemma ucbIndex_sub_armMean_le {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
     (σ2 δ : ℝ) (a : Fin K) (t : ℕ) (ω : Ω) (hpc : pullCount A a t ω ≠ 0)
     (hconc :
       |empMean A R' a t ω - IsBayesAlgEnvSeq.actionMean κ E' a ω|
@@ -241,7 +241,7 @@ lemma le_armMean_bestArm [Nonempty (Fin K)] (ω : Ω) (i : Fin K) :
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsMarkovKernel κ] in
 lemma iSup_armMean_eq_bestArm [Nonempty (Fin K)] {lo hi : ℝ}
-    (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc lo hi)
+    (hm : ∀ a e, (κ (e, a))[id] ∈ Set.Icc lo hi)
     (ω : Ω) : ⨆ i, IsBayesAlgEnvSeq.actionMean κ E' i ω =
     IsBayesAlgEnvSeq.actionMean κ E' (IsBayesAlgEnvSeq.bestAction κ E' ω) ω :=
   le_antisymm (ciSup_le (le_armMean_bestArm E' κ ω))
@@ -250,33 +250,33 @@ lemma iSup_armMean_eq_bestArm [Nonempty (Fin K)] {lo hi : ℝ}
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsMarkovKernel κ] in
 lemma gap_eq_armMean_sub [Nonempty (Fin K)] {lo hi : ℝ}
-    (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc lo hi)
-    (s : ℕ) (ω : Ω) : gap (κ.comap (·, E' ω) (by fun_prop)) (A s ω) =
+    (hm : ∀ a e, (κ (e, a))[id] ∈ Set.Icc lo hi)
+    (s : ℕ) (ω : Ω) : gap (κ.sectR (E' ω)) (A s ω) =
     IsBayesAlgEnvSeq.actionMean κ E' (IsBayesAlgEnvSeq.bestAction κ E' ω) ω -
     IsBayesAlgEnvSeq.actionMean κ E' (A s ω) ω := by
-  simp only [gap, Kernel.comap_apply]
+  simp only [gap, Kernel.sectR_apply]
   exact congr_arg (· - _) (iSup_armMean_eq_bestArm E' κ hm ω)
 
 omit [StandardBorelSpace E] [Nonempty E] [IsProbabilityMeasure Q] [IsMarkovKernel κ] in
 lemma bayesRegret_eq_sum_integral_gap [Nonempty (Fin K)]
     {alg : Algorithm (Fin K) ℝ}
     (h : IsBayesAlgEnvSeq Q κ alg E' A R' P)
-    {C : ℝ} (hm : ∀ a e, |(κ (a, e))[id]| ≤ C) (t : ℕ) :
+    {C : ℝ} (hm : ∀ a e, |(κ (e, a))[id]| ≤ C) (t : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E' A t] =
-    ∑ s ∈ range t, P[fun ω ↦ gap (κ.comap (·, E' ω) (by fun_prop))
+    ∑ s ∈ range t, P[fun ω ↦ gap (κ.sectR (E' ω))
       (A s ω)] := by
   simp only [IsBayesAlgEnvSeq.regret, regret_eq_sum_gap]
   refine integral_finset_sum _ (fun s _ => ?_)
-  have hmeas : Measurable (fun ω ↦ gap (κ.comap (·, E' ω) (by fun_prop))
+  have hmeas : Measurable (fun ω ↦ gap (κ.sectR (E' ω))
       (A s ω)) :=
     (Measurable.iSup (fun a ↦ IsBayesAlgEnvSeq.measurable_actionMean
       (a := a) h.measurable_E)).sub
       (stronglyMeasurable_id.integral_kernel.measurable.comp
-        ((h.measurable_A s).prodMk h.measurable_E))
+        (h.measurable_E.prodMk (h.measurable_A s)))
   refine ⟨hmeas.aestronglyMeasurable, HasFiniteIntegral.of_bounded (C := 2 * C)
     (Filter.Eventually.of_forall fun ω => ?_)⟩
-  simp only [Real.norm_eq_abs, gap, Kernel.comap_apply]
-  have hbdd : BddAbove (Set.range fun i => (κ (i, E' ω))[id]) :=
+  simp only [Real.norm_eq_abs, gap, Kernel.sectR_apply]
+  have hbdd : BddAbove (Set.range fun i => (κ (E' ω, i))[id]) :=
     ⟨C, by rintro _ ⟨i, rfl⟩; exact le_of_abs_le (hm i _)⟩
   rw [abs_of_nonneg (sub_nonneg.mpr (le_ciSup hbdd _))]
   linarith [ciSup_le fun i => le_of_abs_le (hm i (E' ω)),
@@ -308,7 +308,7 @@ lemma sum_comp_pullCount (f : ℕ → ℝ) (n : ℕ) (ω : Ω) :
 
 omit [StandardBorelSpace E] [Nonempty E] [MeasurableSpace Ω] [IsProbabilityMeasure Q]
     [IsMarkovKernel κ] [IsProbabilityMeasure P] in
-lemma sum_ucbIndex_sub_armMean_le {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc lo hi))
+lemma sum_ucbIndex_sub_armMean_le {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
     (hlo : lo ≤ hi) (σ2 δ : ℝ) (n : ℕ) (ω : Ω)
     (hconc : ∀ s < n, ∀ a, pullCount A a s ω ≠ 0 →
       |empMean A R' a s ω - IsBayesAlgEnvSeq.actionMean κ E' a ω|
@@ -547,24 +547,24 @@ private lemma streamMeasure_concentration_bound {α : Type*} [MeasurableSpace α
 lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
-    {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc lo hi)
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ Set.Icc lo hi)
     (a : Fin K) (s : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1)
     (hδ_large : max |lo| |hi| < √(2 * ↑σ2 * Real.log (1 / δ))) :
     ∀ᵐ e ∂(P.map (E')),
       (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
         {ω | √(2 * ↑σ2 * Real.log (1 / δ) / (max 1 (pullCount IT.action a s ω) : ℝ)) ≤
-          |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|} ≤
+          |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|} ≤
       ENNReal.ofReal (2 * s * δ) := by
   have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
-      (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+      (tsAlgorithm hK Q κ) (stationaryEnv (κ.sectR e))
       (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
     rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
   filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
-  let ν := κ.comap (·, e) (by fun_prop)
+  let ν := κ.sectR e
   have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
-    simp only [ν, Kernel.comap_apply]; exact hs a' e
-  have h_mean : (ν a)[id] = (κ (a, e))[id] := by simp only [ν, Kernel.comap_apply]
+    simp only [ν, Kernel.sectR_apply]; exact hs a' e
+  have h_mean : (ν a)[id] = (κ (e, a))[id] := by simp only [ν, Kernel.sectR_apply]
   rw [← h_mean]
   let P' := condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e
   have h_law := h_isAlgEnvSeq.law_pullCount_sumRewards_unique'
@@ -646,8 +646,8 @@ lemma prob_concentration_single_delta_cond [Nonempty (Fin K)]
 lemma prob_concentration_single_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
-    {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ Set.Icc lo hi)
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ Set.Icc lo hi)
     (a : Fin K) (s : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1)
     (hδ_large : max |lo| |hi| < √(2 * ↑σ2 * Real.log (1 / δ))) :
     P {ω | √(2 * ↑σ2 * Real.log (1 / δ) / (max 1 (pullCount A a s ω) : ℝ)) ≤
@@ -655,7 +655,7 @@ lemma prob_concentration_single_delta [Nonempty (Fin K)]
       ENNReal.ofReal (2 * s * δ) := by
   let badSet : E → Set (ℕ → (Fin K) × ℝ) := fun e ↦
     {t | √(2 * ↑σ2 * Real.log (1 / δ) / (max 1 (pullCount IT.action a s t) : ℝ)) ≤
-      |empMean IT.action IT.reward a s t - (κ (a, e))[id]|}
+      |empMean IT.action IT.reward a s t - (κ (e, a))[id]|}
   have h_set_eq : {ω | √(2 * ↑σ2 * Real.log (1 / δ) /
       (max 1 (pullCount A a s ω) : ℝ)) ≤
       |empMean A R' a s ω - IsBayesAlgEnvSeq.actionMean κ E' a ω|} =
@@ -680,12 +680,12 @@ lemma prob_concentration_single_delta [Nonempty (Fin K)]
       (h.measurable_A n).prodMk (h.measurable_R n)).aemeasurable)).symm
   have h_cond := prob_concentration_single_delta_cond hK E' A R' Q κ P h hσ2 hs hm a s δ hδ hδ1
     hδ_large
-  have h_kernel : Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (a, p.1))[id]) :=
-    stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_const.prodMk measurable_fst)
+  have h_kernel : Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
+    stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_fst.prodMk measurable_const)
   have h_meas_set : MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) | p.2 ∈ badSet p.1} := by
     change MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
         √(2 * ↑σ2 * Real.log (1 / δ) / (max 1 (pullCount IT.action a s p.2) : ℝ)) ≤
-        |empMean IT.action IT.reward a s p.2 - (κ (a, p.1))[id]|}
+        |empMean IT.action IT.reward a s p.2 - (κ (p.1, a))[id]|}
     exact measurableSet_le (by fun_prop)
       (((measurable_empMean IT.measurable_action IT.measurable_reward a s).comp measurable_snd).sub
         h_kernel).abs
@@ -709,22 +709,22 @@ lemma prob_concentration_single_delta [Nonempty (Fin K)]
 
 private lemma concentration_cond_bound [Nonempty (Fin K)]
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     {n : ℕ} (hn : 0 < n) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1)
     (e : E) (h_isAlgEnvSeq : IsAlgEnvSeq IT.action IT.reward (tsAlgorithm hK Q κ)
-      (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+      (stationaryEnv (κ.sectR e))
       (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e))
     (a : Fin K) :
     (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
       (⋃ s ∈ Finset.range n, {ω | pullCount IT.action a s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
-          |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}) ≤
+          |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|}) ≤
       ENNReal.ofReal (2 * n * δ) := by
-  let ν := κ.comap (·, e) (by fun_prop)
+  let ν := κ.sectR e
   let P' := condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e
   have h_subG : ∀ a', HasSubgaussianMGF (fun x ↦ x - (ν a')[id]) σ2 (ν a') := fun a' ↦ by
-    simp only [ν, Kernel.comap_apply]; exact hs a' e
-  have h_mean : (ν a)[id] = (κ (a, e))[id] := by simp only [ν, Kernel.comap_apply]
+    simp only [ν, Kernel.sectR_apply]; exact hs a' e
+  have h_mean : (ν a)[id] = (κ (e, a))[id] := by simp only [ν, Kernel.sectR_apply]
   let B_low := fun m : ℕ ↦
     {x : ℝ | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]}
   let B_high := fun m : ℕ ↦
@@ -739,7 +739,7 @@ private lemma concentration_cond_bound [Nonempty (Fin K)]
   let badSetIT := fun (s : ℕ) ↦ {ω : ℕ → (Fin K) × ℝ |
     pullCount IT.action a s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
-        |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}
+        |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|}
   let S := Finset.Icc 1 (n - 1)
   have hS_card : S.card = n - 1 := by simp only [Nat.card_Icc, S]; omega
   have h_decomp : ⋃ s ∈ Finset.range n, badSetIT s =
@@ -822,7 +822,7 @@ private lemma concentration_cond_bound [Nonempty (Fin K)]
 lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ)) ≤
@@ -851,7 +851,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     let badSetIT := fun (s : ℕ) (e : E) ↦ {ω : ℕ → (Fin K) × ℝ |
       pullCount IT.action a s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
-          |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}
+          |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|}
     have h_set_eq : ⋃ s ∈ Finset.range n, badSet s a =
         (fun ω ↦ (E' ω, (fun ω n => (A n ω, R' n ω)) ω)) ⁻¹'
           {p | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT s p.1} := by
@@ -873,14 +873,14 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
         (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
           (⋃ s ∈ Finset.range n, badSetIT s e) ≤ ENNReal.ofReal (2 * n * δ) := by
       have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
-          (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+          (tsAlgorithm hK Q κ) (stationaryEnv (κ.sectR e))
           (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
         rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
       filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
       exact concentration_cond_bound (hK := hK) (E' := E') (A := A) (R' := R')
         (Q := Q) (κ := κ) (P := P) hσ2 hs hn' hδ hδ1 e h_isAlgEnvSeq a
-    have h_kernel : Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (a, p.1))[id]) :=
-      stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_const.prodMk measurable_fst)
+    have h_kernel : Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
+      stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_fst.prodMk measurable_const)
     have h_meas_set : MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
         p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT s p.1} := by
       have h_eq : {p : E × (ℕ → (Fin K) × ℝ) | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT s p.1} =
@@ -892,7 +892,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
         change MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
             pullCount IT.action a s p.2 ≠ 0 ∧
               √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s p.2 : ℝ)) ≤
-              |empMean IT.action IT.reward a s p.2 - (κ (a, p.1))[id]|}
+              |empMean IT.action IT.reward a s p.2 - (κ (p.1, a))[id]|}
         exact MeasurableSet.inter
           (((measurable_pullCount IT.measurable_action a s).comp measurable_snd)
             (measurableSet_singleton (0 : ℕ)).compl)
@@ -929,7 +929,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
 lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P {ω | ∃ s < n, pullCount A (IsBayesAlgEnvSeq.bestAction κ E' ω) s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) /
@@ -945,7 +945,7 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
   let badSetIT := fun (a : Fin K) (s : ℕ) (e : E) ↦ {ω : ℕ → (Fin K) × ℝ |
     pullCount IT.action a s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
-        |empMean IT.action IT.reward a s ω - (κ (a, e))[id]|}
+        |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|}
   have h_set_eq : {ω | ∃ s < n, pullCount A ((envToBestArm κ ∘ E') ω) s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) /
         (pullCount A ((envToBestArm κ ∘ E') ω) s ω : ℝ)) ≤
@@ -970,7 +970,7 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
       (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
         (⋃ s ∈ Finset.range n, badSetIT a s e) ≤ ENNReal.ofReal (2 * n * δ) := by
     have h_cond_ae : ∀ᵐ e ∂(P.map E'), IsAlgEnvSeq IT.action IT.reward
-        (tsAlgorithm hK Q κ) (stationaryEnv (κ.comap (·, e) (by fun_prop)))
+        (tsAlgorithm hK Q κ) (stationaryEnv (κ.sectR e))
         (condDistrib (fun ω n ↦ (A n ω, R' n ω)) E' P e) := by
       rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
     filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
@@ -983,9 +983,9 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
           ENNReal.ofReal (2 * n * δ) := by
     filter_upwards [h_cond_bound] with e he
     exact he (envToBestArm κ e)
-  have h_kernel : ∀ a, Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (a, p.1))[id]) :=
+  have h_kernel : ∀ a, Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
     fun a ↦ stronglyMeasurable_id.integral_kernel.measurable.comp
-      (measurable_const.prodMk measurable_fst)
+      (measurable_fst.prodMk measurable_const)
   have h_meas_badSetIT : ∀ a s, MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
       p.2 ∈ badSetIT a s p.1} := by
     intro a s
@@ -993,7 +993,7 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
     change MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
         pullCount IT.action a s p.2 ≠ 0 ∧
           √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s p.2 : ℝ)) ≤
-          |empMean IT.action IT.reward a s p.2 - (κ (a, p.1))[id]|}
+          |empMean IT.action IT.reward a s p.2 - (κ (p.1, a))[id]|}
     exact MeasurableSet.inter
       (((measurable_pullCount IT.measurable_action a s).comp measurable_snd)
         (measurableSet_singleton (0 : ℕ)).compl)
@@ -1036,8 +1036,8 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
 lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
-    {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc lo hi))
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P[IsBayesAlgEnvSeq.regret κ E' A n]
       ≤ (hi - lo) * ↑K + 2 * (↑K + 1) * (hi - lo) * n ^ 2 * δ +
@@ -1332,8 +1332,8 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
 lemma TS.bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E' A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (a, e))[id]) σ2 (κ (a, e)))
-    {lo hi : ℝ} (hm : ∀ a e, (κ (a, e))[id] ∈ (Set.Icc lo hi)) (t : ℕ) :
+    (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi)) (t : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E' A t]
       ≤ (3 * K + 2) * (hi - lo) + 8 * √(σ2 * K * t * Real.log t) := by
   have ⟨h1, h2⟩ := hm (Classical.arbitrary _) (Classical.arbitrary _)
@@ -1349,7 +1349,7 @@ lemma TS.bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
         ≤ hi - lo := by
           unfold IsBayesAlgEnvSeq.regret Bandits.regret
           simp only [Finset.range_one, Finset.sum_singleton, Nat.cast_one, one_mul,
-            Kernel.comap_apply]
+            Kernel.sectR_apply]
           refine (integral_mono_of_nonneg (ae_of_all _ fun ω ↦ sub_nonneg.mpr
               (le_ciSup ⟨hi, by rintro _ ⟨a, rfl⟩; exact (hm a _).2⟩ _))
             (integrable_const (hi - lo)) (ae_of_all _ fun ω ↦ by

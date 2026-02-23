@@ -378,20 +378,20 @@ transfers to the posterior on the best arm via `condDistrib_comp`.
 variable {K : ℕ} [Nonempty (Fin K)]
 variable {E : Type*} [MeasurableSpace E] [StandardBorelSpace E] [Nonempty E]
 variable (Q : Measure E) [IsProbabilityMeasure Q]
-variable (κ : Kernel (Fin K × E) ℝ) [IsMarkovKernel κ]
+variable (κ : Kernel (E × Fin K) ℝ) [IsMarkovKernel κ]
 variable {Ω : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
 variable {E' : Ω → E} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
 variable {alg : Algorithm (Fin K) ℝ}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 /-- Maps an environment to the best arm (the arm with highest mean reward). -/
-noncomputable def envToBestArm (κ : Kernel (Fin K × E) ℝ) : E → Fin K :=
-  measurableArgmax fun e a ↦ (κ (a, e))[id]
+noncomputable def envToBestArm (κ : Kernel (E × Fin K) ℝ) : E → Fin K :=
+  measurableArgmax fun e a ↦ (κ (e, a))[id]
 
 omit [StandardBorelSpace E] [Nonempty E] [IsMarkovKernel κ] in
 lemma measurable_envToBestArm : Measurable (envToBestArm κ) :=
   measurable_measurableArgmax fun _ ↦
-    stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_const.prodMk measurable_id)
+    stronglyMeasurable_id.integral_kernel.measurable.comp (measurable_id.prodMk measurable_const)
 
 omit [StandardBorelSpace E] [Nonempty E] [IsMarkovKernel κ] [MeasurableSpace Ω]
     [IsProbabilityMeasure P] [Nonempty Ω] in

@@ -104,7 +104,7 @@ lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
     ∀ᵐ e ∂Q, HasLaw (IT.action 0) alg.p0 (condDistrib (trajectory A R') E P e) := by
   rw [← h.hasLaw_env.map_eq]
   filter_upwards [condDistrib_comp E
-      (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable
+      ((measurable_trajectory h.measurable_A h.measurable_R).aemeasurable)
       (IT.measurable_action (α := α) (R := R) 0),
     h.hasCondDistrib_action_zero.condDistrib_eq] with e hc hcd
   exact ⟨(IT.measurable_action 0).aemeasurable, by
@@ -131,38 +131,25 @@ lemma hasCondDistrib_IT_action (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ
   rwa [Kernel.sectR_prodMkLeft] at he
 
 lemma hasCondDistrib_IT_reward [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.reward (n + 1)) (fun x ↦ (IT.hist n x, IT.action (n + 1) x))
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.reward (n + 1)) (fun τ ↦ (IT.hist n τ, IT.action (n + 1) τ))
       ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A R') E P e) := by
   rw [← h.hasLaw_env.map_eq]
-  have hmt := measurable_trajectory h.measurable_A h.measurable_R
-  have hm := IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n
   have h_reorder : HasCondDistrib (R' (n + 1))
-      (fun ω ↦ ((IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω), E ω))
-      ((κ.prodMkLeft _).comap (fun ((h, a), e) ↦ (h, (e, a))) (by fun_prop)) P := by
-    convert (h.hasCondDistrib_reward n).comp_right
-      ((MeasurableEquiv.prodCongr (.refl _) .prodComm).trans MeasurableEquiv.prodAssoc.symm) using 2
-  filter_upwards [h_reorder.ae_hasCondDistrib_sectL
-    ((IT.measurable_hist n).prodMk (IT.measurable_action (n + 1)))
-    (IT.measurable_reward (n + 1))
-    hmt.aemeasurable h.measurable_E.aemeasurable] with e he
-  have hk : ((κ.prodMkLeft _).comap (fun ((h, a), e) ↦ (h, (e, a))) (by fun_prop)).sectL e =
-      (κ.sectR e).prodMkLeft (↥(Iic n) → α × R) :=
-    Kernel.ext fun ⟨_, a⟩ ↦ by
-      simp [Kernel.sectL_apply, Kernel.comap_apply, Kernel.prodMkLeft_apply]
-  rw [hk] at he; exact he
+      (fun ω ↦ (E ω, IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
+      (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
+    (h.hasCondDistrib_reward n).comp_right (MeasurableEquiv.prodAssoc.symm.trans
+      ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
+  exact h_reorder.ae_hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
+    (IT.measurable_action (n + 1))) (IT.measurable_reward (n + 1))
+    (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable h.measurable_E.aemeasurable
 
 lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
     ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward alg (stationaryEnv (κ.sectR e))
       (condDistrib (trajectory A R') E P e) := by
   filter_upwards [hasLaw_IT_action_zero h, hasCondDistrib_IT_reward_zero h,
     ae_all_iff.2 (hasCondDistrib_IT_action h), ae_all_iff.2 (hasCondDistrib_IT_reward h)]
-    with _ h_a0 h_r0 h_a h_r
-  exact {
-    hasLaw_action_zero := h_a0
-    hasCondDistrib_reward_zero := h_r0
-    hasCondDistrib_action := h_a
-    hasCondDistrib_reward := h_r
-  }
+    with _ ha0 hr0 hA hR
+  exact ⟨IT.measurable_action, IT.measurable_reward, ha0, hr0, hA, hR⟩
 
 end CondDistribIsAlgEnvSeq
 
@@ -194,28 +181,26 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
     apply HasCondDistrib.hasLaw_of_const
     simpa [bayesStationaryEnv] using h.hasCondDistrib_reward_zero.fst
   hasCondDistrib_action_zero := by
-    have hfst : HasCondDistrib (fun ω ↦ (R' 0 ω).1) (A 0) (Kernel.const α Q) P := by
+    have hfst : HasCondDistrib (fun ω ↦ (R' 0 ω).1) (A 0) (Kernel.const _ Q) P := by
       simpa [bayesStationaryEnv] using h.hasCondDistrib_reward_zero.fst
     simpa [h.hasLaw_action_zero.map_eq, Algorithm.prod_left] using hfst.swap_const
-  hasCondDistrib_reward_zero := by
-    have h0 := h.hasCondDistrib_reward_zero
-    simp only [bayesStationaryEnv] at h0
-    convert h0.of_compProd.comp_right (MeasurableEquiv.prodComm : α × 𝓔 ≃ᵐ 𝓔 × α) using 2
+  hasCondDistrib_reward_zero :=
+    h.hasCondDistrib_reward_zero.of_compProd.comp_right MeasurableEquiv.prodComm
   hasCondDistrib_action n := by
     let f : (Iic n → α × 𝓔 × R) → 𝓔 × (Iic n → α × R) :=
       fun h ↦ ((h ⟨0, by simp⟩).2.1, fun i ↦ ((h i).1, (h i).2.2))
-    suffices h' : HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A R' n)
-        (((alg.policy n).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P from
-      h'.comp_left (f := f)
-    exact h.hasCondDistrib_action n
+    have hc : HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A R' n)
+        (((alg.policy n).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P :=
+      h.hasCondDistrib_action n
+    exact hc.comp_left (f := f)
   hasCondDistrib_reward n := by
     let f : (Iic n → α × 𝓔 × R) × α → (Iic n → α × R) × 𝓔 × α :=
       fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), (p.1 ⟨0, by simp⟩).2.1, p.2)
-    have hf : Measurable f := by fun_prop
-    suffices h' : HasCondDistrib (fun ω ↦ (R' (n + 1) ω).2)
+    have hc : HasCondDistrib (fun ω ↦ (R' (n + 1) ω).2)
         (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
-        ((Kernel.prodMkLeft (↥(Iic n) → α × R) κ).comap f hf) P from h'.comp_left hf
-    simpa [bayesStationaryEnv, Kernel.snd_prod] using (h.hasCondDistrib_reward n).snd
+        ((Kernel.prodMkLeft ((Iic n) → α × R) κ).comap f (by fun_prop)) P := by
+      simpa [bayesStationaryEnv, Kernel.snd_prod] using (h.hasCondDistrib_reward n).snd
+    exact hc.comp_left (by fun_prop)
 
 end IsAlgEnvSeq
 
@@ -234,13 +219,12 @@ lemma isBayesAlgEnvSeq_bayesTrajMeasure
     (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × α) R) [IsMarkovKernel κ]
     (alg : Algorithm α R) :
     IsBayesAlgEnvSeq Q κ alg (fun ω ↦ (ω 0).2.1) action (fun n ω ↦ (ω n).2.2)
-       (bayesTrajMeasure Q κ alg) :=
-  (isAlgEnvSeq_trajMeasure _ _).isBayesAlgEnvSeq
+       (bayesTrajMeasure Q κ alg) := (isAlgEnvSeq_trajMeasure _ _).isBayesAlgEnvSeq
 
 noncomputable
 def bayesTrajMeasurePosterior [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-    (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × α) ℝ) [IsMarkovKernel κ]
-    (alg : Algorithm α ℝ) (n : ℕ) : Kernel (Iic n → α × ℝ) 𝓔 :=
+    (Q : Measure 𝓔)  (κ : Kernel (𝓔 × α) R) [IsMarkovKernel κ]
+    (alg : Algorithm α R) (n : ℕ) : Kernel (Iic n → α × R) 𝓔 :=
   condDistrib (fun ω ↦ (ω 0).2.1) (IsAlgEnvSeq.hist action (fun n ω ↦ (ω n).2.2) n)
     (bayesTrajMeasure Q κ alg)
 deriving IsMarkovKernel

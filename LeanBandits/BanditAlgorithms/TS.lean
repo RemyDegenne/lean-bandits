@@ -217,9 +217,7 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     condDistrib (IsBayesAlgEnvSeq.bestAction κ E') (IsAlgEnvSeq.hist A R' t) P :=
   by
   have h_ba_comp : IsBayesAlgEnvSeq.bestAction κ E'
-      = IsBayesAlgEnvSeq.bestAction κ id ∘ E' := by
-    rw [bestAction_eq_envToBestArm_comp_env κ (E' := E'),
-      bestAction_eq_envToBestArm_comp_env κ (E' := id), Function.comp_id]
+      = IsBayesAlgEnvSeq.bestAction κ id ∘ E' := rfl
   rw [h_ba_comp]
   have hm := IsBayesAlgEnvSeq.measurable_bestAction (κ := κ) measurable_id
   have h_comp := condDistrib_comp (mβ := MeasurableSpace.pi) (μ := P)
@@ -228,7 +226,7 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
       (IsBayesAlgEnvSeq.bestAction κ id) =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
       (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
         (IsBayesAlgEnvSeq.bestAction κ id) := by
-    filter_upwards [posterior_eq_uniform Q κ h hK t] with x hx
+    filter_upwards [posterior_eq_ref Q κ h (Bandits.uniformAlgorithm_hasFullSupport hK) t] with x hx
     simp only [Kernel.map_apply _ hm, hx]
   exact (h.hasCondDistrib_action' t).condDistrib_eq.trans (h_comp.trans h_map).symm
 
@@ -940,19 +938,20 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
   by_cases hn : n = 0
   · simp [hn]
   have hn' : 0 < n := Nat.pos_of_ne_zero hn
-  rw [show IsBayesAlgEnvSeq.bestAction κ E' = envToBestArm κ ∘ E' from
-    bestAction_eq_envToBestArm_comp_env κ]
+  rw [show IsBayesAlgEnvSeq.bestAction κ E' = IsBayesAlgEnvSeq.bestAction κ id ∘ E' from
+    rfl]
   let badSetIT := fun (a : Fin K) (s : ℕ) (e : E) ↦ {ω : ℕ → (Fin K) × ℝ |
     pullCount IT.action a s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
         |empMean IT.action IT.reward a s ω - (κ (e, a))[id]|}
-  have h_set_eq : {ω | ∃ s < n, pullCount A ((envToBestArm κ ∘ E') ω) s ω ≠ 0 ∧
+  have h_set_eq : {ω | ∃ s < n, pullCount A ((IsBayesAlgEnvSeq.bestAction κ id ∘ E') ω) s ω ≠ 0 ∧
       √(2 * ↑σ2 * Real.log (1 / δ) /
-        (pullCount A ((envToBestArm κ ∘ E') ω) s ω : ℝ)) ≤
-        |empMean A R' ((envToBestArm κ ∘ E') ω) s ω -
-         IsBayesAlgEnvSeq.actionMean κ E' ((envToBestArm κ ∘ E') ω) ω|} =
+        (pullCount A ((IsBayesAlgEnvSeq.bestAction κ id ∘ E') ω) s ω : ℝ)) ≤
+        |empMean A R' ((IsBayesAlgEnvSeq.bestAction κ id ∘ E') ω) s ω -
+         IsBayesAlgEnvSeq.actionMean κ E' ((IsBayesAlgEnvSeq.bestAction κ id ∘ E') ω) ω|} =
       (fun ω ↦ (E' ω, (fun ω n => (A n ω, R' n ω)) ω)) ⁻¹'
-        {p | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1} := by
+        {p | p.2 ∈ ⋃ s ∈ Finset.range n,
+          badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1} := by
     ext ω
     simp only [Set.mem_setOf_eq, Finset.mem_range, Set.mem_preimage, Set.mem_iUnion,
       badSetIT, IsBayesAlgEnvSeq.actionMean, Function.comp_apply, exists_prop]
@@ -979,10 +978,10 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
       (Q := Q) (κ := κ) (P := P) hσ2 hs hn' hδ hδ1 e h_isAlgEnvSeq a
   have h_cond_best : ∀ᵐ e ∂(P.map E'),
       (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
-        (⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ e) s e) ≤
+        (⋃ s ∈ Finset.range n, badSetIT (IsBayesAlgEnvSeq.bestAction κ id e) s e) ≤
           ENNReal.ofReal (2 * n * δ) := by
     filter_upwards [h_cond_bound] with e he
-    exact he (envToBestArm κ e)
+    exact he (IsBayesAlgEnvSeq.bestAction κ id e)
   have h_kernel : ∀ a, Measurable (fun p : E × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
     fun a ↦ stronglyMeasurable_id.integral_kernel.measurable.comp
       (measurable_fst.prodMk measurable_const)
@@ -1001,31 +1000,36 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
         (((measurable_empMean IT.measurable_action IT.measurable_reward a s).comp
           measurable_snd).sub (h_kernel a)).abs)
   have h_meas_set : MeasurableSet {p : E × (ℕ → (Fin K) × ℝ) |
-      p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1} := by
+      p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1} := by
     have h_eq : {p : E × (ℕ → (Fin K) × ℝ) |
-        p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1} =
-      ⋃ a : Fin K, ((envToBestArm κ ∘ Prod.fst) ⁻¹' {a} ∩
+        p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1} =
+      ⋃ a : Fin K, ((IsBayesAlgEnvSeq.bestAction κ id ∘ Prod.fst) ⁻¹' {a} ∩
         ⋃ s ∈ Finset.range n, {p | p.2 ∈ badSetIT a s p.1}) := by
       ext p; simp only [Set.mem_setOf_eq, Set.mem_iUnion, Set.mem_inter_iff,
         Set.mem_preimage, Function.comp_apply, Set.mem_singleton_iff, Finset.mem_range]
       constructor
-      · intro ⟨s, hs, hm⟩; exact ⟨envToBestArm κ p.1, rfl, s, hs, hm⟩
+      · intro ⟨s, hs, hm⟩; exact ⟨IsBayesAlgEnvSeq.bestAction κ id p.1, rfl, s, hs, hm⟩
       · rintro ⟨a, ha, s, hs, hm⟩; exact ⟨s, hs, ha ▸ hm⟩
     rw [h_eq]
     exact .iUnion fun a ↦ .inter
-      ((measurable_envToBestArm (κ := κ) |>.comp measurable_fst) (measurableSet_singleton a))
+      ((IsBayesAlgEnvSeq.measurable_bestAction (κ := κ) measurable_id |>.comp
+        measurable_fst) (measurableSet_singleton a))
       (.biUnion (Finset.range n).countable_toSet fun s _ ↦ h_meas_badSetIT a s)
   calc P ((fun ω ↦ (E' ω, (fun ω n => (A n ω, R' n ω)) ω)) ⁻¹'
-        {p | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1})
+        {p | p.2 ∈ ⋃ s ∈ Finset.range n,
+          badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1})
       = (P.map (fun ω ↦ (E' ω, (fun ω n => (A n ω, R' n ω)) ω)))
-          {p | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1} := by
+          {p | p.2 ∈ ⋃ s ∈ Finset.range n,
+            badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1} := by
         rw [Measure.map_apply h_meas_pair h_meas_set]
     _ = (P.map E' ⊗ₘ
           condDistrib ((fun ω n => (A n ω, R' n ω))) E' P)
-            {p | p.2 ∈ ⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ p.1) s p.1} := by
+            {p | p.2 ∈ ⋃ s ∈ Finset.range n,
+              badSetIT (IsBayesAlgEnvSeq.bestAction κ id p.1) s p.1} := by
         rw [h_disint]
     _ = ∫⁻ e, (condDistrib ((fun ω n => (A n ω, R' n ω))) E' P e)
-          (⋃ s ∈ Finset.range n, badSetIT (envToBestArm κ e) s e) ∂(P.map E') := by
+          (⋃ s ∈ Finset.range n,
+            badSetIT (IsBayesAlgEnvSeq.bestAction κ id e) s e) ∂(P.map E') := by
         rw [Measure.compProd_apply h_meas_set]; rfl
     _ ≤ ∫⁻ _e, ENNReal.ofReal (2 * n * δ) ∂(P.map E') := by
         apply lintegral_mono_ae h_cond_best

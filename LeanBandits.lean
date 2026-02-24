@@ -10,6 +10,7 @@ import LeanBandits.BanditAlgorithms.UCB
 import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.ForMathlib.CondDistrib
 import LeanBandits.ForMathlib.CondIndepFun
+import LeanBandits.ForMathlib.FullSupport
 import LeanBandits.ForMathlib.HasCondDistrib
 import LeanBandits.ForMathlib.IndepFun
 import LeanBandits.ForMathlib.IndepInfinitePi
@@ -21,6 +22,7 @@ import LeanBandits.ForMathlib.MeasurableArgMax
 import LeanBandits.ForMathlib.StandardBorel
 import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
+import LeanBandits.ForMathlib.WithDensity
 import LeanBandits.SequentialLearning.Algorithm
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 import LeanBandits.SequentialLearning.Deterministic

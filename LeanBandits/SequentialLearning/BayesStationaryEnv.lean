@@ -181,9 +181,9 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
     apply HasCondDistrib.hasLaw_of_const
     simpa [bayesStationaryEnv] using h.hasCondDistrib_reward_zero.fst
   hasCondDistrib_action_zero := by
-    have hfst : HasCondDistrib (fun ω ↦ (R' 0 ω).1) (A 0) (Kernel.const _ Q) P := by
+    have hc : HasCondDistrib (fun ω ↦ (R' 0 ω).1) (A 0) (Kernel.const _ Q) P := by
       simpa [bayesStationaryEnv] using h.hasCondDistrib_reward_zero.fst
-    simpa [h.hasLaw_action_zero.map_eq, Algorithm.prod_left] using hfst.swap_const
+    simpa [h.hasLaw_action_zero.map_eq, Algorithm.prod_left] using hc.swap_const
   hasCondDistrib_reward_zero :=
     h.hasCondDistrib_reward_zero.of_compProd.comp_right MeasurableEquiv.prodComm
   hasCondDistrib_action n := by

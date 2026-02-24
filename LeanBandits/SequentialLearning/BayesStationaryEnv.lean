@@ -134,12 +134,12 @@ lemma hasCondDistrib_IT_reward [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ al
     ∀ᵐ e ∂Q, HasCondDistrib (IT.reward (n + 1)) (fun τ ↦ (IT.hist n τ, IT.action (n + 1) τ))
       ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A R') E P e) := by
   rw [← h.hasLaw_env.map_eq]
-  have h_reorder : HasCondDistrib (R' (n + 1))
+  have hc : HasCondDistrib (R' (n + 1))
       (fun ω ↦ (E ω, IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
       (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
     (h.hasCondDistrib_reward n).comp_right (MeasurableEquiv.prodAssoc.symm.trans
       ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
-  exact h_reorder.ae_hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
+  exact hc.ae_hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
     (IT.measurable_action (n + 1))) (IT.measurable_reward (n + 1))
     (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable h.measurable_E.aemeasurable
 
@@ -223,7 +223,7 @@ lemma isBayesAlgEnvSeq_bayesTrajMeasure
 
 noncomputable
 def bayesTrajMeasurePosterior [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-    (Q : Measure 𝓔)  (κ : Kernel (𝓔 × α) R) [IsMarkovKernel κ]
+    (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × α) R) [IsMarkovKernel κ]
     (alg : Algorithm α R) (n : ℕ) : Kernel (Iic n → α × R) 𝓔 :=
   condDistrib (fun ω ↦ (ω 0).2.1) (IsAlgEnvSeq.hist action (fun n ω ↦ (ω n).2.2) n)
     (bayesTrajMeasure Q κ alg)

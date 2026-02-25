@@ -50,10 +50,10 @@ lemma historyDensity_ne_top (alg alg₀ : Algorithm α R)
     (hpos : alg₀.IsPositive) (t : ℕ)
     (h : Iic t → α × R) : historyDensity alg alg₀ t h ≠ ⊤ := by
   induction t with
-  | zero => exact rnDeriv_ne_top_of_forall_singleton_pos hpos.1 _
+  | zero => exact Measure.rnDeriv_ne_top_of_forall_singleton_pos hpos.1 _
   | succ n ih =>
     exact ENNReal.mul_ne_top (ih _)
-      (kernel_rnDeriv_ne_top_of_forall_singleton_pos
+      (Kernel.rnDeriv_ne_top_of_forall_singleton_pos
         (fun h' a => hpos.2 n h' a) _ _)
 
 end HistoryDensity
@@ -75,7 +75,7 @@ lemma Algorithm.IsPositive.absolutelyContinuous_stepKernel_stationary
     simp only [Kernel.compProd_apply hs, Measure.compProd_apply hs, Kernel.prodMkLeft_apply]
   rw [h1, h2]
   exact Measure.AbsolutelyContinuous.compProd_left
-    (absolutelyContinuous_of_forall_singleton_pos (hpos.2 n h)) _
+    (Measure.absolutelyContinuous_of_forall_singleton_pos (hpos.2 n h)) _
 
 namespace IsAlgEnvSeq
 
@@ -146,7 +146,7 @@ lemma absolutelyContinuous_map_hist_stationary
         h.hasLaw_step_zero.map_eq, h₀.hasLaw_step_zero.map_eq]
     simp only [stationaryEnv_ν0]
     exact (Measure.AbsolutelyContinuous.compProd_left
-      (absolutelyContinuous_of_forall_singleton_pos hpos.1) _).map
+      (Measure.absolutelyContinuous_of_forall_singleton_pos hpos.1) _).map
       e.symm.measurable
   | succ n ih =>
     rw [h.map_hist_succ_eq_compProd_map, h₀.map_hist_succ_eq_compProd_map]
@@ -167,7 +167,7 @@ lemma map_hist_eq_withDensity_historyDensity
   | zero =>
     set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => α × R)
     have h_ac : alg.p0 ≪ alg₀.p0 :=
-      absolutelyContinuous_of_forall_singleton_pos hpos.1
+      Measure.absolutelyContinuous_of_forall_singleton_pos hpos.1
     have h_hist : IsAlgEnvSeq.hist A R' 0 = e.symm ∘ IsAlgEnvSeq.step A R' 0 := by
       funext ω ⟨i, hi⟩
       have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
@@ -182,8 +182,8 @@ lemma map_hist_eq_withDensity_historyDensity
         h.hasLaw_step_zero.map_eq, h₀.hasLaw_step_zero.map_eq]
     simp only [stationaryEnv_ν0]
     conv_lhs => rw [← Measure.withDensity_rnDeriv_eq _ _ h_ac]
-    rw [withDensity_compProd_left (Measure.measurable_rnDeriv _ _)]
-    exact withDensity_map_equiv_symm
+    rw [Measure.withDensity_compProd_left (Measure.measurable_rnDeriv _ _)]
+    exact Measure.withDensity_map_equiv_symm
       ((Measure.measurable_rnDeriv _ _).comp measurable_fst)
   | succ n ih =>
     let σ : (Iic n → α × R) → (α × R) → ℝ≥0∞ :=
@@ -207,20 +207,20 @@ lemma map_hist_eq_withDensity_historyDensity
           (Kernel.rnDeriv (alg.policy n) (alg₀.policy n) x) = alg.policy n x := by
         rw [← Kernel.withDensity_apply _ (Kernel.measurable_rnDeriv _ _)]
         exact Kernel.withDensity_rnDeriv_eq (κ := alg.policy n) (η := alg₀.policy n)
-          (absolutelyContinuous_of_forall_singleton_pos (hpos.2 n x))
+          (Measure.absolutelyContinuous_of_forall_singleton_pos (hpos.2 n x))
       rw [h_alg, h_alg₀, ← h_wd]
       haveI : SFinite ((alg₀.policy n x).withDensity
           (Kernel.rnDeriv (alg.policy n) (alg₀.policy n) x)) := by
         rw [h_wd]; infer_instance
-      exact withDensity_compProd_left
+      exact Measure.withDensity_compProd_left
         (Kernel.measurable_rnDeriv (alg.policy n) (alg₀.policy n)).of_uncurry_left
     haveI : IsSFiniteKernel ((stepKernel alg₀ (stationaryEnv ν) n).withDensity σ) := by
       rw [← h_step]; infer_instance
     rw [h.map_hist_succ_eq_compProd_map n,
         h₀.map_hist_succ_eq_compProd_map n,
         ih, h_step,
-        withDensity_compProd_withDensity (measurable_historyDensity alg alg₀ n) hσ_meas]
-    exact withDensity_map_equiv_symm
+        Measure.withDensity_compProd_withDensity (measurable_historyDensity alg alg₀ n) hσ_meas]
+    exact Measure.withDensity_map_equiv_symm
       (((measurable_historyDensity alg alg₀ n).comp measurable_fst).mul hσ_meas)
 
 end IsAlgEnvSeq
@@ -256,35 +256,14 @@ lemma absolutelyContinuous_map_hist
   set κ₀ := condDistrib (IsAlgEnvSeq.hist A₀ R₀ t) E₀ P₀
   rw [h.map_hist_eq_condDistrib_comp t, h₀.map_hist_eq_condDistrib_comp t,
     ← Measure.snd_compProd, ← Measure.snd_compProd]
-  have hW_meas : Measurable (fun (ω : Ω) (n : ℕ) => (A n ω, R' n ω)) :=
-    measurable_pi_lambda _ fun n => (h.measurable_A n).prodMk (h.measurable_R n)
-  have hW₀_meas : Measurable (fun (ω : Ω₀) (n : ℕ) => (A₀ n ω, R₀ n ω)) :=
-    measurable_pi_lambda _ fun n => (h₀.measurable_A n).prodMk (h₀.measurable_R n)
   exact (Measure.AbsolutelyContinuous.compProd_right
     (show ∀ᵐ e ∂Q, κ_alg e ≪ κ₀ e from by
       have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
           (ℕ → α × R) → (Iic t → α × R)) = IT.hist t :=
         funext fun ω => funext fun i => Prod.mk.eta
-      have h_cd : ∀ᵐ e ∂Q, κ_alg e =
-          (condDistrib (fun ω n => (A n ω, R' n ω)) E P e).map (IT.hist t) := by
-        rw [← h.hasLaw_env.map_eq]
-        have h_comp : κ_alg
-            =ᵐ[P.map E] (condDistrib (fun ω n => (A n ω, R' n ω)) E P).map (IT.hist t) :=
-          condDistrib_comp E hW_meas.aemeasurable (IT.measurable_hist t)
-        filter_upwards [h_comp] with e he
-        rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-      have h_cd₀ : ∀ᵐ e ∂Q, κ₀ e =
-          (condDistrib (fun ω n => (A₀ n ω, R₀ n ω)) E₀ P₀ e).map (IT.hist t) := by
-        rw [← h₀.hasLaw_env.map_eq]
-        have h_comp : κ₀
-            =ᵐ[P₀.map E₀] (condDistrib (fun ω n => (A₀ n ω, R₀ n ω)) E₀ P₀).map (IT.hist t) :=
-          condDistrib_comp E₀ hW₀_meas.aemeasurable (IT.measurable_hist t)
-        filter_upwards [h_comp] with e he
-        rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-      have hae := h.ae_IsAlgEnvSeq
-      have hae₀ := h₀.ae_IsAlgEnvSeq
-      filter_upwards [h_cd, h_cd₀, hae, hae₀] with e he he₀ hae hae₀
-      rw [he, he₀, ← h_IT_hist]
+      filter_upwards [h.hasLaw_IT_hist t, h₀.hasLaw_IT_hist t,
+        h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq] with e he he₀ hae hae₀
+      rw [← he.map_eq, ← he₀.map_eq, ← h_IT_hist]
       exact hae.absolutelyContinuous_map_hist_stationary hpos hae₀ t)).map
     measurable_snd
 
@@ -304,37 +283,16 @@ lemma condDistrib_env_hist_alg_indep
   set ρ := historyDensity alg alg₀ t
   have hρ_meas := measurable_historyDensity alg alg₀ t
   have hρ_ne_top := historyDensity_ne_top alg alg₀ hpos t
-  have hW_meas : Measurable (fun (ω : Ω) (n : ℕ) => (A n ω, R' n ω)) :=
-    measurable_pi_lambda _ fun n => (h.measurable_A n).prodMk (h.measurable_R n)
-  have hW₀_meas : Measurable (fun (ω : Ω₀) (n : ℕ) => (A₀ n ω, R₀ n ω)) :=
-    measurable_pi_lambda _ fun n => (h₀.measurable_A n).prodMk (h₀.measurable_R n)
   -- Key factorization: κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ)
   have h_wd_ae : κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ) := by
     have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
         (ℕ → α × R) → (Iic t → α × R)) = IT.hist t :=
       funext fun ω => funext fun i => Prod.mk.eta
-    have h_cd : ∀ᵐ e ∂Q, κ_alg e =
-        (condDistrib (fun ω n => (A n ω, R' n ω)) E P e).map (IT.hist t) := by
-      rw [← h.hasLaw_env.map_eq]
-      have h_comp : κ_alg
-          =ᵐ[P.map E] (condDistrib (fun ω n => (A n ω, R' n ω)) E P).map (IT.hist t) :=
-        condDistrib_comp E hW_meas.aemeasurable (IT.measurable_hist t)
-      filter_upwards [h_comp] with e he
-      rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-    have h_cd₀ : ∀ᵐ e ∂Q, κ₀ e =
-        (condDistrib (fun ω n => (A₀ n ω, R₀ n ω)) E₀ P₀ e).map (IT.hist t) := by
-      rw [← h₀.hasLaw_env.map_eq]
-      have h_comp : κ₀
-          =ᵐ[P₀.map E₀] (condDistrib (fun ω n => (A₀ n ω, R₀ n ω)) E₀ P₀).map (IT.hist t) :=
-        condDistrib_comp E₀ hW₀_meas.aemeasurable (IT.measurable_hist t)
-      filter_upwards [h_comp] with e he
-      rw [he, Kernel.map_apply _ (IT.measurable_hist t)]
-    have hae := h.ae_IsAlgEnvSeq
-    have hae₀ := h₀.ae_IsAlgEnvSeq
-    filter_upwards [h_cd, h_cd₀, hae, hae₀] with e he he₀ hae hae₀
+    filter_upwards [h.hasLaw_IT_hist t, h₀.hasLaw_IT_hist t,
+      h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq] with e he he₀ hae hae₀
     rw [Kernel.withDensity_apply _
       (show Measurable (Function.uncurry (fun (_ : 𝓔) => ρ)) from hρ_meas.comp measurable_snd),
-      he, he₀, ← h_IT_hist]
+      ← he.map_eq, ← he₀.map_eq, ← h_IT_hist]
     exact hae.map_hist_eq_withDensity_historyDensity hpos t hae₀
   haveI : IsSFiniteKernel (κ₀.withDensity (fun _ => ρ)) :=
     Kernel.IsSFiniteKernel.withDensity _ (fun _ b => hρ_ne_top b)
@@ -361,7 +319,7 @@ lemma condDistrib_env_hist_alg_indep
     rw [h_marg, h_marg₀, Measure.compProd_congr h_wd_ae,
       Measure.compProd_withDensity
         (show Measurable (Function.uncurry (fun (_ : 𝓔) => ρ)) from hρ_meas.comp measurable_snd)]
-    exact map_withDensity_comp measurable_snd hρ_meas
+    exact Measure.map_withDensity_comp measurable_snd hρ_meas
   have h_swap : P.map (fun ω => (IsAlgEnvSeq.hist A R' t ω, E ω))
       = P.map (IsAlgEnvSeq.hist A R' t) ⊗ₘ condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ t) P₀ := by
     have h_uncurry_meas : Measurable (Function.uncurry (fun (_ : 𝓔) => ρ)) :=
@@ -376,7 +334,7 @@ lemma condDistrib_env_hist_alg_indep
       _ = ((Q ⊗ₘ κ₀).withDensity (ρ ∘ Prod.snd)).map Prod.swap := by
           congr 1; exact Measure.compProd_withDensity h_uncurry_meas
       _ = ((Q ⊗ₘ κ₀).map Prod.swap).withDensity (ρ ∘ Prod.fst) :=
-          map_swap_withDensity_fst hρ_meas
+          Measure.map_swap_withDensity_fst hρ_meas
       _ = (P₀.map (fun ω => (IsAlgEnvSeq.hist A₀ R₀ t ω, E₀ ω))).withDensity
             (ρ ∘ Prod.fst) := by
           congr 1; rw [← h_joint₀]
@@ -388,7 +346,7 @@ lemma condDistrib_env_hist_alg_indep
           rw [← compProd_map_condDistrib h₀.measurable_E.aemeasurable]
       _ = (P₀.map (IsAlgEnvSeq.hist A₀ R₀ t)).withDensity ρ ⊗ₘ
             condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ t) P₀ :=
-          (withDensity_compProd_left hρ_meas).symm
+          (Measure.withDensity_compProd_left hρ_meas).symm
       _ = P.map (IsAlgEnvSeq.hist A R' t) ⊗ₘ
             condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ t) P₀ := by
           rw [h_hist]

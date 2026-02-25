@@ -16,6 +16,8 @@ open MeasureTheory ProbabilityTheory
 
 variable {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {μ ν : Measure α}
 
+namespace Measure
+
 /-- Any measure is absolutely continuous wrt any measure giving positive mass to all singletons. -/
 lemma absolutelyContinuous_of_forall_singleton_pos (hν : ∀ a : α, ν {a} > 0) : μ ≪ ν := by
   intro s hs
@@ -35,11 +37,17 @@ lemma rnDeriv_ne_top_of_forall_singleton_pos [SigmaFinite μ]
     (hν : ∀ a, ν {a} > 0) (a : α) : μ.rnDeriv ν a ≠ ⊤ :=
   (forall_of_ae_of_forall_singleton_pos hν (Measure.rnDeriv_lt_top μ ν) a).ne
 
+end Measure
+
+namespace Kernel
+
 /-- Kernel `rnDeriv` is pointwise finite when the reference kernel has full support
     on singletons. -/
-lemma kernel_rnDeriv_ne_top_of_forall_singleton_pos
+lemma rnDeriv_ne_top_of_forall_singleton_pos
     [MeasurableSpace.CountableOrCountablyGenerated α β]
     {κ η : Kernel α β} [IsFiniteKernel κ] [IsFiniteKernel η]
     (hη : ∀ a b, η a {b} > 0) (a : α) (b : β) :
     Kernel.rnDeriv κ η a b ≠ ⊤ :=
-  (forall_of_ae_of_forall_singleton_pos (hη a) (Kernel.rnDeriv_lt_top κ η) b).ne
+  (Measure.forall_of_ae_of_forall_singleton_pos (hη a) (Kernel.rnDeriv_lt_top κ η) b).ne
+
+end Kernel

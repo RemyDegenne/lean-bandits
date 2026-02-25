@@ -19,6 +19,8 @@ open scoped ENNReal
 variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
     {mγ : MeasurableSpace γ} {μ : Measure α}
 
+namespace Measure
+
 /-- Composing `withDensity` on the measure side of a `compProd`:
 `(μ.withDensity f) ⊗ₘ κ = (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst)`. -/
 lemma withDensity_compProd_left [SFinite μ] {κ : Kernel α β} [IsSFiniteKernel κ]
@@ -93,3 +95,5 @@ lemma withDensity_compProd_withDensity [SFinite μ]
       (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst * Function.uncurry g) := by
   rw [Measure.compProd_withDensity hg, withDensity_compProd_left hf]
   exact (withDensity_mul _ (hf.comp measurable_fst) hg).symm
+
+end Measure

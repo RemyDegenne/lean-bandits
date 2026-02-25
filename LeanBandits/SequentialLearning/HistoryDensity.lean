@@ -29,16 +29,6 @@ namespace Learning
 
 variable {K : ℕ}
 
-/-- An algorithm has full support if every action has positive probability under both
-the initial measure and every policy. -/
-def Algorithm.HasFullSupport (ref : Algorithm (Fin K) ℝ) : Prop :=
-  (∀ a, ref.p0 {a} > 0) ∧
-  (∀ n (h : Iic n → Fin K × ℝ) (a : Fin K), ref.policy n h {a} > 0)
-
-lemma Bandits.uniformAlgorithm_hasFullSupport (hK : 0 < K) :
-    (Bandits.uniformAlgorithm hK).HasFullSupport :=
-  ⟨Bandits.uniformAlgorithm_p0_pos, fun _ h a => Bandits.uniformAlgorithm_policy_pos h a⟩
-
 section AbsolutelyContinuousHist
 
 variable [Nonempty (Fin K)]
@@ -47,7 +37,7 @@ omit [Nonempty (Fin K)] in
 /-- The step kernel for a stationary environment decomposes as a product of the policy
     measure and the reward kernel. -/
 private lemma absolutelyContinuous_stepKernel_stationary
-    (alg ref : Algorithm (Fin K) ℝ) (href : ref.HasFullSupport)
+    (alg ref : Algorithm (Fin K) ℝ) (href : ref.IsPositive)
     (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν] (n : ℕ) (h : Iic n → Fin K × ℝ) :
     stepKernel alg (stationaryEnv ν) n h ≪
     stepKernel ref (stationaryEnv ν) n h := by
@@ -97,7 +87,7 @@ private lemma map_hist_succ_eq_compProd_map
     history distribution under a reference algorithm with full support,
     for a stationary environment. -/
 private lemma absolutelyContinuous_map_hist_stationary
-    (alg ref : Algorithm (Fin K) ℝ) (href : ref.HasFullSupport)
+    (alg ref : Algorithm (Fin K) ℝ) (href : ref.IsPositive)
     (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     {Ω₁ : Type*} [MeasurableSpace Ω₁]
     {A₁ : ℕ → Ω₁ → Fin K} {R₁ : ℕ → Ω₁ → ℝ}
@@ -168,7 +158,7 @@ private lemma measurable_historyDensity (alg ref : Algorithm (Fin K) ℝ) (t : �
 
 omit [Nonempty (Fin K)] in
 private lemma historyDensity_ne_top (alg ref : Algorithm (Fin K) ℝ)
-    (href : ref.HasFullSupport) (t : ℕ)
+    (href : ref.IsPositive) (t : ℕ)
     (h : Iic t → Fin K × ℝ) : historyDensity alg ref t h ≠ ⊤ := by
   induction t with
   | zero => exact rnDeriv_ne_top_of_forall_singleton_pos href.1 _
@@ -180,7 +170,7 @@ private lemma historyDensity_ne_top (alg ref : Algorithm (Fin K) ℝ)
 /-- The history distribution under any algorithm equals the reference algorithm's history
 distribution weighted by `historyDensity`, for any stationary environment. -/
 private lemma map_hist_eq_withDensity_historyDensity
-    (alg ref : Algorithm (Fin K) ℝ) (href : ref.HasFullSupport) (t : ℕ)
+    (alg ref : Algorithm (Fin K) ℝ) (href : ref.IsPositive) (t : ℕ)
     (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
     {Ω₁ : Type*} [MeasurableSpace Ω₁]
     {A₁ : ℕ → Ω₁ → Fin K} {R₁ : ℕ → Ω₁ → ℝ}
@@ -300,7 +290,7 @@ omit [StandardBorelSpace E] [Nonempty E] in
     history distribution under a reference algorithm with full support. -/
 lemma absolutelyContinuous_map_hist
     (h : IsBayesAlgEnvSeq Q κ alg E' A R' P)
-    {ref : Algorithm (Fin K) ℝ} (href : ref.HasFullSupport)
+    {ref : Algorithm (Fin K) ℝ} (href : ref.IsPositive)
     {Ωu : Type*} [MeasurableSpace Ωu] [StandardBorelSpace Ωu] [Nonempty Ωu]
     {Eu : Ωu → E} {Au : ℕ → Ωu → Fin K} {Ru : ℕ → Ωu → ℝ}
     {Pu : Measure Ωu} [IsProbabilityMeasure Pu]
@@ -348,7 +338,7 @@ omit [StandardBorelSpace Ω] [Nonempty Ω] in
 /-- The posterior on the environment given history is algorithm-independent. -/
 lemma condDistrib_env_hist_alg_indep
     (h : IsBayesAlgEnvSeq Q κ alg E' A R' P)
-    {ref : Algorithm (Fin K) ℝ} (href : ref.HasFullSupport)
+    {ref : Algorithm (Fin K) ℝ} (href : ref.IsPositive)
     {Ωu : Type*} [MeasurableSpace Ωu] [StandardBorelSpace Ωu] [Nonempty Ωu]
     {Eu : Ωu → E} {Au : ℕ → Ωu → Fin K} {Ru : ℕ → Ωu → ℝ}
     {Pu : Measure Ωu} [IsProbabilityMeasure Pu]
@@ -462,7 +452,7 @@ omit [StandardBorelSpace Ω] [Nonempty Ω] in
 reference algorithm, which is `IsBayesAlgEnvSeq.posterior`. -/
 lemma posterior_eq_ref
     (h : IsBayesAlgEnvSeq Q κ alg E' A R' P)
-    {ref : Algorithm (Fin K) ℝ} (href : ref.HasFullSupport) (t : ℕ) :
+    {ref : Algorithm (Fin K) ℝ} (href : ref.IsPositive) (t : ℕ) :
     condDistrib E' (IsAlgEnvSeq.hist A R' t) P
       =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
     IT.bayesTrajMeasurePosterior Q κ ref t :=

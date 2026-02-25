@@ -3,11 +3,9 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanBandits.SequentialLearning.StationaryEnv
-import LeanBandits.SequentialLearning.BayesStationaryEnv
-import LeanBandits.BanditAlgorithms.Uniform
 import LeanBandits.ForMathlib.FullSupport
 import LeanBandits.ForMathlib.WithDensity
+import LeanBandits.SequentialLearning.BayesStationaryEnv
 
 open MeasureTheory ProbabilityTheory Finset Preorder
 
@@ -15,14 +13,57 @@ open scoped ENNReal NNReal
 
 namespace Learning
 
-variable {K : ℕ}
+variable {α : Type*} {R : Type*} [MeasurableSpace α] [MeasurableSpace R]
+
+section HistoryDensity
+
+variable [MeasurableSpace.CountablyGenerated α]
+
+/-- The density of the history distribution under `alg` w.r.t. a positive reference algorithm.
+This density depends only on the algorithm's action probabilities, not on the reward kernel. -/
+noncomputable def historyDensity
+    (alg alg₀ : Algorithm α R) :
+    (t : ℕ) → (Iic t → α × R) → ℝ≥0∞
+  | 0 => (alg.p0.rnDeriv alg₀.p0 ∘ Prod.fst) ∘
+        MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => α × R)
+  | n + 1 =>
+    let σ : (Iic n → α × R) → (α × R) → ℝ≥0∞ :=
+      fun h ar => Kernel.rnDeriv (alg.policy n)
+        (alg₀.policy n) h ar.1
+    (historyDensity alg alg₀ n ∘ Prod.fst * Function.uncurry σ) ∘
+      MeasurableEquiv.IicSuccProd (fun _ : ℕ => α × R) n
+
+@[fun_prop]
+lemma measurable_historyDensity (alg alg₀ : Algorithm α R) (t : ℕ) :
+    Measurable (historyDensity alg alg₀ t) := by
+  induction t with
+  | zero =>
+    exact (Measure.measurable_rnDeriv _ _).comp
+      (measurable_fst.comp (MeasurableEquiv.piUnique _).measurable)
+  | succ n ih =>
+    exact ((ih.comp measurable_fst).mul
+      ((Kernel.measurable_rnDeriv _ _).comp
+        (measurable_fst.prodMk (measurable_fst.comp measurable_snd)))).comp
+      (MeasurableEquiv.IicSuccProd _ n).measurable
+
+lemma historyDensity_ne_top (alg alg₀ : Algorithm α R)
+    (hpos : alg₀.IsPositive) (t : ℕ)
+    (h : Iic t → α × R) : historyDensity alg alg₀ t h ≠ ⊤ := by
+  induction t with
+  | zero => exact rnDeriv_ne_top_of_forall_singleton_pos hpos.1 _
+  | succ n ih =>
+    exact ENNReal.mul_ne_top (ih _)
+      (kernel_rnDeriv_ne_top_of_forall_singleton_pos
+        (fun h' a => hpos.2 n h' a) _ _)
+
+end HistoryDensity
 
 /-- The step kernel for a stationary environment under a positive algorithm absolutely
     continuously dominates any other algorithm's step kernel. -/
 lemma Algorithm.IsPositive.absolutelyContinuous_stepKernel_stationary
-    {alg₀ : Algorithm (Fin K) ℝ} (hpos : alg₀.IsPositive)
-    (alg : Algorithm (Fin K) ℝ) (ν : Kernel (Fin K) ℝ) [IsMarkovKernel ν]
-    (n : ℕ) (h : Iic n → Fin K × ℝ) :
+    {alg₀ : Algorithm α R} (hpos : alg₀.IsPositive)
+    (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν]
+    (n : ℕ) (h : Iic n → α × R) :
     stepKernel alg (stationaryEnv ν) n h ≪
     stepKernel alg₀ (stationaryEnv ν) n h := by
   have h1 : stepKernel alg (stationaryEnv ν) n h = (alg.policy n h) ⊗ₘ ν := by
@@ -36,59 +77,22 @@ lemma Algorithm.IsPositive.absolutelyContinuous_stepKernel_stationary
   exact Measure.AbsolutelyContinuous.compProd_left
     (absolutelyContinuous_of_forall_singleton_pos (hpos.2 n h)) _
 
-/-- The density of the history distribution under `alg` w.r.t. a positive reference algorithm.
-This density depends only on the algorithm's action probabilities, not on the reward kernel. -/
-noncomputable def historyDensity
-    (alg alg₀ : Algorithm (Fin K) ℝ) :
-    (t : ℕ) → (Iic t → Fin K × ℝ) → ℝ≥0∞
-  | 0 => (alg.p0.rnDeriv alg₀.p0 ∘ Prod.fst) ∘
-        MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
-  | n + 1 =>
-    let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ℝ≥0∞ :=
-      fun h ar => Kernel.rnDeriv (alg.policy n)
-        (alg₀.policy n) h ar.1
-    (historyDensity alg alg₀ n ∘ Prod.fst * Function.uncurry σ) ∘
-      MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
-
-@[fun_prop]
-lemma measurable_historyDensity (alg alg₀ : Algorithm (Fin K) ℝ) (t : ℕ) :
-    Measurable (historyDensity alg alg₀ t) := by
-  induction t with
-  | zero =>
-    exact (Measure.measurable_rnDeriv _ _).comp
-      (measurable_fst.comp (MeasurableEquiv.piUnique _).measurable)
-  | succ n ih =>
-    exact ((ih.comp measurable_fst).mul
-      ((Kernel.measurable_rnDeriv _ _).comp
-        (measurable_fst.prodMk (measurable_fst.comp measurable_snd)))).comp
-      (MeasurableEquiv.IicSuccProd _ n).measurable
-
-lemma historyDensity_ne_top (alg alg₀ : Algorithm (Fin K) ℝ)
-    (hpos : alg₀.IsPositive) (t : ℕ)
-    (h : Iic t → Fin K × ℝ) : historyDensity alg alg₀ t h ≠ ⊤ := by
-  induction t with
-  | zero => exact rnDeriv_ne_top_of_forall_singleton_pos hpos.1 _
-  | succ n ih =>
-    exact ENNReal.mul_ne_top (ih _)
-      (kernel_rnDeriv_ne_top_of_forall_singleton_pos
-        (fun h' a => hpos.2 n h' a) _ _)
-
 namespace IsAlgEnvSeq
 
-variable [Nonempty (Fin K)]
+variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
 
 /-- The history distribution at time `n + 1` decomposes as a compProd of the history at time `n`
     and the step kernel, composed with `IicSuccProd.symm`. -/
 lemma map_hist_succ_eq_compProd_map
     {Ω : Type*} [MeasurableSpace Ω]
-    {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-    {alg : Algorithm (Fin K) ℝ} {env : Environment (Fin K) ℝ}
+    {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
+    {alg : Algorithm α R} {env : Environment α R}
     {P : Measure Ω} [IsFiniteMeasure P]
     (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
     P.map (IsAlgEnvSeq.hist A R' (n + 1)) =
     (P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ stepKernel alg env n).map
-      (MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n).symm := by
-  set e := MeasurableEquiv.IicSuccProd (fun _ : ℕ => Fin K × ℝ) n
+      (MeasurableEquiv.IicSuccProd (fun _ : ℕ => α × R) n).symm := by
+  set e := MeasurableEquiv.IicSuccProd (fun _ : ℕ => α × R) n
   have hA := h.measurable_A; have hR := h.measurable_R
   have h_func : IsAlgEnvSeq.hist A R' (n + 1) = e.symm ∘
       (fun ω => (IsAlgEnvSeq.hist A R' n ω, IsAlgEnvSeq.step A R' (n + 1) ω)) := by
@@ -108,14 +112,14 @@ lemma map_hist_succ_eq_compProd_map
     (IsAlgEnvSeq.measurable_step (n + 1) (hA _) (hR _)).aemeasurable
     (stepKernel alg env n)).mp h_cd.condDistrib_eq)
 
-variable {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
+variable {ν : Kernel α R} [IsMarkovKernel ν]
 variable {Ω : Type*} [MeasurableSpace Ω]
-variable {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-variable {alg : Algorithm (Fin K) ℝ}
+variable {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
+variable {alg : Algorithm α R}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
-variable {alg₀ : Algorithm (Fin K) ℝ}
+variable {alg₀ : Algorithm α R}
 variable {Ω₀ : Type*} [MeasurableSpace Ω₀]
-variable {A₀ : ℕ → Ω₀ → Fin K} {R₀ : ℕ → Ω₀ → ℝ}
+variable {A₀ : ℕ → Ω₀ → α} {R₀ : ℕ → Ω₀ → R}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
 /-- The history distribution under any algorithm is absolutely continuous w.r.t. the
@@ -129,7 +133,7 @@ lemma absolutelyContinuous_map_hist_stationary
     P.map (IsAlgEnvSeq.hist A R' t) ≪ P₀.map (IsAlgEnvSeq.hist A₀ R₀ t) := by
   induction t with
   | zero =>
-    set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
+    set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => α × R)
     have h_hist : IsAlgEnvSeq.hist A R' 0 = e.symm ∘ IsAlgEnvSeq.step A R' 0 := by
       funext ω ⟨i, hi⟩; have : i = 0 := Nat.le_zero.mp (Finset.mem_Iic.mp hi); subst this; rfl
     have h_hist₀ : IsAlgEnvSeq.hist A₀ R₀ 0 = e.symm ∘ IsAlgEnvSeq.step A₀ R₀ 0 := by
@@ -161,7 +165,7 @@ lemma map_hist_eq_withDensity_historyDensity
     (P₀.map (IsAlgEnvSeq.hist A₀ R₀ t)).withDensity (historyDensity alg alg₀ t) := by
   induction t with
   | zero =>
-    set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => Fin K × ℝ)
+    set e := MeasurableEquiv.piUnique (fun _ : Iic (0 : ℕ) => α × R)
     have h_ac : alg.p0 ≪ alg₀.p0 :=
       absolutelyContinuous_of_forall_singleton_pos hpos.1
     have h_hist : IsAlgEnvSeq.hist A R' 0 = e.symm ∘ IsAlgEnvSeq.step A R' 0 := by
@@ -182,7 +186,7 @@ lemma map_hist_eq_withDensity_historyDensity
     exact withDensity_map_equiv_symm
       ((Measure.measurable_rnDeriv _ _).comp measurable_fst)
   | succ n ih =>
-    let σ : (Iic n → Fin K × ℝ) → (Fin K × ℝ) → ℝ≥0∞ :=
+    let σ : (Iic n → α × R) → (α × R) → ℝ≥0∞ :=
       fun x ar => Kernel.rnDeriv (alg.policy n) (alg₀.policy n) x ar.1
     have hσ_meas : Measurable (Function.uncurry σ) :=
       (Kernel.measurable_rnDeriv _ _).comp
@@ -223,38 +227,18 @@ end IsAlgEnvSeq
 
 namespace IsBayesAlgEnvSeq
 
-variable [Nonempty (Fin K)]
 variable {𝓔 : Type*} [MeasurableSpace 𝓔]
+variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q]
-variable {κ : Kernel (𝓔 × Fin K) ℝ}
-
-/-- The marginal on the history equals `condDistrib (hist) (env) P ∘ₘ Q`. -/
-lemma map_hist_eq_condDistrib_comp
-    {Ω : Type*} [MeasurableSpace Ω] [StandardBorelSpace Ω] [Nonempty Ω]
-    {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-    {alg : Algorithm (Fin K) ℝ} {P : Measure Ω} [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (t : ℕ) :
-    P.map (IsAlgEnvSeq.hist A R' t) =
-    condDistrib (IsAlgEnvSeq.hist A R' t) E P ∘ₘ Q := by
-  calc P.map (IsAlgEnvSeq.hist A R' t)
-    _ = (P.map (fun ω => (E ω,
-          IsAlgEnvSeq.hist A R' t ω))).snd :=
-        (Measure.snd_map_prodMk h.measurable_E).symm
-    _ = (P.map E ⊗ₘ condDistrib
-          (IsAlgEnvSeq.hist A R' t) E P).snd := by
-        rw [compProd_map_condDistrib
-          (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R t).aemeasurable]
-    _ = (Q ⊗ₘ condDistrib (IsAlgEnvSeq.hist A R' t)
-          E P).snd := by rw [h.hasLaw_env.map_eq]
-    _ = _ := Measure.snd_compProd Q _
+variable {κ : Kernel (𝓔 × α) R}
 
 variable {Ω : Type*} [MeasurableSpace Ω]
-variable {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-variable {alg : Algorithm (Fin K) ℝ}
+variable {E : Ω → 𝓔} {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
+variable {alg : Algorithm α R}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
-variable {alg₀ : Algorithm (Fin K) ℝ}
+variable {alg₀ : Algorithm α R}
 variable {Ω₀ : Type*} [MeasurableSpace Ω₀]
-variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → Fin K} {R₀ : ℕ → Ω₀ → ℝ}
+variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → α} {R₀ : ℕ → Ω₀ → R}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
 /-- The history distribution under any algorithm is absolutely continuous w.r.t. the
@@ -279,7 +263,7 @@ lemma absolutelyContinuous_map_hist
   exact (Measure.AbsolutelyContinuous.compProd_right
     (show ∀ᵐ e ∂Q, κ_alg e ≪ κ₀ e from by
       have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
-          (ℕ → Fin K × ℝ) → (Iic t → Fin K × ℝ)) = IT.hist t :=
+          (ℕ → α × R) → (Iic t → α × R)) = IT.hist t :=
         funext fun ω => funext fun i => Prod.mk.eta
       have h_cd : ∀ᵐ e ∂Q, κ_alg e =
           (condDistrib (fun ω n => (A n ω, R' n ω)) E P e).map (IT.hist t) := by
@@ -327,7 +311,7 @@ lemma condDistrib_env_hist_alg_indep
   -- Key factorization: κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ)
   have h_wd_ae : κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ) := by
     have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward t :
-        (ℕ → Fin K × ℝ) → (Iic t → Fin K × ℝ)) = IT.hist t :=
+        (ℕ → α × R) → (Iic t → α × R)) = IT.hist t :=
       funext fun ω => funext fun i => Prod.mk.eta
     have h_cd : ∀ᵐ e ∂Q, κ_alg e =
         (condDistrib (fun ω n => (A n ω, R' n ω)) E P e).map (IT.hist t) := by

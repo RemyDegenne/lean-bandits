@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
 import Mathlib.Probability.Kernel.RadonNikodym
+import Mathlib.Probability.Kernel.Composition.MeasureCompProd
 
 /-!
 # Absolute continuity and rnDeriv finiteness from full support
@@ -51,3 +52,15 @@ lemma rnDeriv_ne_top_of_forall_singleton_pos
   (Measure.forall_of_ae_of_forall_singleton_pos (hη a) (Kernel.rnDeriv_lt_top κ η) b).ne
 
 end Kernel
+
+variable {γ : Type*} {mγ : MeasurableSpace γ}
+
+namespace Measure.AbsolutelyContinuous
+
+/-- If `κ a` is absolutely continuous wrt `η a`, then so is the kernel compProd at `a`. -/
+lemma kernel_compProd_left {κ η : Kernel α β} [IsSFiniteKernel κ] [IsSFiniteKernel η]
+  {ξ : Kernel (α × β) γ} [IsSFiniteKernel ξ] {a : α} (hac : κ a ≪ η a) :
+  (κ ⊗ₖ ξ) a ≪ (η ⊗ₖ ξ) a := by
+  simp_rw [Kernel.compProd_apply_eq_compProd_sectR, hac.compProd_left _]
+
+end Measure.AbsolutelyContinuous

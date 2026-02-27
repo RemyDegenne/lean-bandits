@@ -80,5 +80,29 @@ lemma isMaxOn_measurableArgmax {α : Type*} [LinearOrder α]
   rw [measurableArgmax, h_eq,
     MeasurableEmbedding.leftInverse_invFun (measurableEmbedding_encode 𝓨) y]
 
+/-- Congruence lemma: measurableArgmax only depends on the function values at the point. -/
+lemma measurableArgmax_congr {𝓧₁ 𝓧₂ : Type*} {α : Type*} [LinearOrder α]
+    [Nonempty 𝓨] [Finite 𝓨] [Encodable 𝓨] [MeasurableSingletonClass 𝓨]
+    (f₁ : 𝓧₁ → 𝓨 → α) (f₂ : 𝓧₂ → 𝓨 → α)
+    [∀ x, DecidablePred fun n ↦ ∃ y, n = Encodable.encode y ∧ ∀ (z : 𝓨), f₁ x z ≤ f₁ x y]
+    [∀ x, DecidablePred fun n ↦ ∃ y, n = Encodable.encode y ∧ ∀ (z : 𝓨), f₂ x z ≤ f₂ x y]
+    (x₁ : 𝓧₁) (x₂ : 𝓧₂) (h : f₁ x₁ = f₂ x₂) :
+    measurableArgmax f₁ x₁ = measurableArgmax f₂ x₂ := by
+  simp only [measurableArgmax]; congr 1
+  exact Nat.find_congr' fun {_} =>
+    ⟨fun ⟨y, hn, hy⟩ => ⟨y, hn, h ▸ hy⟩, fun ⟨y, hn, hy⟩ => ⟨y, hn, h.symm ▸ hy⟩⟩
+
+/-- measurableArgmax is independent of the DecidablePred instance used.
+    This follows from Nat.find_congr' which handles different decidability instances. -/
+lemma measurableArgmax_eq_of_eq {α : Type*} [LinearOrder α]
+    [Nonempty 𝓨] [Finite 𝓨] [Encodable 𝓨] [MeasurableSingletonClass 𝓨]
+    (f : 𝓧 → 𝓨 → α)
+    (d1 : ∀ x, DecidablePred fun n ↦ ∃ y, n = Encodable.encode y ∧ ∀ (z : 𝓨), f x z ≤ f x y)
+    (d2 : ∀ x, DecidablePred fun n ↦ ∃ y, n = Encodable.encode y ∧ ∀ (z : 𝓨), f x z ≤ f x y)
+    (x : 𝓧) :
+    @measurableArgmax 𝓧 𝓨 α _ _ _ _ _ _ f d1 x = @measurableArgmax 𝓧 𝓨 α _ _ _ _ _ _ f d2 x := by
+  simp only [measurableArgmax]; congr 1
+  exact @Nat.find_congr' _ _ (d1 x) (d2 x) _ _ (fun {_} ↦ Iff.rfl)
+
 end Finite
 end MeasurableArgmax

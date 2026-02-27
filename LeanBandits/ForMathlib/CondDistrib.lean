@@ -24,6 +24,16 @@ section CondDistrib
 
 variable [IsFiniteMeasure μ]
 
+/-- An ae-equality of kernels wrt the joint law `μ.map (X, Y)` is equivalent to an ae-equality
+fiberwise via the conditional distribution of `Y` given `X`. -/
+lemma Kernel.ae_eq_map_prod_iff_ae_condDistrib
+    [MeasurableSpace.CountableOrCountablyGenerated (β × Ω) δ]
+    (hY : AEMeasurable Y μ) {f g : Kernel (β × Ω) δ} [IsFiniteKernel f] [IsFiniteKernel g] :
+    f =ᵐ[μ.map (fun ω ↦ (X ω, Y ω))] g ↔
+    ∀ᵐ x ∂(μ.map X), ∀ᵐ y ∂(condDistrib Y X μ x), f (x, y) = g (x, y) := by
+  rw [← compProd_map_condDistrib hY]
+  exact Measure.ae_compProd_iff (Kernel.measurableSet_eq _ _)
+
 lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :
     condDistrib (fun ω ↦ (X ω, Y ω)) T μ
@@ -39,8 +49,7 @@ lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [Standard
     condDistrib (fun ω ↦ (X ω, T ω)) T μ =ᵐ[μ.map T] condDistrib X T μ ×ₖ Kernel.id := by
   have h_prod := condDistrib_prod_left hX hT hT (μ := μ)
   have h_fst := condDistrib_comp_self (μ := μ) (fun ω ↦ (T ω, X ω)) (f := Prod.fst) (by fun_prop)
-  rw [(compProd_map_condDistrib hX).symm] at h_fst
-  have h_fst' := (Measure.ae_compProd_iff (Kernel.measurableSet_eq _ _)).mp h_fst
+  have h_fst' := (Kernel.ae_eq_map_prod_iff_ae_condDistrib hX).mp h_fst
   filter_upwards [h_prod, h_fst'] with z hz1 hz2
   rw [hz1]
   simp only [Kernel.deterministic_apply] at hz2

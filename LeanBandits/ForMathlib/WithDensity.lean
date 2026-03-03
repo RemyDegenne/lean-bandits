@@ -72,14 +72,14 @@ lemma map_withDensity_comp
   simp only [Measure.map_apply hg hs, withDensity_apply _ (hg hs), withDensity_apply _ hs,
     setLIntegral_map hs hf hg, Function.comp]
 
-/-- `(μ.withDensity f) ⊗ₘ (κ.withDensity g) = (μ ⊗ₘ κ).withDensity (f ∘ fst * uncurry g)`. -/
+/-- `(f · μ) ⊗ₘ (g · κ) = ((a, c) ↦ f a * g a c) · (μ ⊗ₘ κ)`. -/
 lemma withDensity_compProd_withDensity [SFinite μ]
     {κ : Kernel α γ} [IsSFiniteKernel κ]
     {f : α → ℝ≥0∞} {g : α → γ → ℝ≥0∞}
     (hf : Measurable f) (hg : Measurable (Function.uncurry g))
     [IsSFiniteKernel (κ.withDensity g)] :
     (μ.withDensity f) ⊗ₘ (κ.withDensity g) =
-      (μ ⊗ₘ κ).withDensity (f ∘ Prod.fst * Function.uncurry g) := by
+      (μ ⊗ₘ κ).withDensity (fun (a, c) => f a * g a c) := by
   rw [Measure.compProd_withDensity hg, withDensity_compProd_left hf]
   exact (withDensity_mul _ (hf.comp measurable_fst) hg).symm
 

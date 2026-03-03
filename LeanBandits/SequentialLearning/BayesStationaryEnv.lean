@@ -96,17 +96,15 @@ lemma hasCondDistrib_reward' [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg 
     HasCondDistrib (R' (n + 1)) (fun ω ↦ (E ω, A (n + 1) ω)) κ P :=
   (h.hasCondDistrib_reward n).comp_left (by fun_prop)
 
+lemma hasLaw_hist [SFinite Q] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
+    HasLaw (IsAlgEnvSeq.hist A R' n) (condDistrib (IsAlgEnvSeq.hist A R' n) E P ∘ₘ Q) P where
+  aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  map_eq := by
+    rw [← Measure.snd_map_prodMk h.measurable_E, ← compProd_map_condDistrib
+      (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable,
+      h.hasLaw_env.map_eq, Measure.snd_compProd]
+
 end Laws
-
-section Maps
-
-lemma map_hist_eq_condDistrib_comp [SFinite Q] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (t : ℕ) :
-    P.map (IsAlgEnvSeq.hist A R' t) = condDistrib (IsAlgEnvSeq.hist A R' t) E P ∘ₘ Q := by
-  rw [← Measure.snd_map_prodMk h.measurable_E, ← compProd_map_condDistrib
-    (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R t).aemeasurable,
-    h.hasLaw_env.map_eq, Measure.snd_compProd]
-
-end Maps
 
 section CondDistribIsAlgEnvSeq
 

@@ -90,8 +90,7 @@ lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A R' alg env P)
     rw [Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
         Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq]
     apply Measure.AbsolutelyContinuous.compProd ih
-    filter_upwards with h'
-    exact Measure.AbsolutelyContinuous.kernel_compProd_left (hc.policy n h')
+    filter_upwards with h' using Measure.AbsolutelyContinuous.kernel_compProd_left (hc.policy n h')
 
 lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A R' alg env P) (h₀ : IsAlgEnvSeq A₀ R₀ alg₀ env P₀)
    (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (IsAlgEnvSeq.hist A R' n)
@@ -138,123 +137,67 @@ variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → α} {R₀ : ℕ → �
 variable {alg₀ : Algorithm α R}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
-lemma hasCondDistrib_hist_withDensity_historyDensity
-    (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    (hc : alg ≪ₐ alg₀)
-    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀)
-    (n : ℕ) :
+lemma hasCondDistrib_hist_condDistrib_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
+    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib (IsAlgEnvSeq.hist A R' n) E
       ((condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity
-        (fun _ => historyDensity alg alg₀ n)) P where
+        (fun _ ↦ historyDensity alg alg₀ n)) P where
   aemeasurable_fst := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
   aemeasurable_snd := h.measurable_E.aemeasurable
   condDistrib_eq := by
     rw [h.hasLaw_env.map_eq]
-    have h_IT_hist : (IsAlgEnvSeq.hist IT.action IT.reward n :
-        (ℕ → α × R) → (Iic n → α × R)) = IT.hist n :=
-      funext fun ω => funext fun i => Prod.mk.eta
-    filter_upwards [h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n,
-      h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq] with e he he₀ hae hae₀
-    rw [Kernel.withDensity_apply _ (by fun_prop),
-      ← he.map_eq, ← he₀.map_eq, ← h_IT_hist]
+    filter_upwards [h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq, h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n]
+      with _ hae hae₀ he he₀
+    rw [Kernel.withDensity_apply _ (by fun_prop), ← he.map_eq, ← he₀.map_eq]
     exact (hae.hasLaw_hist_withDensity hae₀ hc n).map_eq
 
+variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 variable [IsProbabilityMeasure Q]
 
-/-- The history distribution under any algorithm equals the reference algorithm's
-    history distribution, weighted by the history density ratio. -/
-lemma hasLaw_hist_withDensity
-    (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    (hc : alg ≪ₐ alg₀)
-    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀)
-    (n : ℕ) :
-    HasLaw (IsAlgEnvSeq.hist A R' n)
-      ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (historyDensity alg alg₀ n)) P where
-  aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
-  map_eq := by
-    set κ_alg := condDistrib (IsAlgEnvSeq.hist A R' n) E P
-    set κ₀ := condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀
-    set ρ := historyDensity alg alg₀ n
-    have hρ_meas := measurable_historyDensity alg alg₀ n
-    have h_wd_ae : κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ) := by
-      rw [← h.hasLaw_env.map_eq]
-      exact (h.hasCondDistrib_hist_withDensity_historyDensity hc h₀ n).condDistrib_eq
-    rw [(h.hasLaw_hist n).map_eq, Measure.bind_congr_right h_wd_ae,
-      Kernel.comp_withDensity_const hρ_meas, (h₀.hasLaw_hist n).map_eq]
-
-variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-
-/-- The joint distribution of (history, environment) under any algorithm equals
-    the history marginal compProd with the reference algorithm's posterior. -/
-lemma hasLaw_hist_env
-    (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    (hc : alg ≪ₐ alg₀)
-    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀)
-    (n : ℕ) :
+lemma hasLaw_hist_env (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
+    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasLaw (fun ω => (IsAlgEnvSeq.hist A R' n ω, E ω))
-      (P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ
-        condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀) P where
-  aemeasurable :=
-    ((IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).prodMk
+      (P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀) P where
+  aemeasurable := ((IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).prodMk
       h.measurable_E).aemeasurable
   map_eq := by
-    set κ_alg := condDistrib (IsAlgEnvSeq.hist A R' n) E P
-    set κ₀ := condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀
+    have hA := h.measurable_A
+    have hR := h.measurable_R
+    have hA₀ := h₀.measurable_A
+    have hR₀ := h₀.measurable_R
+    have hE := h.measurable_E
+    have hE₀ := h₀.measurable_E
     set ρ := historyDensity alg alg₀ n
-    have hρ_meas := measurable_historyDensity alg alg₀ n
-    have h_wd_ae : κ_alg =ᵐ[Q] κ₀.withDensity (fun _ => ρ) := by
-      rw [← h.hasLaw_env.map_eq]
-      exact (h.hasCondDistrib_hist_withDensity_historyDensity hc h₀ n).condDistrib_eq
-    have h_hist := (h.hasLaw_hist_withDensity hc h₀ n).map_eq
-    have h_meas_hist := IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n
-    have h_meas_hist₀ := IsAlgEnvSeq.measurable_hist h₀.measurable_A h₀.measurable_R n
-    have h_joint : P.map (fun ω => (E ω, IsAlgEnvSeq.hist A R' n ω)) = Q ⊗ₘ κ_alg := by
-      rw [← h.hasLaw_env.map_eq]
-      exact (compProd_map_condDistrib h_meas_hist.aemeasurable).symm
-    have h_joint₀ : P₀.map (fun ω => (E₀ ω, IsAlgEnvSeq.hist A₀ R₀ n ω)) = Q ⊗ₘ κ₀ := by
-      rw [← h₀.hasLaw_env.map_eq]
-      exact (compProd_map_condDistrib h_meas_hist₀.aemeasurable).symm
-    calc P.map (fun ω => (IsAlgEnvSeq.hist A R' n ω, E ω))
-      _ = (Q ⊗ₘ κ_alg).map Prod.swap := by
-          rw [← h_joint]
-          exact (Measure.map_map measurable_swap
-            (h.measurable_E.prodMk h_meas_hist)).symm
-      _ = ((Q ⊗ₘ κ₀).withDensity (ρ ∘ Prod.snd)).map Prod.swap := by
-          congr 1; exact Measure.compProd_eq_compProd_withDensity hρ_meas h_wd_ae
-      _ = ((Q ⊗ₘ κ₀).map Prod.swap).withDensity (ρ ∘ Prod.fst) :=
-          Measure.map_swap_withDensity_fst hρ_meas
-      _ = (P₀.map (fun ω => (IsAlgEnvSeq.hist A₀ R₀ n ω, E₀ ω))).withDensity
-            (ρ ∘ Prod.fst) := by
-          congr 1; rw [← h_joint₀]
-          exact Measure.map_map measurable_swap
-            (h₀.measurable_E.prodMk h_meas_hist₀)
-      _ = (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n) ⊗ₘ
-            condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀).withDensity
-            (ρ ∘ Prod.fst) := by
-          rw [← compProd_map_condDistrib h₀.measurable_E.aemeasurable]
-      _ = (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity ρ ⊗ₘ
-            condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀ :=
-          (Measure.withDensity_compProd_left hρ_meas).symm
-      _ = P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ
-            condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀ := by
-          rw [h_hist]
+    have h_wd_ae : condDistrib (IsAlgEnvSeq.hist A R' n) E P =ᵐ[Q]
+        (condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity (fun _ => ρ) :=
+      h.hasLaw_env.map_eq ▸ (h.hasCondDistrib_hist_condDistrib_withDensity h₀ hc n).condDistrib_eq
+    have h_hist : P.map (IsAlgEnvSeq.hist A R' n) =
+        (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity ρ := by
+      rw [← map_bind_condDistrib hE (by fun_prop), h.hasLaw_env.map_eq,
+        Measure.bind_congr_right h_wd_ae, Kernel.comp_withDensity_const (by fun_prop),
+        ← h₀.hasLaw_env.map_eq, map_bind_condDistrib hE₀ (by fun_prop)]
+    have h_swap : P.map (fun ω => (IsAlgEnvSeq.hist A R' n ω, E ω)) =
+        (Q ⊗ₘ condDistrib (IsAlgEnvSeq.hist A R' n) E P).map Prod.swap := by
+      rw [← h.hasLaw_env.map_eq, compProd_map_condDistrib (by fun_prop)]
+      symm; exact Measure.map_map measurable_swap (by fun_prop)
+    have h_swap₀ : (Q ⊗ₘ condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).map Prod.swap =
+        P₀.map (fun ω => (IsAlgEnvSeq.hist A₀ R₀ n ω, E₀ ω)) := by
+      rw [← h₀.hasLaw_env.map_eq, compProd_map_condDistrib (by fun_prop)]
+      exact Measure.map_map measurable_swap (by fun_prop)
+    rw [h_swap, Measure.compProd_eq_compProd_withDensity (by fun_prop) h_wd_ae,
+      Measure.map_swap_withDensity_fst (by fun_prop), h_swap₀,
+      ← compProd_map_condDistrib (by fun_prop),
+      ← Measure.withDensity_compProd_left (by fun_prop), ← h_hist]
 
-/-- The posterior on the environment given history is algorithm-independent. -/
-lemma hasCondDistrib_env_hist
-    (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    (hc : alg ≪ₐ alg₀)
-    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀)
-    (n : ℕ) :
+lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
+    (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib E (IsAlgEnvSeq.hist A R' n)
       (condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀) P where
   aemeasurable_fst := h.measurable_E.aemeasurable
-  aemeasurable_snd :=
-    (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
-  condDistrib_eq :=
-    (condDistrib_ae_eq_iff_measure_eq_compProd _
-      h.measurable_E.aemeasurable
-      (condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀)).mpr
-      (h.hasLaw_hist_env hc h₀ n).map_eq
+  aemeasurable_snd := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  condDistrib_eq := by
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable]
+    exact (h.hasLaw_hist_env h₀ hc n).map_eq
 
 end IsBayesAlgEnvSeq
 

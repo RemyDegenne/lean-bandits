@@ -83,22 +83,53 @@ lemma withDensity_compProd_withDensity [SFinite μ]
   rw [Measure.compProd_withDensity hg, withDensity_compProd_left hf]
   exact (withDensity_mul _ (hf.comp measurable_fst) hg).symm
 
+/-- If `κ =ᵐ[μ] η.withDensity (fun _ => f)`, then `μ ⊗ₘ κ = (μ ⊗ₘ η).withDensity (f ∘ Prod.snd)`.
+    Unlike `compProd_congr` + `compProd_withDensity`, does not need
+    `IsSFiniteKernel (η.withDensity (fun _ => f))`. -/
+lemma compProd_eq_compProd_withDensity [SFinite μ]
+    {κ η : Kernel α β} [IsSFiniteKernel κ] [IsSFiniteKernel η]
+    {f : β → ℝ≥0∞} (hf : Measurable f)
+    (h : κ =ᵐ[μ] η.withDensity (fun _ b ↦ f b)) :
+    μ ⊗ₘ κ = (μ ⊗ₘ η).withDensity (f ∘ Prod.snd) := by
+  have hf_uncurry : Measurable (Function.uncurry (fun (_ : α) => f)) :=
+    hf.comp measurable_snd
+  ext s hs
+  have lhs : (μ ⊗ₘ κ) s = ∫⁻ a, (κ a) (Prod.mk a ⁻¹' s) ∂μ :=
+    Measure.compProd_apply hs
+  have rhs : ((μ ⊗ₘ η).withDensity (f ∘ Prod.snd)) s =
+      ∫⁻ a, ∫⁻ b in Prod.mk a ⁻¹' s, f b ∂(η a) ∂μ := by
+    rw [withDensity_apply _ hs, ← lintegral_indicator hs,
+      Measure.lintegral_compProd ((hf.comp measurable_snd).indicator hs)]
+    congr 1; ext a
+    have : (fun b => s.indicator (f ∘ Prod.snd) (a, b)) = (Prod.mk a ⁻¹' s).indicator f := by
+      ext b; simp only [Set.indicator, Set.mem_preimage]; rfl
+    rw [this, lintegral_indicator (hs.preimage measurable_prodMk_left)]
+  rw [lhs, rhs]
+  apply lintegral_congr_ae
+  filter_upwards [h] with a ha
+  rw [ha, Kernel.withDensity_apply _ hf_uncurry, withDensity_apply _ (hs.preimage (by fun_prop))]
+
 end Measure
 
 namespace ProbabilityTheory.Kernel
 
 /-- `(κ.withDensity (fun _ => f)) ∘ₘ μ = (κ ∘ₘ μ).withDensity f`. -/
 lemma comp_withDensity_const
-    [SFinite μ]
     {κ : Kernel α γ} [IsSFiniteKernel κ]
-    {f : γ → ℝ≥0∞} (hf : Measurable f)
-    [IsSFiniteKernel (κ.withDensity (fun _ => f))] :
-    (κ.withDensity (fun _ => f)) ∘ₘ μ = (κ ∘ₘ μ).withDensity f := by
-  rw [← Measure.snd_compProd μ (κ.withDensity (fun _ => f)),
-    Measure.compProd_withDensity (show Measurable (Function.uncurry (fun (_ : α) => f)) from
-      hf.comp measurable_snd),
-    ← Measure.snd_compProd μ κ, Measure.snd, Measure.snd]
-  exact Measure.map_withDensity_comp measurable_snd hf
+    {f : γ → ℝ≥0∞} (hf : Measurable f) :
+    (κ.withDensity (fun _ c ↦ f c)) ∘ₘ μ = (κ ∘ₘ μ).withDensity f := by
+  have hf_uncurry : Measurable (Function.uncurry (fun (_ : α) => f)) :=
+    hf.comp measurable_snd
+  ext s hs
+  have lhs : ((κ.withDensity (fun _ => f)) ∘ₘ μ) s = ∫⁻ a, ∫⁻ x in s, f x ∂(κ a) ∂μ := by
+    rw [Measure.bind_apply hs (Kernel.measurable _).aemeasurable]
+    congr 1; ext a
+    rw [Kernel.withDensity_apply _ hf_uncurry, withDensity_apply _ hs]
+  have rhs : ((κ ∘ₘ μ).withDensity f) s = ∫⁻ a, ∫⁻ x in s, f x ∂(κ a) ∂μ := by
+    rw [withDensity_apply _ hs, ← lintegral_indicator hs f,
+      Measure.lintegral_bind (Kernel.measurable _).aemeasurable ((hf.indicator hs).aemeasurable)]
+    congr 1; ext a; rw [lintegral_indicator hs f]
+  rw [lhs, rhs]
 
 /-- Composing `Kernel.withDensity` on the left kernel of `Kernel.compProd`:
 `(κ.withDensity f) ⊗ₖ η = (κ ⊗ₖ η).withDensity (fun a (b, _) => f a b)`. -/

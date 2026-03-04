@@ -3,7 +3,7 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import Mathlib.Probability.UniformOn
+import LeanBandits.ForMathlib.FullSupport
 import LeanBandits.SequentialLearning.Algorithm
 
 /-! # The Uniform Algorithm -/
@@ -23,8 +23,11 @@ def uniformAlgorithm (hK : 0 < K) : Algorithm (Fin K) ℝ :=
   { policy _ := Kernel.const _ (uniformOn Set.univ)
     p0 := uniformOn Set.univ }
 
-lemma uniformAlgorithm_IsPositive (hK : 0 < K) : (uniformAlgorithm hK).IsPositive := by
-  constructor
-  all_goals simp [uniformAlgorithm, uniformOn, cond_pos_of_inter_ne_zero]
+lemma absolutelyContinuous_uniformAlgorithm (hK : 0 < K) (alg : Algorithm (Fin K) ℝ) :
+    alg ≪ₐ uniformAlgorithm hK where
+  p0 := Measure.absolutelyContinuous_of_forall_singleton_pos
+    (by simp [uniformAlgorithm, uniformOn, cond_pos_of_inter_ne_zero])
+  policy n h := Measure.absolutelyContinuous_of_forall_singleton_pos
+    (by simp [uniformAlgorithm, uniformOn, cond_pos_of_inter_ne_zero])
 
 end Bandits

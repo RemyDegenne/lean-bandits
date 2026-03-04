@@ -30,8 +30,11 @@ structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wher
 instance (alg : Algorithm α R) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm α R) : IsProbabilityMeasure alg.p0 := alg.hp0
 
-def Algorithm.IsPositive (alg : Algorithm α R) : Prop :=
-  (∀ a, alg.p0 {a} > 0) ∧ (∀ n h a, alg.policy n h {a} > 0)
+structure Algorithm.AbsolutelyContinuous (alg alg₀ : Algorithm α R) : Prop where
+  p0 : alg.p0 ≪ alg₀.p0
+  policy n h : alg.policy n h ≪ alg₀.policy n h
+
+scoped notation:50 alg " ≪ₐ " alg₀ => Algorithm.AbsolutelyContinuous alg alg₀
 
 /-- An algorithm that receives observations in `E × R` created form an algorithm that receives
 observations in `R` by ignoring the additional information. -/

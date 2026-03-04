@@ -226,7 +226,7 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
       (IsBayesAlgEnvSeq.bestAction κ id) =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
       (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
         (IsBayesAlgEnvSeq.bestAction κ id) := by
-    filter_upwards [(h.hasCondDistrib_env_hist (uniformAlgorithm_IsPositive hK)
+    filter_upwards [(h.hasCondDistrib_env_hist (absolutelyContinuous_uniformAlgorithm hK _)
       (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK)) t).condDistrib_eq]
       with x hx
     simp only [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hx]

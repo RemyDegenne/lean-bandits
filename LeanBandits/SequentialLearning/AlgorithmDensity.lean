@@ -15,24 +15,28 @@ namespace Learning
 
 variable {α R : Type*} [MeasurableSpace α] [MeasurableSpace R]
 
+namespace Algorithm
+
 noncomputable
-def historyDensity [MeasurableSpace.CountablyGenerated α] (alg alg₀ : Algorithm α R) :
+def density [MeasurableSpace.CountablyGenerated α] (alg alg₀ : Algorithm α R) :
     (n : ℕ) → (Iic n → α × R) → ℝ≥0∞
   | 0, h => (alg.p0.rnDeriv alg₀.p0 (h ⟨0, by simp⟩).1)
   | n + 1, h =>
     let p := MeasurableEquiv.IicSuccProd (fun _ ↦ α × R) n h
-    historyDensity alg alg₀ n p.1 * (alg.policy n).rnDeriv (alg₀.policy n) p.1 p.2.1
+    alg.density alg₀ n p.1 * (alg.policy n).rnDeriv (alg₀.policy n) p.1 p.2.1
 
 @[fun_prop]
-lemma measurable_historyDensity [MeasurableSpace.CountablyGenerated α] (alg alg₀ : Algorithm α R)
-    (n : ℕ) : Measurable (historyDensity alg alg₀ n) := by
+lemma measurable_density [MeasurableSpace.CountablyGenerated α] (alg alg₀ : Algorithm α R) (n : ℕ) :
+    Measurable (alg.density alg₀ n) := by
   induction n with
   | zero =>
-    simp_rw [historyDensity]
+    simp_rw [density]
     fun_prop
   | succ n ih =>
-    simp_rw [historyDensity]
+    simp_rw [density]
     fun_prop
+
+end Algorithm
 
 namespace IsAlgEnvSeq
 
@@ -94,7 +98,7 @@ lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A R' alg env P)
 
 lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A R' alg env P) (h₀ : IsAlgEnvSeq A₀ R₀ alg₀ env P₀)
    (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (IsAlgEnvSeq.hist A R' n)
-      ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (historyDensity alg alg₀ n)) P where
+      ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n)) P where
   aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
   map_eq := by
     induction n with
@@ -141,7 +145,7 @@ lemma hasCondDistrib_hist_condDistrib_withDensity (h : IsBayesAlgEnvSeq Q κ alg
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib (IsAlgEnvSeq.hist A R' n) E
       ((condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity
-        (fun _ ↦ historyDensity alg alg₀ n)) P where
+        (fun _ ↦ alg.density alg₀ n)) P where
   aemeasurable_fst := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
   aemeasurable_snd := h.measurable_E.aemeasurable
   condDistrib_eq := by
@@ -167,7 +171,7 @@ lemma hasLaw_hist_env (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     have hR₀ := h₀.measurable_R
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
-    set ρ := historyDensity alg alg₀ n
+    set ρ := alg.density alg₀ n
     have hcd : condDistrib (IsAlgEnvSeq.hist A R' n) E P =ᵐ[Q]
         (condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity (fun _ ↦ ρ) := by
       rw [← h.hasLaw_env.map_eq]

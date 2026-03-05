@@ -24,9 +24,9 @@ import LeanBandits.ForMathlib.SubGaussian
 import LeanBandits.ForMathlib.Traj
 import LeanBandits.ForMathlib.WithDensity
 import LeanBandits.SequentialLearning.Algorithm
+import LeanBandits.SequentialLearning.AlgorithmDensity
 import LeanBandits.SequentialLearning.BayesStationaryEnv
 import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.FiniteActions
-import LeanBandits.SequentialLearning.HistoryDensity
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 import LeanBandits.SequentialLearning.StationaryEnv

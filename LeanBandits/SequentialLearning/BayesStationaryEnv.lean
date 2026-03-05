@@ -111,16 +111,6 @@ lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
     rw [← Kernel.map_apply _ (IT.measurable_action 0), ← hc,
       show IT.action 0 ∘ trajectory A R' = A 0 from rfl, hcd, Kernel.const_apply]⟩
 
-lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (IsAlgEnvSeq.hist A R' n) E P e)
-      (condDistrib (trajectory A R') E P e) := by
-  rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A R' n = IT.hist n ∘ trajectory A R' from rfl]
-  filter_upwards [condDistrib_comp E
-    (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable
-    (IT.measurable_hist n)] with e he
-  exact ⟨(IT.measurable_hist n).aemeasurable, by
-    rw [← Kernel.map_apply _ (IT.measurable_hist n), he]⟩
-
 lemma hasCondDistrib_IT_reward_zero [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
     ∀ᵐ e ∂Q, HasCondDistrib (IT.reward 0) (IT.action 0) (κ.sectR e)
       (condDistrib (trajectory A R') E P e) := by
@@ -152,6 +142,16 @@ lemma hasCondDistrib_IT_reward [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ al
   exact hc.ae_hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
     (IT.measurable_action (n + 1))) (IT.measurable_reward (n + 1))
     (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable h.measurable_E.aemeasurable
+
+lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
+    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (IsAlgEnvSeq.hist A R' n) E P e)
+      (condDistrib (trajectory A R') E P e) := by
+  rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A R' n = IT.hist n ∘ trajectory A R' from rfl]
+  filter_upwards [condDistrib_comp E
+    (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable
+    (IT.measurable_hist n)] with e he
+  exact ⟨(IT.measurable_hist n).aemeasurable, by
+    rw [← Kernel.map_apply _ (IT.measurable_hist n), he]⟩
 
 lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
     ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.reward alg (stationaryEnv (κ.sectR e))

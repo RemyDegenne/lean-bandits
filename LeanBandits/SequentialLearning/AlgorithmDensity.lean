@@ -141,15 +141,11 @@ variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → α} {R₀ : ℕ → �
 variable {alg₀ : Algorithm α R}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
-lemma hasCondDistrib_hist_condDistrib_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
+lemma condDistrib_hist_eq_condDistrib_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    HasCondDistrib (IsAlgEnvSeq.hist A R' n) E
+    condDistrib (IsAlgEnvSeq.hist A R' n) E P =ᵐ[Q]
       ((condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity
-        (fun _ ↦ alg.density alg₀ n)) P where
-  aemeasurable_fst := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
-  aemeasurable_snd := h.measurable_E.aemeasurable
-  condDistrib_eq := by
-    rw [h.hasLaw_env.map_eq]
+        (fun _ ↦ alg.density alg₀ n)) := by
     filter_upwards [h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq, h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n]
       with _ hae hae₀ he he₀
     rw [Kernel.withDensity_apply _ (by fun_prop), ← he.map_eq, ← he₀.map_eq]
@@ -171,13 +167,9 @@ lemma hasLaw_hist_env (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     have hR₀ := h₀.measurable_R
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
-    set ρ := alg.density alg₀ n
-    have hcd : condDistrib (IsAlgEnvSeq.hist A R' n) E P =ᵐ[Q]
-        (condDistrib (IsAlgEnvSeq.hist A₀ R₀ n) E₀ P₀).withDensity (fun _ ↦ ρ) := by
-      rw [← h.hasLaw_env.map_eq]
-      exact (h.hasCondDistrib_hist_condDistrib_withDensity h₀ hc n).condDistrib_eq
+    have hcd := h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n
     have hm : P.map (IsAlgEnvSeq.hist A R' n) =
-        (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity ρ := by
+        (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n) := by
       rw [← map_bind_condDistrib hE (by fun_prop), h.hasLaw_env.map_eq,
         Measure.bind_congr_right hcd, Kernel.comp_withDensity_const (by fun_prop),
         ← h₀.hasLaw_env.map_eq, map_bind_condDistrib hE₀ (by fun_prop)]

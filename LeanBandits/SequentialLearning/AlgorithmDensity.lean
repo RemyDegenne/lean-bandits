@@ -151,15 +151,11 @@ lemma condDistrib_hist_eq_condDistrib_hist_withDensity (h : IsBayesAlgEnvSeq Q �
     rw [Kernel.withDensity_apply _ (by fun_prop), ← he.map_eq, ← he₀.map_eq]
     exact (hae.hasLaw_hist_withDensity hae₀ hc n).map_eq
 
-variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable [IsProbabilityMeasure Q]
-
-lemma hasLaw_hist_env (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
+lemma hasLaw_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    HasLaw (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, E ω))
-      (P.map (IsAlgEnvSeq.hist A R' n) ⊗ₘ condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀) P where
-  aemeasurable := ((IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).prodMk
-      h.measurable_E).aemeasurable
+    HasLaw (IsAlgEnvSeq.hist A R' n)
+      ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n)) P where
+  aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
   map_eq := by
     have hA := h.measurable_A
     have hR := h.measurable_R
@@ -167,18 +163,13 @@ lemma hasLaw_hist_env (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     have hR₀ := h₀.measurable_R
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
-    have hcd := h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n
-    have hm : P.map (IsAlgEnvSeq.hist A R' n) =
-        (P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n) := by
-      rw [← map_bind_condDistrib hE (by fun_prop), h.hasLaw_env.map_eq,
-        Measure.bind_congr_right hcd, Kernel.comp_withDensity_const (by fun_prop),
-        ← h₀.hasLaw_env.map_eq, map_bind_condDistrib hE₀ (by fun_prop)]
-    rw [← compProd_map_condDistrib_swap hE (by fun_prop), h.hasLaw_env.map_eq,
-      Measure.compProd_eq_compProd_withDensity (by fun_prop) hcd,
-      Measure.map_swap_withDensity_fst (by fun_prop),
-      ← h₀.hasLaw_env.map_eq, compProd_map_condDistrib_swap hE₀ (by fun_prop),
-      ← compProd_map_condDistrib (by fun_prop),
-      ← Measure.withDensity_compProd_left (by fun_prop), ← hm]
+    rw [← map_bind_condDistrib hE (by fun_prop), h.hasLaw_env.map_eq,
+          Measure.bind_congr_right (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
+          Kernel.comp_withDensity_const (by fun_prop),
+          ← h₀.hasLaw_env.map_eq, map_bind_condDistrib hE₀ (by fun_prop)]
+
+variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
+variable [IsProbabilityMeasure Q]
 
 lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
@@ -187,8 +178,21 @@ lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
   aemeasurable_fst := h.measurable_E.aemeasurable
   aemeasurable_snd := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
   condDistrib_eq := by
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable]
-    exact (h.hasLaw_hist_env h₀ hc n).map_eq
+    have hA := h.measurable_A
+    have hR := h.measurable_R
+    have hA₀ := h₀.measurable_A
+    have hR₀ := h₀.measurable_R
+    have hE := h.measurable_E
+    have hE₀ := h₀.measurable_E
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable,
+      ← compProd_map_condDistrib_swap hE (by fun_prop), h.hasLaw_env.map_eq,
+      Measure.compProd_eq_compProd_withDensity (by fun_prop)
+        (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
+      Measure.map_swap_withDensity_fst (by fun_prop),
+      ← h₀.hasLaw_env.map_eq, compProd_map_condDistrib_swap hE₀ (by fun_prop),
+      ← compProd_map_condDistrib (by fun_prop),
+      ← Measure.withDensity_compProd_left (by fun_prop),
+      ← (hasLaw_hist_withDensity h h₀ hc n).map_eq]
 
 end IsBayesAlgEnvSeq
 

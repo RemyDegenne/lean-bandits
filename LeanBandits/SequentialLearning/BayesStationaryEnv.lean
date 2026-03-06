@@ -106,7 +106,7 @@ lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A R' P) :
   filter_upwards [condDistrib_comp E
       ((measurable_trajectory h.measurable_A h.measurable_R).aemeasurable)
       (IT.measurable_action (α := α) (R := R) 0),
-    h.hasCondDistrib_action_zero.condDistrib_eq] with e hc hcd
+    h.hasCondDistrib_action_zero.condDistrib_eq] with _ hc hcd
   exact ⟨(IT.measurable_action 0).aemeasurable, by
     rw [← Kernel.map_apply _ (IT.measurable_action 0), ← hc,
       show IT.action 0 ∘ trajectory A R' = A 0 from rfl, hcd, Kernel.const_apply]⟩
@@ -127,7 +127,7 @@ lemma hasCondDistrib_IT_action (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ
   filter_upwards [(h.hasCondDistrib_action n).ae_hasCondDistrib_sectR
     (IT.measurable_hist n) (IT.measurable_action (n + 1))
     (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable
-    h.measurable_E.aemeasurable] with e he
+    h.measurable_E.aemeasurable] with _ he
   rwa [Kernel.sectR_prodMkLeft] at he
 
 lemma hasCondDistrib_IT_reward [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
@@ -149,7 +149,7 @@ lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P) (n : ℕ) :
   rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A R' n = IT.hist n ∘ trajectory A R' from rfl]
   filter_upwards [condDistrib_comp E
     (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable
-    (IT.measurable_hist n)] with e he
+    (IT.measurable_hist n)] with _ he
   exact ⟨(IT.measurable_hist n).aemeasurable, by
     rw [← Kernel.map_apply _ (IT.measurable_hist n), he]⟩
 

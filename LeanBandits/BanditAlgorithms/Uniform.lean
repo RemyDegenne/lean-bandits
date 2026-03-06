@@ -12,7 +12,7 @@ open MeasureTheory ProbabilityTheory Learning
 
 namespace Bandits
 
-variable {K : ℕ} {hK : 0 < K}
+variable {K : ℕ}
 
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable

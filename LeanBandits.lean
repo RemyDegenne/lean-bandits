@@ -24,3 +24,9 @@ import LeanBandits.SequentialLearning.Deterministic
 import LeanBandits.SequentialLearning.FiniteActions
 import LeanBandits.SequentialLearning.IonescuTulceaSpace
 import LeanBandits.SequentialLearning.StationaryEnv
+import LeanBandits.OptimizationAlgorithms.Utils.EuclideanSpace
+import LeanBandits.OptimizationAlgorithms.Utils.Tuple
+import LeanBandits.OptimizationAlgorithms.Utils.Uniform
+import LeanBandits.OptimizationAlgorithms.LIPO
+import LeanBandits.OptimizationAlgorithms.PRS
+import LeanBandits.OptimizationAlgorithms.RankOpt

@@ -105,8 +105,7 @@ lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.
     have h_eval : Measurable (fun p : (Iic n → α × ℝ) × Iic n ↦ (p.1 p.2).1) := by
       suffices Measurable (fun p : (Iic n → α × ℝ) × Iic n ↦ p.1 p.2) by
         fun_prop
-      refine measurable_from_prod_countable_left fun i ↦ ?_
-      exact measurable_pi_apply i
+      exact measurable_from_prod_countable_left fun i ↦ measurable_pi_apply i
     refine h_eval.comp (Measurable.prodMk ?_ ?_)
     · fun_prop
     · change Measurable (fun p : Iic n → α × ℝ ↦ Tuple.argmax (fun i ↦ (p i).2))

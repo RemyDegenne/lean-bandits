@@ -559,6 +559,132 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 
 section Subgaussian
 
+/-! ### Sub-Gaussian concentration (δ-parameterized) -/
+
+private lemma exp_neg_sq_div_eq_delta {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
+    ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
+      (2 * k * ↑σ2))) = ENNReal.ofReal δ := by
+  have hk_pos : (0 : ℝ) < k := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hk)
+  have hσ2_pos : (0 : ℝ) < ↑σ2 := NNReal.coe_pos.mpr (pos_iff_ne_zero.mpr hσ2)
+  have hlog : 0 < Real.log (1 / δ) :=
+    Real.log_pos (by rw [one_div]; exact one_lt_inv₀ hδ |>.mpr hδ1)
+  rw [Real.sq_sqrt (by positivity)]
+  simp only [neg_div, Real.exp_neg]
+  rw [show 2 * (k : ℝ) * ↑σ2 * Real.log (1 / δ) / (2 * k * ↑σ2) =
+    Real.log (1 / δ) from by field_simp [ne_of_gt hσ2_pos, ne_of_gt hk_pos]]
+  rw [Real.exp_log (by positivity : (0 : ℝ) < 1 / δ), one_div, inv_inv]
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+/-- Claude: δ-parameterized one-sided concentration for the stream measure. Setting `δ = 1/(n+1)^c`
+recovers `todo` and `todo'` (case-split on `c = 0`) -/
+lemma streamMeasure_concentration_le_delta {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k +
+        √(2 * ↑σ2 * Real.log (1 / δ) / k) ≤ (ν a)[id]} ≤
+      ENNReal.ofReal δ := by
+  have hlog : 0 < Real.log (1 / δ) :=
+    Real.log_pos (by rw [one_div]; exact one_lt_inv₀ hδ |>.mpr hδ1)
+  calc
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k +
+        √(2 * ↑σ2 * Real.log (1 / δ) / k) ≤ (ν a)[id]}
+  _ = streamMeasure ν
+        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤
+          -√(2 * ↑σ2 * Real.log (1 / δ) / k)} := by
+      congr with ω
+      field_simp
+      rw [Finset.sum_sub_distrib]
+      simp
+      grind
+  _ = streamMeasure ν
+        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤
+          -√(2 * k * ↑σ2 * Real.log (1 / δ))} := by
+      congr with ω
+      field_simp
+      congr! 2
+      rw [Real.sqrt_div (by positivity : 0 ≤ 2 * ↑σ2 * Real.log (1 / δ)),
+        show ↑k * 2 * ↑σ2 * Real.log (1 / δ) = ↑k * (2 * ↑σ2 * Real.log (1 / δ)) from by ring,
+        Real.sqrt_mul (by positivity : (0 : ℝ) ≤ ↑k), ← mul_div_assoc,
+        mul_div_right_comm, Real.div_sqrt]
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
+        (2 * k * ↑σ2))) := by
+      rw [← ofReal_measureReal]
+      gcongr
+      refine HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_
+        (by positivity)
+      · exact (iIndepFun_eval_streamMeasure'' ν a).comp
+          (fun i ω ↦ ω - (ν a)[id]) (fun _ ↦ by fun_prop)
+      · intro i _; exact (hν a).congr_identDistrib
+          ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
+  _ = ENNReal.ofReal δ := exp_neg_sq_div_eq_delta hσ2 k hk δ hδ hδ1
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma streamMeasure_concentration_ge_delta {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
+    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k -
+        √(2 * ↑σ2 * Real.log (1 / δ) / k)} ≤
+      ENNReal.ofReal δ := by
+  have hlog : 0 < Real.log (1 / δ) :=
+    Real.log_pos (by rw [one_div]; exact one_lt_inv₀ hδ |>.mpr hδ1)
+  calc
+    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k -
+        √(2 * ↑σ2 * Real.log (1 / δ) / k)}
+  _ = streamMeasure ν
+        {ω | √(2 * ↑σ2 * Real.log (1 / δ) / k) ≤
+          (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
+      congr with ω
+      field_simp
+      rw [Finset.sum_sub_distrib]
+      simp
+      grind
+  _ = streamMeasure ν
+        {ω | √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤
+          (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
+      congr with ω
+      field_simp
+      congr! 1
+      rw [Real.sqrt_div (by positivity : 0 ≤ 2 * ↑σ2 * Real.log (1 / δ)),
+        show 2 * ↑σ2 * Real.log (1 / δ) * ↑k = ↑k * (2 * ↑σ2 * Real.log (1 / δ)) from by ring,
+        Real.sqrt_mul (by positivity : (0 : ℝ) ≤ ↑k), ← mul_div_assoc,
+        mul_div_right_comm, Real.div_sqrt]
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
+        (2 * k * ↑σ2))) := by
+      rw [← ofReal_measureReal]
+      gcongr
+      refine HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_
+        (by positivity)
+      · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
+          (fun _ ↦ by fun_prop)
+      · intro i _; exact (hν a).congr_identDistrib
+          ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
+  _ = ENNReal.ofReal δ := exp_neg_sq_div_eq_delta hσ2 k hk δ hδ hδ1
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma streamMeasure_concentration_bound {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) (m : ℕ) (hm : m ≠ 0) :
+    streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
+        {x | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} ∪
+        {x | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}} ≤
+      ENNReal.ofReal (2 * δ) :=
+  calc streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
+        {x | x / m + √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} ∪
+        {x | (ν a)[id] ≤ x / m - √(2 * ↑σ2 * Real.log (1 / δ) / m)}}
+      ≤ streamMeasure ν {ω | (∑ i ∈ range m, ω i a) / m +
+            √(2 * ↑σ2 * Real.log (1 / δ) / m) ≤ (ν a)[id]} +
+          streamMeasure ν {ω | (ν a)[id] ≤ (∑ i ∈ range m, ω i a) / m -
+            √(2 * ↑σ2 * Real.log (1 / δ) / m)} := by
+        apply (measure_mono (fun ω hω ↦ ?_)).trans (measure_union_le _ _)
+        simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
+    _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
+        gcongr
+        · exact streamMeasure_concentration_le_delta hσ2 hν a m hm δ hδ hδ1
+        · exact streamMeasure_concentration_ge_delta hσ2 hν a m hm δ hδ hδ1
+    _ = ENNReal.ofReal (2 * δ) := by
+        rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
+
 omit [DecidableEq α] [StandardBorelSpace α] in
 lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (a : α) (m : ℕ) :

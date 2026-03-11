@@ -11,62 +11,46 @@ import LeanBandits.SequentialLearning.AlgorithmDensity
 
 open MeasureTheory ProbabilityTheory Finset Learning
 
-open scoped ENNReal NNReal
+open scoped NNReal
 
 namespace Bandits
 
+variable {K : ℕ}
+variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
+
 namespace TS
 
-variable {K : ℕ} (hK : 0 < K)
-variable {𝓔 : Type*} [m𝓔 : MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ]
-
-/-- The distribution over actions for every given history for TS. -/
 noncomputable
-def policy (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
+def policy (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ]
+    (hK : 0 < K) (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map
-    (IsBayesAlgEnvSeq.bestAction κ id)
+  (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map (IsBayesAlgEnvSeq.bestAction κ id)
 
-instance (n : ℕ) : IsMarkovKernel (policy hK Q κ n) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  unfold policy
-  exact Kernel.IsMarkovKernel.map _
-    (IsBayesAlgEnvSeq.measurable_bestAction measurable_id)
+instance {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
+    {hK : 0 < K} (n : ℕ) : IsMarkovKernel (policy Q κ hK n) :=
+  Kernel.IsMarkovKernel.map _ (by fun_prop)
 
-/-- The initial distribution over actions for TS. -/
 noncomputable
-def initialPolicy : Measure (Fin K) :=
+def initialPolicy (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
+    [IsMarkovKernel κ] (hK : 0 < K) : Measure (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   Q.map (IsBayesAlgEnvSeq.bestAction κ id)
 
-instance : IsProbabilityMeasure (initialPolicy hK Q κ) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact Measure.isProbabilityMeasure_map
-    (IsBayesAlgEnvSeq.measurable_bestAction (by fun_prop)).aemeasurable
+instance {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
+    {hK : 0 < K} : IsProbabilityMeasure (initialPolicy Q κ hK) :=
+  Measure.isProbabilityMeasure_map (by fun_prop)
 
 end TS
 
-variable {K : ℕ}
-
-section Algorithm
-
-variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-
-/-- The Thompson Sampling (TS) algorithm: actions are chosen according to the probability that they
-are optimal given prior knowledge represented by a prior distribution `Q` and a data generation
-model represented by a kernel `κ`. -/
 noncomputable
-def tsAlgorithm (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q]
-    (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
-  policy := TS.policy hK Q κ
-  p0 := TS.initialPolicy hK Q κ
-
-end Algorithm
+def tsAlgorithm (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
+    [IsMarkovKernel κ] (hK : 0 < K) : Algorithm (Fin K) ℝ where
+  policy := TS.policy Q κ hK
+  p0 := TS.initialPolicy Q κ hK
 
 namespace TS
 
-/-! ### Auxiliary real-analysis lemmas -/
+section Auxiliary
 
 lemma abs_sub_le_of_mem_Icc {lo hi x y : ℝ} (hx : x ∈ Set.Icc lo hi)
     (hy : y ∈ Set.Icc lo hi) :
@@ -96,6 +80,8 @@ lemma sum_inv_sqrt_le (M : ℕ) (hM : 0 < M) :
         Real.mul_self_sqrt (show (0 : ℝ) ≤ ↑n by positivity),
         mul_self_nonneg (√(↑(n + 1) : ℝ) - √(↑n : ℝ)),
         show (↑(n + 1) : ℝ) = ↑n + 1 from by push_cast; ring]
+
+end Auxiliary
 
 /-! ### UCB index: definition and deterministic bounds -/
 
@@ -786,7 +772,7 @@ variable (P : Measure Ω) [IsProbabilityMeasure P]
 namespace TS
 
 lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P) (t : ℕ) :
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (t : ℕ) :
     condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P
       =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
     condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P := by
@@ -808,7 +794,7 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
   exact (h.hasCondDistrib_action' t).condDistrib_eq.trans (h_comp.trans h_map).symm
 
 lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P)
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
@@ -1085,7 +1071,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     measureReal_nonneg (μ := P) (s := Eδᶜ)]
 
 lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P)
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
     {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi)) (t : ℕ) :

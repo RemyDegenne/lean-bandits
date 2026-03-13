@@ -88,7 +88,6 @@ lemma measurable_ucbIndex [MeasurableSpace Ω]
   exact .ite ((measurable_pullCount hA a t)
     (measurableSet_singleton 0)) measurable_const (by fun_prop)
 
-
 lemma armMean_le_ucbIndex {lo hi : ℝ} (hm : ∀ a e, (κ (e, a))[id] ∈ (Set.Icc lo hi))
     (σ2 δ : ℝ) (a : Fin K) (t : ℕ) (ω : Ω)
     (hconc : pullCount A a t ω ≠ 0 →
@@ -162,12 +161,14 @@ lemma sum_comp_pullCount (f : ℕ → ℝ) (n : ℕ) (ω : Ω) :
     congr 1
     simp
 
+/-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
 private lemma sum_sqrt_le {ι : Type*} {c : ι → ℝ} (s : Finset ι) (hc : ∀ i, 0 ≤ c i) :
     ∑ i ∈ s, √(c i) ≤ √(#s * ∑ i ∈ s, c i) := by
   have h := Real.sum_sqrt_mul_sqrt_le s hc (fun _ => zero_le_one)
   simp only [Real.sqrt_one, mul_one, sum_const, nsmul_eq_mul] at h
   rwa [Real.sqrt_mul (by positivity), mul_comm]
 
+/-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
 private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1 / √k ≤ 2 * √n - 1 := by
   induction n with
   | zero => simp at h

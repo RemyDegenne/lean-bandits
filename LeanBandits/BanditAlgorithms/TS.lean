@@ -72,16 +72,6 @@ lemma ucbIndex_mem_Icc (h : l ≤ u) {a : Fin K} {n : ℕ} {ω : Ω} :
   unfold ucbIndex
   grind
 
-lemma ucbIndex_sub_mean_le {lo hi μ : ℝ} (hμ : μ ∈ Set.Icc lo hi)
-    (σ2 δ : ℝ) (a : Fin K) (t : ℕ) (ω : Ω) (hpc : pullCount A a t ω ≠ 0)
-    (h :
-      |empMean A R' a t ω - μ|
-        < √(2 * σ2 * Real.log (1 / δ) / (pullCount A a t ω : ℝ))) :
-    ucbIndex A R' lo hi σ2 δ a t ω - μ
-      ≤ 2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A a t ω : ℝ)) := by
-  unfold ucbIndex
-  grind
-
 omit [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 lemma iSup_armMean_eq_bestArm [Nonempty (Fin K)] (E : Ω → 𝓔)
     (κ : Kernel (𝓔 × Fin K) ℝ) {lo hi : ℝ}
@@ -180,8 +170,8 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
             2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
           sum_le_sum fun s hs => by
             have hpc : pullCount A (A s ω) s ω ≠ 0 := (Finset.mem_filter.mp hs).2
-            exact ucbIndex_sub_mean_le (hm _) σ2 δ (A s ω) s ω hpc
-              (hconc s (mem_range.mp (Finset.mem_filter.mp hs).1) _ hpc)
+            unfold ucbIndex
+            grind
       _ ≤ ∑ s ∈ range n,
             2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
           Finset.sum_le_sum_of_subset_of_nonneg

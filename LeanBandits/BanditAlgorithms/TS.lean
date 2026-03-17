@@ -53,6 +53,7 @@ namespace TS
 section UCB
 
 variable {Ω : Type*}
+variable {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
 variable {l u σ2 δ : ℝ}
 
 noncomputable
@@ -61,12 +62,11 @@ def ucb (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (l u σ2 δ : ℝ) 
   else max l (min u (empMean A R' a n ω + √(2 * σ2 * Real.log (1 / δ) / (pullCount A a n ω))))
 
 @[fun_prop]
-lemma measurable_ucb [MeasurableSpace Ω] {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} {a : Fin K}
-    {n : ℕ} (hA : ∀ t, Measurable (A t)) (hR : ∀ t, Measurable (R' t)) :
-    Measurable (ucb A R' l u σ2 δ a n) :=
+lemma measurable_ucb [MeasurableSpace Ω] {a : Fin K} {n : ℕ} (hA : ∀ t, Measurable (A t))
+    (hR : ∀ t, Measurable (R' t)) : Measurable (ucb A R' l u σ2 δ a n) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
-lemma ucb_mem_Icc {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} (h : l ≤ u) {a : Fin K} {n : ℕ} {ω : Ω} :
+lemma ucb_mem_Icc (h : l ≤ u) {a : Fin K} {n : ℕ} {ω : Ω} :
     ucb A R' l u σ2 δ a n ω ∈ Set.Icc l u := by
   unfold ucb
   grind
@@ -81,23 +81,22 @@ lemma measurable_uncurry_ucb' {n : ℕ} :
     Measurable (fun p : (Iic n → Fin K × ℝ) × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
-lemma ucbIndex_succ_eq_ucbIndex'_hist (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (a : Fin K)
-    (n : ℕ) (ω : Ω) :
+lemma ucb_succ_eq_ucb' {a : Fin K} {n : ℕ} {ω : Ω} :
     ucb A R' l u σ2 δ a (n + 1) ω = ucb' n (IsAlgEnvSeq.hist A R' n ω) l u σ2 δ a := by
-  have hpc : pullCount A a (n + 1) ω = pullCount' n (IsAlgEnvSeq.hist A R' n ω) a :=
+  have hp : pullCount A a (n + 1) ω = pullCount' n (IsAlgEnvSeq.hist A R' n ω) a :=
     pullCount_add_one_eq_pullCount'
-  have hem : empMean A R' a (n + 1) ω = empMean' n (IsAlgEnvSeq.hist A R' n ω) a :=
+  have he : empMean A R' a (n + 1) ω = empMean' n (IsAlgEnvSeq.hist A R' n ω) a :=
     empMean_add_one_eq_empMean'
-  simp_rw [ucb, ucb', hpc, hem]
+  rw [ucb, ucb', hp, he]
 
-/-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
+/-- Helper for `sum_ucb_sub_mean_le`. -/
 private lemma sum_sqrt_le {ι : Type*} {c : ι → ℝ} (s : Finset ι) (hc : ∀ i, 0 ≤ c i) :
     ∑ i ∈ s, √(c i) ≤ √(#s * ∑ i ∈ s, c i) := by
   have h := Real.sum_sqrt_mul_sqrt_le s hc (fun _ => zero_le_one)
   simp only [Real.sqrt_one, mul_one, sum_const, nsmul_eq_mul] at h
   rwa [Real.sqrt_mul (by positivity), mul_comm]
 
-/-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
+/-- Helper for `sum_ucb_sub_mean_le`. -/
 private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1 / √k ≤ 2 * √n - 1 := by
   induction n with
   | zero => simp at h
@@ -115,32 +114,22 @@ private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1
       have : √n * √n = n := Real.mul_self_sqrt (by positivity)
       nlinarith
 
-variable {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
-
-/-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
-lemma sum_comp_pullCount (f : ℕ → ℝ) (n : ℕ) (ω : Ω) :
+/-- Helper for `sum_ucb_sub_mean_le`. -/
+private lemma sum_comp_pullCount (f : ℕ → ℝ) (n : ℕ) (ω : Ω) :
     ∑ s ∈ range n, f (pullCount A (A s ω) s ω) =
     ∑ a : Fin K, ∑ j ∈ range (pullCount A a n ω), f j := by
   induction n with
   | zero => simp
   | succ n ih =>
-    rw [sum_range_succ, ih]
-    suffices ∑ a, ∑ j ∈ range (pullCount A a (n + 1) ω), f j =
-        (∑ a, ∑ j ∈ range (pullCount A a n ω), f j) +
-        f (pullCount A (A n ω) n ω) by linarith
-    have h_eq : ∀ a, ∑ j ∈ range (pullCount A a (n + 1) ω), f j =
-        ∑ j ∈ range (pullCount A a n ω), f j +
-        if A n ω = a then f (pullCount A a n ω) else 0 := by
-      intro a
-      rw [pullCount_add_one]
-      split_ifs with h
-      · rw [sum_range_succ]
-      · simp
-    simp_rw [h_eq, sum_add_distrib]
-    congr 1
-    simp
+    have hf : f (pullCount A (A n ω) n ω) =
+      ∑ a, if A n ω = a then f (pullCount A a n ω) else 0 := by simp
+    simp_rw [sum_range_succ, ih, hf, ← sum_add_distrib, pullCount_add_one]
+    congr 1 with a
+    split_ifs
+    · simp [sum_range_succ]
+    · simp
 
-lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
+lemma sum_ucb_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
     (hm : ∀ a, μ a ∈ Set.Icc lo hi)
     (hlo : lo ≤ hi) (σ2 δ : ℝ) (n : ℕ) (ω : Ω)
     (hconc : ∀ s < n, ∀ a, pullCount A a s ω ≠ 0 →
@@ -254,13 +243,7 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
 
 end UCB
 
-/-! ### Concentration bounds (algorithm-generic)
-
-These lemmas take `{alg : Algorithm (Fin K) ℝ}` and
-`(h : IsAlgEnvSeq IT.action IT.reward alg (stationaryEnv ν) P')` —
-they hold for any algorithm, not just TS. Placed in the `TS` namespace
-following the convention of UCB.lean and ETC.lean (cf. `UCB.prob_ucbIndex_le`,
-`ETC.probReal_sumRewards_le_sumRewards_le`). -/
+/-! ### Concentration bounds -/
 
 section Concentration
 
@@ -791,8 +774,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
         let g : (Iic t → Fin K × ℝ) × Fin K → ℝ :=
           fun p ↦ ucb' t p.1 l u (↑σ2) δ p.2
         have hg_eq : ∀ a (ω : Ω), ucb A R' l u (↑σ2) δ a (t + 1) ω =
-            g (IsAlgEnvSeq.hist A R' t ω, a) :=
-          fun a ω ↦ ucbIndex_succ_eq_ucbIndex'_hist A R' a t ω
+            g (IsAlgEnvSeq.hist A R' t ω, a) := fun _ _ ↦ ucb_succ_eq_ucb'
         have hg_meas : Measurable g := measurable_uncurry_ucb'
         rw [show (fun ω ↦ uc (A (t + 1) ω) (t + 1) ω -
             uc (bestArm ω) (t + 1) ω) =
@@ -844,7 +826,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
       ∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)
         ≤ (u - l) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
     intro ω hω
-    exact sum_ucbIndex_sub_mean_le (μ := fun a => armMean a ω)
+    exact sum_ucb_sub_mean_le (μ := fun a => armMean a ω)
       (hm (E ω)) hlo (↑σ2) δ n ω hω
   have h_prob : P Eδᶜ ≤ ENNReal.ofReal (2 * K * n * δ) := by
     have : Eδᶜ = {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧

@@ -196,6 +196,7 @@ lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
+@[fun_prop]
 lemma measurable_uncurry_pullCount' [MeasurableEq α] (n : ℕ) :
     Measurable (fun p : (Iic n → α × R) × α ↦ pullCount' n p.1 p.2) := by
   simp_rw [pullCount'_eq_sum]
@@ -862,8 +863,24 @@ lemma measurable_sumRewards' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_sumRewards' [MeasurableEq α] (n : ℕ) :
+    Measurable (fun p : (Iic n → α × ℝ) × α ↦ sumRewards' n p.1 p.2) := by
+  simp_rw [sumRewards']
+  have h_meas s : Measurable (fun p : (Iic n → α × ℝ) × α ↦
+      if (p.1 s).1 = p.2 then (p.1 s).2 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
+  fun_prop
+
+@[fun_prop]
 lemma measurable_empMean' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     Measurable (fun h ↦ empMean' n h a) := by
+  unfold empMean'
+  fun_prop
+
+@[fun_prop]
+lemma measurable_uncurry_empMean' [MeasurableEq α] (n : ℕ) :
+    Measurable (fun p : (Iic n → α × ℝ) × α ↦ empMean' n p.1 p.2) := by
   unfold empMean'
   fun_prop
 

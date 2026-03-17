@@ -56,38 +56,39 @@ variable {Ω : Type*}
 variable {l u σ2 δ : ℝ}
 
 noncomputable
-def ucbIndex (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (l u σ2 δ : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
+def ucb (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (l u σ2 δ : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   if pullCount A a n ω = 0 then u
   else max l (min u (empMean A R' a n ω + √(2 * σ2 * Real.log (1 / δ) / (pullCount A a n ω))))
 
 @[fun_prop]
-lemma measurable_ucbIndex [MeasurableSpace Ω] {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} {a : Fin K}
+lemma measurable_ucb [MeasurableSpace Ω] {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} {a : Fin K}
     {n : ℕ} (hA : ∀ t, Measurable (A t)) (hR : ∀ t, Measurable (R' t)) :
-    Measurable (ucbIndex A R' l u σ2 δ a n) :=
+    Measurable (ucb A R' l u σ2 δ a n) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
-lemma ucbIndex_mem_Icc {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} (h : l ≤ u) {a : Fin K} {n : ℕ}
-    {ω : Ω} : ucbIndex A R' l u σ2 δ a n ω ∈ Set.Icc l u := by
-  unfold ucbIndex
+lemma ucb_mem_Icc {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ} (h : l ≤ u) {a : Fin K} {n : ℕ} {ω : Ω} :
+    ucb A R' l u σ2 δ a n ω ∈ Set.Icc l u := by
+  unfold ucb
   grind
 
 noncomputable
-def ucbIndex' (n : ℕ) (h : Iic n → Fin K × ℝ) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
+def ucb' (n : ℕ) (h : Iic n → Fin K × ℝ) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
   if pullCount' n h a = 0 then u
   else max l (min u (empMean' n h a + √(2 * σ2 * Real.log (1 / δ) / (pullCount' n h a))))
 
 @[fun_prop]
-lemma measurable_ucbIndex' {a : Fin K} {n : ℕ} : Measurable (fun h ↦ ucbIndex' n h l u σ2 δ a) :=
+lemma measurable_uncurry_ucb' {n : ℕ} :
+    Measurable (fun p : (Iic n → Fin K × ℝ) × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
 lemma ucbIndex_succ_eq_ucbIndex'_hist (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (a : Fin K)
     (n : ℕ) (ω : Ω) :
-    ucbIndex A R' l u σ2 δ a (n + 1) ω = ucbIndex' n (IsAlgEnvSeq.hist A R' n ω) l u σ2 δ a := by
+    ucb A R' l u σ2 δ a (n + 1) ω = ucb' n (IsAlgEnvSeq.hist A R' n ω) l u σ2 δ a := by
   have hpc : pullCount A a (n + 1) ω = pullCount' n (IsAlgEnvSeq.hist A R' n ω) a :=
     pullCount_add_one_eq_pullCount'
   have hem : empMean A R' a (n + 1) ω = empMean' n (IsAlgEnvSeq.hist A R' n ω) a :=
     empMean_add_one_eq_empMean'
-  simp_rw [ucbIndex, ucbIndex', hpc, hem]
+  simp_rw [ucb, ucb', hpc, hem]
 
 /-- Helper for `sum_ucbIndex_sub_armMean_le`. -/
 private lemma sum_sqrt_le {ι : Type*} {c : ι → ℝ} (s : Finset ι) (hc : ∀ i, 0 ≤ c i) :
@@ -145,7 +146,7 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
     (hconc : ∀ s < n, ∀ a, pullCount A a s ω ≠ 0 →
       |empMean A R' a s ω - μ a|
         < √(2 * σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ))) :
-    ∑ s ∈ range n, (ucbIndex A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
+    ∑ s ∈ range n, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
       ≤ (hi - lo) * ↑K + 2 * √(8 * σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
   -- Split range n into first-pull (pc=0) and non-first-pull (pc≠0) sets
   set S0 := (range n).filter (fun s => pullCount A (A s ω) s ω = 0)
@@ -155,21 +156,21 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
   conv_lhs => rw [hpart]
   rw [Finset.sum_union hdisj]
   -- We bound ∑_{S0} and ∑_{S1} separately, then combine
-  suffices h_S0 : ∑ s ∈ S0, (ucbIndex A R' lo hi σ2 δ (A s ω) s ω -
+  suffices h_S0 : ∑ s ∈ S0, (ucb A R' lo hi σ2 δ (A s ω) s ω -
         μ (A s ω)) ≤ (hi - lo) * ↑K by
-    suffices h_S1 : ∑ s ∈ S1, (ucbIndex A R' lo hi σ2 δ (A s ω) s ω -
+    suffices h_S1 : ∑ s ∈ S1, (ucb A R' lo hi σ2 δ (A s ω) s ω -
         μ (A s ω))
           ≤ 2 * √(8 * σ2 * Real.log (1 / δ)) * √(↑K * ↑n) by
       have := Finset.sum_union hdisj (f := fun s =>
-        ucbIndex A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
+        ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
       rw [← hpart] at this; linarith
     -- Bound ∑_{S1}: each term ≤ 2√(2σ2c/pc) = 2√(2σ2c/max(1,pc)), so ≤ full sum
-    calc ∑ s ∈ S1, (ucbIndex A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
+    calc ∑ s ∈ S1, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
         ≤ ∑ s ∈ S1,
             2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
           sum_le_sum fun s hs => by
             have hpc : pullCount A (A s ω) s ω ≠ 0 := (Finset.mem_filter.mp hs).2
-            unfold ucbIndex
+            unfold ucb
             grind
       _ ≤ ∑ s ∈ range n,
             2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
@@ -222,10 +223,10 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
                 simp [sqrt_eq_zero'.mpr this]
             rw [sum_congr rfl h0]; simp only [sum_const_zero]; positivity
   -- Bound ∑_{S0}: each term = hi - μ ≤ hi - lo, and #S0 ≤ K
-  have hterm_S0 : ∀ s ∈ S0, ucbIndex A R' lo hi σ2 δ (A s ω) s ω -
+  have hterm_S0 : ∀ s ∈ S0, ucb A R' lo hi σ2 δ (A s ω) s ω -
       μ (A s ω) ≤ hi - lo := fun s hs => by
     have hpc : pullCount A (A s ω) s ω = 0 := (Finset.mem_filter.mp hs).2
-    simp only [ucbIndex, hpc, ↓reduceIte]
+    simp only [ucb, hpc, ↓reduceIte]
     linarith [(hm (A s ω)).1]
   have h_card_S0 : #S0 ≤ K := by
     calc #S0 ≤ #(Finset.univ : Finset (Fin K)) :=
@@ -245,7 +246,7 @@ lemma sum_ucbIndex_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
                 exact absurd hpc₁ (show pullCount A (A s₁ ω) s₁ ω ≠ 0 from
                   Finset.card_ne_zero_of_mem this))
       _ = K := Finset.card_fin K
-  calc ∑ s ∈ S0, (ucbIndex A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
+  calc ∑ s ∈ S0, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
       ≤ ∑ _s ∈ S0, (hi - lo) := sum_le_sum hterm_S0
     _ = #S0 * (hi - lo) := by rw [sum_const, nsmul_eq_mul]
     _ ≤ ↑K * (hi - lo) := by gcongr; linarith
@@ -691,53 +692,53 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
   have hlo : l ≤ u := h1.trans h2
   let bestArm := IsBayesAlgEnvSeq.bestAction κ E
   let armMean := IsBayesAlgEnvSeq.actionMean κ E
-  let ucb := ucbIndex A R' l u (↑σ2) δ
+  let uc := ucb A R' l u (↑σ2) δ
   set Eδ : Set Ω := {ω | ∀ s < n, ∀ a, pullCount A a s ω ≠ 0 →
     |empMean A R' a s ω - armMean a ω|
       < √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ))}
   set Fδ : Set Ω := {ω | ∀ s < n, pullCount A (bestArm ω) s ω ≠ 0 →
     |empMean A R' (bestArm ω) s ω - armMean (bestArm ω) ω|
       < √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A (bestArm ω) s ω : ℝ))}
-  have hm_ucb : ∀ a t, Measurable (ucbIndex A R' l u (↑σ2) δ a t) :=
-    fun _ _ ↦ measurable_ucbIndex h.measurable_A h.measurable_R
+  have hm_ucb : ∀ a t, Measurable (ucb A R' l u (↑σ2) δ a t) :=
+    fun _ _ ↦ measurable_ucb h.measurable_A h.measurable_R
   have hm_arm : ∀ a, Measurable (IsBayesAlgEnvSeq.actionMean κ E a) :=
     fun a ↦ IsBayesAlgEnvSeq.measurable_actionMean (a := a) h.measurable_E
   have hm_best : Measurable (IsBayesAlgEnvSeq.bestAction κ E) :=
     IsBayesAlgEnvSeq.measurable_bestAction h.measurable_E
   have h_first_bound : ∀ ω,
-      |∑ s ∈ range n, (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)|
+      |∑ s ∈ range n, (armMean (bestArm ω) ω - uc (bestArm ω) s ω)|
         ≤ n * (u - l) := fun ω ↦
-    calc |∑ s ∈ range n, (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)|
-        ≤ ∑ s ∈ range n, |armMean (bestArm ω) ω - ucb (bestArm ω) s ω| :=
+    calc |∑ s ∈ range n, (armMean (bestArm ω) ω - uc (bestArm ω) s ω)|
+        ≤ ∑ s ∈ range n, |armMean (bestArm ω) ω - uc (bestArm ω) s ω| :=
           Finset.abs_sum_le_sum_abs _ _
       _ ≤ ∑ s ∈ range n, (u - l) := by
           gcongr with s _
           exact abs_sub_le_of_le_of_le (hm _ _).1 (hm _ _).2
-            ((ucbIndex_mem_Icc hlo).1)
-            (ucbIndex_mem_Icc hlo).2
+            ((ucb_mem_Icc hlo).1)
+            (ucb_mem_Icc hlo).2
       _ = ↑n * (u - l) := by
           rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
   have h_second_bound : ∀ ω,
-      |∑ s ∈ range n, (ucb (A s ω) s ω - armMean (A s ω) ω)|
+      |∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)|
         ≤ n * (u - l) := fun ω ↦
-    calc |∑ s ∈ range n, (ucb (A s ω) s ω - armMean (A s ω) ω)|
-        ≤ ∑ s ∈ range n, |ucb (A s ω) s ω - armMean (A s ω) ω| :=
+    calc |∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)|
+        ≤ ∑ s ∈ range n, |uc (A s ω) s ω - armMean (A s ω) ω| :=
           Finset.abs_sum_le_sum_abs _ _
       _ ≤ ∑ s ∈ range n, (u - l) := by
           gcongr with s _
-          exact abs_sub_le_of_le_of_le (ucbIndex_mem_Icc hlo).1
-            (ucbIndex_mem_Icc hlo).2 (hm _ _).1 (hm _ _).2
+          exact abs_sub_le_of_le_of_le (ucb_mem_Icc hlo).1
+            (ucb_mem_Icc hlo).2 (hm _ _).1 (hm _ _).2
       _ = ↑n * (u - l) := by
           rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
   have h_int_sum1 : Integrable (fun ω ↦ ∑ s ∈ range n,
-      (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)) P := by
+      (armMean (bestArm ω) ω - uc (bestArm ω) s ω)) P := by
     apply Integrable.of_bound (C := ↑n * (u - l))
     · exact (Finset.measurable_fun_sum _ fun s _ ↦
         (measurable_apply_fin hm_arm hm_best).sub
           (measurable_apply_fin (fun a ↦ hm_ucb a s) hm_best)).aestronglyMeasurable
     · filter_upwards with ω; rw [Real.norm_eq_abs]; exact h_first_bound ω
   have h_int_sum2 : Integrable (fun ω ↦ ∑ s ∈ range n,
-      (ucb (A s ω) s ω - armMean (A s ω) ω)) P := by
+      (uc (A s ω) s ω - armMean (A s ω) ω)) P := by
     apply Integrable.of_bound (C := ↑n * (u - l))
     · exact (Finset.measurable_fun_sum _ fun s _ ↦
         (measurable_apply_fin (fun a ↦ hm_ucb a s) (h.measurable_A s)).sub
@@ -746,26 +747,26 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
   have h_swap :
       P[IsBayesAlgEnvSeq.regret κ E A n] =
       P[fun ω ↦ ∑ s ∈ range n,
-        (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)] +
+        (armMean (bestArm ω) ω - uc (bestArm ω) s ω)] +
       P[fun ω ↦ ∑ s ∈ range n,
-        (ucb (A s ω) s ω - armMean (A s ω) ω)] := by
+        (uc (A s ω) s ω - armMean (A s ω) ω)] := by
     have h_int_ucb : ∀ s {f : Ω → Fin K}, Measurable f →
-        Integrable (fun ω ↦ ucb (f ω) s ω) P := fun s {_} hf ↦
+        Integrable (fun ω ↦ uc (f ω) s ω) P := fun s {_} hf ↦
       ⟨(measurable_apply_fin (fun a ↦ hm_ucb a s) hf).aestronglyMeasurable,
         HasFiniteIntegral.of_bounded (ae_of_all _ fun ω ↦ by
           rw [Real.norm_eq_abs]
-          exact abs_le_max_abs_abs (ucbIndex_mem_Icc hlo).1
-            (ucbIndex_mem_Icc hlo).2)⟩
-    have h_int_ucb_sub : ∀ s, Integrable (fun ω ↦ ucb (A s ω) s ω - ucb (bestArm ω) s ω) P :=
+          exact abs_le_max_abs_abs (ucb_mem_Icc hlo).1
+            (ucb_mem_Icc hlo).2)⟩
+    have h_int_ucb_sub : ∀ s, Integrable (fun ω ↦ uc (A s ω) s ω - uc (bestArm ω) s ω) P :=
       fun s ↦ (h_int_ucb s (h.measurable_A s)).sub (h_int_ucb s hm_best)
-    have h_ucb_zero : ∀ a (ω : Ω), ucbIndex A R' l u (↑σ2) δ a 0 ω = u := by
-      intro a ω; unfold ucbIndex; simp [pullCount_zero]
-    have h_ucb_swap : ∀ s, ∫ ω, (ucb (A s ω) s ω - ucb (bestArm ω) s ω) ∂P = 0 := by
+    have h_ucb_zero : ∀ a (ω : Ω), ucb A R' l u (↑σ2) δ a 0 ω = u := by
+      intro a ω; unfold ucb; simp [pullCount_zero]
+    have h_ucb_swap : ∀ s, ∫ ω, (uc (A s ω) s ω - uc (bestArm ω) s ω) ∂P = 0 := by
       intro s
       cases s with
       | zero =>
-        have : ∀ ω, ucb (A 0 ω) 0 ω - ucb (bestArm ω) 0 ω = 0 := fun ω ↦ by
-          change ucbIndex A R' l u (↑σ2) δ _ 0 ω - ucbIndex A R' l u (↑σ2) δ _ 0 ω = 0
+        have : ∀ ω, uc (A 0 ω) 0 ω - uc (bestArm ω) 0 ω = 0 := fun ω ↦ by
+          change ucb A R' l u (↑σ2) δ _ 0 ω - ucb A R' l u (↑σ2) δ _ 0 ω = 0
           simp [h_ucb_zero]
         exact (integral_congr_ae (ae_of_all _ this)).trans (integral_zero _ _)
       | succ t =>
@@ -787,81 +788,60 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
                 (hm_hist.prodMk hm_best).aemeasurable
                 hf.aestronglyMeasurable,
               h_map_eq]
-        set g : (Iic t → Fin K × ℝ) × Fin K → ℝ :=
-          fun p ↦ if pullCount' t p.1 p.2 = 0 then u
-            else max l (min u (empMean' t p.1 p.2 +
-              √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount' t p.1 p.2 : ℝ))))
-        have hg_eq : ∀ a (ω : Ω), ucbIndex A R' l u (↑σ2) δ a (t + 1) ω =
+        let g : (Iic t → Fin K × ℝ) × Fin K → ℝ :=
+          fun p ↦ ucb' t p.1 l u (↑σ2) δ p.2
+        have hg_eq : ∀ a (ω : Ω), ucb A R' l u (↑σ2) δ a (t + 1) ω =
             g (IsAlgEnvSeq.hist A R' t ω, a) :=
           fun a ω ↦ ucbIndex_succ_eq_ucbIndex'_hist A R' a t ω
-        have hg_meas : Measurable g := by
-          apply Measurable.ite
-          · have : MeasurableSet {p : (Iic t → Fin K × ℝ) × Fin K |
-                (pullCount' t p.1 p.2 : ℝ) = (0 : ℝ)} :=
-              measurableSet_eq_fun
-                (measurable_apply_fin
-                  (fun a ↦ measurable_from_top.comp
-                    ((measurable_pullCount' t a).comp measurable_fst))
-                  measurable_snd)
-                measurable_const
-            simp only [Nat.cast_eq_zero] at this; exact this
-          · exact measurable_const
-          · exact .max measurable_const (.min measurable_const
-              (.add (measurable_apply_fin
-                (fun a ↦ (measurable_empMean' t a).comp measurable_fst)
-                measurable_snd)
-              (measurable_const.div (measurable_apply_fin
-                (fun a ↦ measurable_from_top.comp
-                  ((measurable_pullCount' t a).comp measurable_fst))
-                measurable_snd)).sqrt))
-        rw [show (fun ω ↦ ucb (A (t + 1) ω) (t + 1) ω -
-            ucb (bestArm ω) (t + 1) ω) =
-            fun ω ↦ (fun ω ↦ ucb (A (t + 1) ω) (t + 1) ω) ω -
-              (fun ω ↦ ucb (bestArm ω) (t + 1) ω) ω from rfl,
+        have hg_meas : Measurable g := measurable_uncurry_ucb'
+        rw [show (fun ω ↦ uc (A (t + 1) ω) (t + 1) ω -
+            uc (bestArm ω) (t + 1) ω) =
+            fun ω ↦ (fun ω ↦ uc (A (t + 1) ω) (t + 1) ω) ω -
+              (fun ω ↦ uc (bestArm ω) (t + 1) ω) ω from rfl,
           integral_sub (h_int_ucb (t + 1) (h.measurable_A (t + 1)))
             (h_int_ucb (t + 1) hm_best),
           funext fun ω ↦ hg_eq _ _, funext fun ω ↦ hg_eq _ _,
           h_int_eq g hg_meas, sub_self]
     have h_ucb_sum_zero : ∫ ω, ∑ s ∈ range n,
-        (ucb (A s ω) s ω - ucb (bestArm ω) s ω) ∂P = 0 := by
+        (uc (A s ω) s ω - uc (bestArm ω) s ω) ∂P = 0 := by
       rw [integral_finset_sum _ (fun s _ ↦ h_int_ucb_sub s)]
       exact Finset.sum_eq_zero fun s _ ↦ h_ucb_swap s
     have h_int_gap : Integrable (fun ω ↦ IsBayesAlgEnvSeq.regret κ E A n ω) P :=
       IsBayesAlgEnvSeq.integrable_regret h.measurable_E (h.measurable_A) hm
     simp_rw [IsBayesAlgEnvSeq.regret_eq_sum_gap, IsBayesAlgEnvSeq.gap_eq_sub] at h_int_gap ⊢
-    have h_pw : ∀ ω, (∑ s ∈ range n, (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)) +
-        (∑ s ∈ range n, (ucb (A s ω) s ω - armMean (A s ω) ω)) =
+    have h_pw : ∀ ω, (∑ s ∈ range n, (armMean (bestArm ω) ω - uc (bestArm ω) s ω)) +
+        (∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)) =
         (∑ s ∈ range n, (armMean (bestArm ω) ω - armMean (A s ω) ω)) +
-        (∑ s ∈ range n, (ucb (A s ω) s ω - ucb (bestArm ω) s ω)) := by
+        (∑ s ∈ range n, (uc (A s ω) s ω - uc (bestArm ω) s ω)) := by
       intro ω
       simp only [← Finset.sum_add_distrib]
       apply Finset.sum_congr rfl; intros; ring
     have h_int_ucb_swap : Integrable
-        (fun ω ↦ ∑ s ∈ range n, (ucb (A s ω) s ω - ucb (bestArm ω) s ω)) P :=
+        (fun ω ↦ ∑ s ∈ range n, (uc (A s ω) s ω - uc (bestArm ω) s ω)) P :=
       integrable_finset_sum _ fun s _ ↦ h_int_ucb_sub s
     calc ∫ ω, ∑ s ∈ range n, (armMean (bestArm ω) ω - armMean (A s ω) ω) ∂P
         = ∫ ω, ((∑ s ∈ range n, (armMean (bestArm ω) ω - armMean (A s ω) ω)) +
-            (∑ s ∈ range n, (ucb (A s ω) s ω - ucb (bestArm ω) s ω))) ∂P := by
+            (∑ s ∈ range n, (uc (A s ω) s ω - uc (bestArm ω) s ω))) ∂P := by
           rw [integral_add h_int_gap h_int_ucb_swap, h_ucb_sum_zero, add_zero]
-      _ = ∫ ω, ((∑ s ∈ range n, (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)) +
-            (∑ s ∈ range n, (ucb (A s ω) s ω - armMean (A s ω) ω))) ∂P := by
+      _ = ∫ ω, ((∑ s ∈ range n, (armMean (bestArm ω) ω - uc (bestArm ω) s ω)) +
+            (∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω))) ∂P := by
           congr 1; ext ω; linarith [h_pw ω]
       _ = _ := integral_add h_int_sum1 h_int_sum2
   have h_first_Fδ : ∀ ω ∈ Fδ,
-      ∑ s ∈ range n, (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)
+      ∑ s ∈ range n, (armMean (bestArm ω) ω - uc (bestArm ω) s ω)
         ≤ 0 := by
     intro ω hω
     apply Finset.sum_nonpos
     intro s hs
-    have : armMean (bestArm ω) ω ≤ ucb (bestArm ω) s ω := by
-      simp only [armMean, ucb]; unfold ucbIndex
+    have : armMean (bestArm ω) ω ≤ uc (bestArm ω) s ω := by
+      simp only [armMean, uc]; unfold ucb
       split_ifs with h0
       · exact (hm (E ω) (bestArm ω)).2
       · have := abs_lt.mp ((hω s (mem_range.mp hs)) h0)
         exact le_max_of_le_right (le_min (hm (E ω) (bestArm ω)).2 (by linarith))
     linarith
   have h_second_Eδ : ∀ ω ∈ Eδ,
-      ∑ s ∈ range n, (ucb (A s ω) s ω - armMean (A s ω) ω)
+      ∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)
         ≤ (u - l) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
     intro ω hω
     exact sum_ucbIndex_sub_mean_le (μ := fun a => armMean a ω)
@@ -913,9 +893,9 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
       (Q := Q) (κ := κ) (P := P) h hσ2 hs n δ hδ hδ1
   rw [h_swap]
   set f1 : Ω → ℝ := fun ω ↦ ∑ s ∈ range n,
-    (armMean (bestArm ω) ω - ucb (bestArm ω) s ω)
+    (armMean (bestArm ω) ω - uc (bestArm ω) s ω)
   set f2 : Ω → ℝ := fun ω ↦ ∑ s ∈ range n,
-    (ucb (A s ω) s ω - armMean (A s ω) ω)
+    (uc (A s ω) s ω - armMean (A s ω) ω)
   set B := (u - l) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n)
   have h1g : ∫ ω in Fδ, f1 ω ∂P ≤ 0 :=
     setIntegral_nonpos hFδ_meas fun ω hω ↦ h_first_Fδ ω hω
@@ -964,15 +944,12 @@ lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     simp only [Nat.cast_one, Real.log_one, mul_zero, Real.sqrt_zero, mul_zero, add_zero]
     calc P[IsBayesAlgEnvSeq.regret κ E A 1]
         ≤ hi - lo := by
-          unfold IsBayesAlgEnvSeq.regret Bandits.regret
-          simp only [Finset.range_one, Finset.sum_singleton, Nat.cast_one, one_mul,
-            Kernel.sectR_apply]
-          refine (integral_mono_of_nonneg (ae_of_all _ fun ω ↦ sub_nonneg.mpr
-              (le_ciSup ⟨hi, by rintro _ ⟨a, rfl⟩; exact (hm _ a).2⟩ _))
-            (integrable_const (hi - lo)) (ae_of_all _ fun ω ↦ by
-              linarith [ciSup_le fun a ↦ (hm (E ω) a).2,
-                (hm (E ω) (A 0 ω)).1])).trans ?_
-          simp
+          rw [IsBayesAlgEnvSeq.regret_eq_sum_gap']
+          simp only [Finset.range_one, Finset.sum_singleton]
+          exact (integral_mono_of_nonneg
+            (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_nonneg_of_le (fun e a ↦ (hm e a).2))
+            (integrable_const _)
+            (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_le_of_mem_Icc hm)).trans (by simp)
       _ ≤ (3 * ↑K + 2) * (hi - lo) := by
           nlinarith [Nat.one_le_cast (α := ℝ).mpr (Nat.one_le_of_lt hK),
             sub_nonneg.mpr hlo]

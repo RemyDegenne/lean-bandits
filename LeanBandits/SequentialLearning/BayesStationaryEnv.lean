@@ -64,17 +64,74 @@ lemma measurable_bestAction [Nonempty α] [Fintype α] [Encodable α] [Measurabl
     {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} (hE : Measurable E) : Measurable (bestAction κ E) :=
   measurable_measurableArgmax (by fun_prop)
 
+/-- The gap at time `n`. -/
 noncomputable
-def regret (κ : Kernel (𝓔 × α) ℝ) (E : Ω → 𝓔) (A : ℕ → Ω → α) (t : ℕ) (ω : Ω) : ℝ :=
-  Bandits.regret (κ.sectR (E ω)) A t ω
+def gap (κ : Kernel (𝓔 × α) ℝ) (E : Ω → 𝓔) (A : ℕ → Ω → α) (n : ℕ) (ω : Ω) : ℝ :=
+  Bandits.gap (κ.sectR (E ω)) (A n ω)
+
+omit [MeasurableSpace Ω] in
+/-- The gap is non-negative if the means are bounded by `u : ℝ` (even if `α` is not `Finite`). -/
+lemma gap_nonneg_of_le [Nonempty α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ}
+    {ω : Ω} {u : ℝ} (h : ∀ e a, (κ (e, a))[id] ≤ u) : 0 ≤ gap κ E A n ω := by
+  simp_rw [gap, Bandits.gap, Kernel.sectR_apply]
+  linarith [le_ciSup ⟨u, Set.forall_mem_range.2 fun a ↦ (h (E ω) a)⟩ (A n ω)]
+
+omit [MeasurableSpace Ω] in
+lemma gap_le_of_mem_Icc [Nonempty α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ}
+    {ω : Ω} {l u : ℝ} (h : ∀ e a, (κ (e, a))[id] ∈ Set.Icc l u) : gap κ E A n ω ≤ u - l := by
+  simp_rw [gap, Bandits.gap, Kernel.sectR_apply]
+  grind [ciSup_le (fun a ↦ (h (E ω) a).2)]
+
+omit [MeasurableSpace Ω] in
+lemma gap_eq_sub [Nonempty α] [Fintype α] [Encodable α] [MeasurableSingletonClass α]
+    {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ} {ω : Ω} :
+    gap κ E A n ω = actionMean κ E (bestAction κ E ω) ω - actionMean κ E (A n ω) ω := by
+  rw [gap, Bandits.gap]
+  congr
+  apply le_antisymm
+  · exact ciSup_le (isMaxOn_measurableArgmax (fun ω' a ↦ actionMean κ E a ω') ω)
+  · exact Finite.le_ciSup (fun a ↦ actionMean κ E a ω) _
 
 @[fun_prop]
-lemma measurable_regret [Countable α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {t : ℕ}
-    (hE : Measurable E) (hA : ∀ n, Measurable (A n)) :
-    Measurable (regret κ E A t) := by
-  have hm := (stronglyMeasurable_id.integral_kernel (κ := κ)).measurable
-  exact (Measurable.const_mul (Measurable.iSup fun _ ↦ (hm.comp (by fun_prop))) _).sub
-    (Finset.measurable_sum _ fun _ _ ↦ hm.comp (by fun_prop))
+lemma measurable_gap [Countable α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ}
+    (hE : Measurable E) (hA : ∀ t, Measurable (A t)) : Measurable (gap κ E A n) :=
+  (Measurable.iSup fun _ ↦ stronglyMeasurable_id.integral_kernel.measurable.comp (by fun_prop)).sub
+    (stronglyMeasurable_id.integral_kernel.measurable.comp (by fun_prop))
+
+lemma integrable_gap [Countable α] [Nonempty α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔}
+    {A : ℕ → Ω → α} {n : ℕ} {P : Measure Ω} [IsFiniteMeasure P] (hE : Measurable E)
+    (hA : ∀ t, Measurable (A t)) {l u : ℝ} (h : ∀ e a, (κ (e, a))[id] ∈ Set.Icc l u) :
+    Integrable (gap κ E A n) P := by
+  apply Integrable.of_bound (by fun_prop) (u - l)
+  filter_upwards with ω
+  rw [Real.norm_eq_abs, abs_of_nonneg (gap_nonneg_of_le (fun e a ↦ (h e a).2))]
+  exact gap_le_of_mem_Icc h
+
+noncomputable
+def regret (κ : Kernel (𝓔 × α) ℝ) (E : Ω → 𝓔) (A : ℕ → Ω → α) (n : ℕ) (ω : Ω) : ℝ :=
+  Bandits.regret (κ.sectR (E ω)) A n ω
+
+omit [MeasurableSpace Ω] in
+lemma regret_eq_sum_gap {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ} {ω : Ω} :
+    regret κ E A n ω = ∑ s ∈ range n, gap κ E A s ω := by
+  simp [regret, Bandits.regret, gap, Bandits.gap]
+
+omit [MeasurableSpace Ω] in
+lemma regret_eq_sum_gap' {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ} :
+    regret κ E A n = fun ω ↦ ∑ s ∈ range n, gap κ E A s ω := funext fun _ ↦ regret_eq_sum_gap
+
+@[fun_prop]
+lemma measurable_regret [Countable α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → α} {n : ℕ}
+    (hE : Measurable E) (hA : ∀ t, Measurable (A t)) : Measurable (regret κ E A n) := by
+  rw [regret_eq_sum_gap']
+  fun_prop
+
+lemma integrable_regret [Countable α] [Nonempty α] {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔}
+    {A : ℕ → Ω → α} {n : ℕ} {P : Measure Ω} [IsFiniteMeasure P] (hE : Measurable E)
+    (hA : ∀ t, Measurable (A t)) {l u : ℝ} (h : ∀ e a, (κ (e, a))[id] ∈ Set.Icc l u) :
+    Integrable (regret κ E A n) P := by
+  rw [regret_eq_sum_gap']
+  exact integrable_finset_sum _ (fun _ _ ↦ integrable_gap hE hA h)
 
 end Real
 

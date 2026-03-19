@@ -455,6 +455,53 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 
 section Subgaussian
 
+open Real
+
+lemma superMartingale_exp_sumNoises (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {c : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (t : ℝ) :
+    Supermartingale (fun n ω ↦
+        exp (t * (sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω)
+          - t ^ 2 * c * pullCount A a (n + 1) ω / 2))
+      (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) P := by
+  refine supermartingale_nat (fun n ↦ ?_) (fun n ↦ ?_) (fun n ↦ ?_)
+  · have h1 := h.adapted_sumNoises_add_one a n (μ := fun a ↦ (ν a)[id])
+    have h2 := adapted_pullCount_add_one h.measurable_A h.measurable_R a n
+    fun_prop
+  · sorry
+  · simp_rw [sumNoises_add_one (t := n + 1), pullCount_add_one (t := n + 1)]
+    have h_ae_eq ω :
+        (t * (sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω +
+          if A (n + 1) ω = a then R (n + 1) ω - (ν a)[id] else 0)) -
+        t ^ 2 * c * ↑(pullCount A a (n + 1) ω + if A (n + 1) ω = a then 1 else 0) / 2 =
+        (t * sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω -
+          t ^ 2 * c * (pullCount A a (n + 1) ω) / 2) +
+          if A (n + 1) ω = a then t * (R (n + 1) ω - (ν a)[id]) - t ^ 2 * c / 2 else 0 := by
+      simp only [id_eq, Nat.cast_add, Nat.cast_ite, Nat.cast_one, CharP.cast_eq_zero]
+      split_ifs with hA <;> ring
+    simp_rw [h_ae_eq, exp_add]
+    calc P[fun ω ↦ exp (t * sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω -
+          t ^ 2 * c * (pullCount A a (n + 1) ω) / 2) *
+      exp (if A (n + 1) ω = a then t * (R (n + 1) ω - (ν a)[id]) - t ^ 2 * c / 2 else 0)|
+        IsAlgEnvSeq.filtration h.measurable_A h.measurable_R n]
+    _ =ᵐ[P] (fun ω ↦ exp (t * (sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω) -
+          t ^ 2 * c * (pullCount A a (n + 1) ω) / 2)) *
+      P[fun ω ↦ exp (if A (n + 1) ω = a then t * (R (n + 1) ω - (ν a)[id]) - t ^ 2 * c / 2 else 0)|
+        IsAlgEnvSeq.filtration h.measurable_A h.measurable_R n] := by
+      apply condExp_mul_of_aestronglyMeasurable_left
+      · have h1 := h.adapted_sumNoises_add_one a n (μ := fun a ↦ (ν a)[id])
+        have h2 := adapted_pullCount_add_one h.measurable_A h.measurable_R a n
+        fun_prop
+      · sorry
+      · sorry
+    _ ≤ᵐ[P] fun ω ↦ exp (t * sumNoises A R (fun a ↦ (ν a)[id]) a (n + 1) ω -
+          t ^ 2 * c * (pullCount A a (n + 1) ω) / 2) := by
+      suffices P[fun ω ↦ exp (if A (n + 1) ω = a then t * (R (n + 1) ω - (ν a)[id]) - t ^ 2 * c / 2
+          else 0) | IsAlgEnvSeq.filtration h.measurable_A h.measurable_R n] ≤ᵐ[P] 1 by
+        filter_upwards [this] with ω hω
+        simp only [id_eq, Pi.mul_apply, Pi.one_apply] at ⊢ hω
+        exact mul_le_of_le_one_right (by positivity) hω
+      sorry
+
 omit [DecidableEq α] [StandardBorelSpace α] in
 lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (a : α) (m : ℕ) :

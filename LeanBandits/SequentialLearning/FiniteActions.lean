@@ -749,12 +749,21 @@ noncomputable
 def empMean' (n : ℕ) (h : Iic n → α × ℝ) (a : α) :=
   (sumRewards' n h a) / (pullCount' n h a)
 
+def sumNoises (A : ℕ → Ω → α) (R' : ℕ → Ω → ℝ) (μ : α → ℝ) (a : α) (t : ℕ) (ω : Ω) : ℝ :=
+  ∑ s ∈ range t, if A s ω = a then R' s ω - μ a else 0
+
 @[simp]
 lemma sumRewards_zero {R' : ℕ → Ω → ℝ} : sumRewards A R' a 0 = 0 := by ext; simp [sumRewards]
 
 lemma sumRewards_add_one {R' : ℕ → Ω → ℝ} :
     sumRewards A R' a (t + 1) ω = sumRewards A R' a t ω + if A t ω = a then R' t ω else 0 := by
   unfold sumRewards
+  rw [sum_range_succ]
+
+lemma sumNoises_add_one {R' : ℕ → Ω → ℝ} (μ : α → ℝ) :
+    sumNoises A R' μ a (t + 1) ω =
+      sumNoises A R' μ a t ω + if A t ω = a then R' t ω - μ a else 0 := by
+  unfold sumNoises
   rw [sum_range_succ]
 
 lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ}
@@ -816,17 +825,13 @@ lemma empMean_eq_empMean' {R' : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} (hn : n 
   unfold empMean empMean'
   rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
 
-lemma sumRewards_sub_pullCount_mul_eq_sum {R' : ℕ → Ω → ℝ} (c : α → ℝ) :
-    sumRewards A R' a (n + 1) ω - pullCount A a (n + 1) ω * c a =
-      ∑ i ∈ range (n + 1), (if A i ω = a then R' i ω - c a else 0) := by
+lemma sumRewards_sub_pullCount_mul_eq_sumNoises {R' : ℕ → Ω → ℝ} (c : α → ℝ) :
+    sumRewards A R' a n ω - pullCount A a n ω * c a = sumNoises A R' c a n ω := by
+  unfold sumNoises
   induction n with
-  | zero =>
-    simp_rw [sumRewards_add_one, pullCount_add_one]
-    simp only [sumRewards_zero, Pi.zero_apply, zero_add, pullCount_zero, Nat.cast_ite, Nat.cast_one,
-      CharP.cast_eq_zero, ite_mul, one_mul, zero_mul, range_one, sum_singleton]
-    grind
+  | zero => simp
   | succ n hn =>
-    simp_rw [sumRewards_add_one (t := n + 1), pullCount_add_one (t := n + 1)]
+    simp_rw [sumRewards_add_one (t := n), pullCount_add_one (t := n)]
     split_ifs with ha
     · conv_rhs => rw [sum_range_succ]
       simp only [Nat.cast_add, Nat.cast_one, ha, ↓reduceIte, add_mul, one_mul]
@@ -834,6 +839,12 @@ lemma sumRewards_sub_pullCount_mul_eq_sum {R' : ℕ → Ω → ℝ} (c : α → 
     · simp only [add_zero, hn]
       conv_rhs => rw [sum_range_succ]
       simp [ha]
+
+
+lemma sumRewards_sub_pullCount_mul_eq_sumNoises' {R' : ℕ → Ω → ℝ} (c : α → ℝ) :
+    (fun ω ↦ sumRewards A R' a n ω - pullCount A a n ω * c a) = sumNoises A R' c a n := by
+  ext ω
+  exact sumRewards_sub_pullCount_mul_eq_sumNoises c
 
 @[fun_prop]
 lemma measurable_sumRewards [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
@@ -850,6 +861,13 @@ lemma measurable_empMean [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
     (hR' : ∀ n, Measurable (R' n)) (a : α) (n : ℕ) :
     Measurable (empMean A R' a n) := by
   unfold empMean
+  fun_prop
+
+@[fun_prop]
+lemma measurable_sumNoises [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (μ : α → ℝ) (a : α) (n : ℕ) :
+    Measurable (sumNoises A R' μ a n) := by
+  simp_rw [← sumRewards_sub_pullCount_mul_eq_sumNoises']
   fun_prop
 
 @[fun_prop]
@@ -894,6 +912,19 @@ lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace α] [Nonempty �
   have h_predictable := h.isPredictable_sumRewards a
   rw [isPredictable_iff_measurable_add_one] at h_predictable
   exact h_predictable.2
+
+lemma IsAlgEnvSeq.adapted_sumNoises_add_one [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
+    {alg : Algorithm α ℝ} {env : Environment α ℝ} {μ : α → ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : α) :
+    Adapted (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R)
+      (fun n ↦ sumNoises A R' μ a (n + 1)) := by
+  simp_rw [← sumRewards_sub_pullCount_mul_eq_sumNoises']
+  have h1 := h.adapted_sumRewards_add_one a
+  have h2 := adapted_pullCount_add_one h.measurable_A h.measurable_R a
+  refine h1.sub (Adapted.mul ?_ (adapted_const _ _))
+  intro n
+  specialize h2 n
+  fun_prop
 
 section CopiedFromPR
 

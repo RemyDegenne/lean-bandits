@@ -10,6 +10,25 @@ open scoped ENNReal NNReal
 
 namespace ProbabilityTheory
 
+namespace HasSubgaussianMGF
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  {μ : Measure Ω} {X : Ω → ℝ} {c : ℝ≥0}
+
+lemma memLp_exp_mul_sub (h : HasSubgaussianMGF X c μ) (t : ℝ) (p : ℝ≥0) :
+    MemLp (fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)) p μ := by
+  have h_lp := h.memLp_exp_mul t p
+  simp_rw [sub_eq_add_neg, exp_add]
+  exact h_lp.mul_const _
+
+lemma integrable_exp_mul_sub (h : HasSubgaussianMGF X c μ) (t : ℝ) :
+    Integrable (fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)) μ := by
+  have h_int := h.integrable_exp_mul t
+  simp_rw [exp_sub]
+  exact h_int.div_const _
+
+end HasSubgaussianMGF
+
 namespace HasCondSubgaussianMGF
 
 variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {hm : m ≤ mΩ} [StandardBorelSpace Ω]
@@ -50,6 +69,68 @@ lemma integrable_exp_mul_sub (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) :
   have h_int := h.integrable_exp_mul t
   simp_rw [exp_sub]
   exact h_int.div_const _
+
+lemma aux {X : ℕ → Ω → ℝ} {c : ℕ → ℝ≥0} {ℱ : Filtration ℕ mΩ}
+    {p : ℕ → Ω → Prop} [∀ n, DecidablePred (p n)]
+    (h0 : HasSubgaussianMGF (X 0) (c 0) μ)
+    (h_subG : ∀ n, HasCondSubgaussianMGF (ℱ n) (ℱ.le n) (X (n + 1)) (c (n + 1)) μ)
+    (hp : IsPredictable ℱ p) (t : ℝ) (n : ℕ) :
+    ∀ q, 1 < q → MemLp (fun ω ↦ exp (∑ i ∈ Finset.range n,
+      if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) q μ := by
+  induction n with
+  | zero =>
+    simp only [Finset.range_zero, Finset.sum_empty, exp_zero]
+    exact fun _ _ ↦ memLp_const _
+  | succ n hn =>
+    intro q hq
+    simp_rw [Finset.sum_range_succ, exp_add]
+    obtain ⟨p1, p2, hp1, hp2, h_triple⟩ :
+        ∃ p1 p2, 1 < p1 ∧ 1 < p2 ∧ ENNReal.HolderTriple p1 p2 q := by
+      refine ⟨2 * q, 2 * q, ?_, ?_, ?_⟩
+      · conv_lhs => rw [← one_mul 1]
+        gcongr
+        simp
+      · conv_lhs => rw [← one_mul 1]
+        gcongr
+        simp
+      · constructor
+        rw [ENNReal.mul_inv (by simp) (by simp), ← ENNReal.div_eq_inv_mul, ENNReal.add_halves]
+    refine MemLp.mul (q := p2) ?_ (hn p1 hp1)
+    cases n with
+    | zero =>
+      have h_Lp := h0.memLp_exp_mul_sub t p2.toNNReal
+      sorry
+    | succ n =>
+      have h_Lp := (h_subG n).memLp_exp_mul_sub t p2.toNNReal
+      sorry
+
+lemma todo_supermartingale_optional {X : ℕ → Ω → ℝ} {c : ℕ → ℝ≥0} {ℱ : Filtration ℕ mΩ}
+    {p : ℕ → Ω → Prop} [∀ n, DecidablePred (p n)] (hX : Adapted ℱ X)
+    (h0 : HasSubgaussianMGF (X 0) (c 0) μ)
+    (h_subG : ∀ n, HasCondSubgaussianMGF (ℱ n) (ℱ.le n) (X (n + 1)) (c (n + 1)) μ)
+    (hp : IsPredictable ℱ p) (t : ℝ) :
+    Supermartingale (fun n ω ↦ exp (∑ i ∈ Finset.range n,
+      if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) ℱ μ := by
+  refine supermartingale_nat (fun n ↦ ?_) (fun n ↦ ?_) (fun n ↦ ?_)
+  · sorry
+  · sorry
+  · simp_rw [Finset.sum_range_succ, exp_add]
+    calc μ[fun ω ↦ exp (∑ i ∈ Finset.range n, if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0) *
+      exp (if p n ω then t * X n ω - c n * t ^ 2 / 2 else 0) | ℱ n]
+    _ =ᵐ[μ] (fun ω ↦ exp (∑ i ∈ Finset.range n,
+        if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0)) *
+      μ[fun ω ↦ exp (if p n ω then t * X n ω - c n * t ^ 2 / 2 else 0) | ℱ n] := by
+      apply condExp_mul_of_aestronglyMeasurable_left
+      · sorry
+      · sorry
+      · sorry
+    _ ≤ᵐ[μ] fun ω ↦ exp (∑ i ∈ Finset.range n,
+        if p i ω then (t * X i ω - c i * t ^ 2 / 2) else 0) := by
+      suffices μ[fun ω ↦ exp (if p n ω then t * X n ω - c n * t ^ 2 / 2 else 0) | ℱ n] ≤ᵐ[μ] 1 by
+        filter_upwards [this] with ω hω
+        simp only [Pi.mul_apply, Pi.one_apply] at ⊢ hω
+        exact mul_le_of_le_one_right (by positivity) hω
+      sorry
 
 end HasCondSubgaussianMGF
 

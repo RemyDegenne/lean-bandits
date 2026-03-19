@@ -729,6 +729,19 @@ lemma sum_pullCount [Fintype α] {ω : Ω} : ∑ a, pullCount A a t ω = t := by
   rw [sum_pullCount_mul]
   simp
 
+lemma sum_comp_pullCount [Fintype α] [AddCommMonoid R] (f : ℕ → R) (t : ℕ) (ω : Ω) :
+    ∑ s ∈ range t, f (pullCount A (A s ω) s ω) = ∑ a, ∑ j ∈ range (pullCount A a t ω), f j := by
+  induction t with
+  | zero => simp
+  | succ n ih =>
+    have hf : f (pullCount A (A n ω) n ω) =
+      ∑ a, if A n ω = a then f (pullCount A a n ω) else 0 := by simp
+    simp_rw [sum_range_succ, ih, hf, ← sum_add_distrib, pullCount_add_one]
+    congr 1 with a
+    split_ifs
+    · simp [sum_range_succ]
+    · simp
+
 section SumRewards
 
 /-- Sum of rewards obtained when pulling action `a` up to time `t` (exclusive). -/

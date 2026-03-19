@@ -114,132 +114,68 @@ private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1
       have : √n * √n = n := Real.mul_self_sqrt (by positivity)
       nlinarith
 
-/-- Helper for `sum_ucb_sub_mean_le`. -/
-private lemma sum_comp_pullCount (f : ℕ → ℝ) (n : ℕ) (ω : Ω) :
-    ∑ s ∈ range n, f (pullCount A (A s ω) s ω) =
-    ∑ a : Fin K, ∑ j ∈ range (pullCount A a n ω), f j := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    have hf : f (pullCount A (A n ω) n ω) =
-      ∑ a, if A n ω = a then f (pullCount A a n ω) else 0 := by simp
-    simp_rw [sum_range_succ, ih, hf, ← sum_add_distrib, pullCount_add_one]
-    congr 1 with a
-    split_ifs
-    · simp [sum_range_succ]
-    · simp
-
-lemma sum_ucb_sub_mean_le {lo hi : ℝ} {μ : Fin K → ℝ}
-    (hm : ∀ a, μ a ∈ Set.Icc lo hi)
-    (hlo : lo ≤ hi) (σ2 δ : ℝ) (n : ℕ) (ω : Ω)
-    (hconc : ∀ s < n, ∀ a, pullCount A a s ω ≠ 0 →
-      |empMean A R' a s ω - μ a|
-        < √(2 * σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ))) :
-    ∑ s ∈ range n, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
-      ≤ (hi - lo) * ↑K + 2 * √(8 * σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
-  -- Split range n into first-pull (pc=0) and non-first-pull (pc≠0) sets
-  set S0 := (range n).filter (fun s => pullCount A (A s ω) s ω = 0)
-  set S1 := (range n).filter (fun s => pullCount A (A s ω) s ω ≠ 0)
-  have hpart : range n = S0 ∪ S1 := (Finset.filter_union_filter_not_eq _ _).symm
-  have hdisj : Disjoint S0 S1 := Finset.disjoint_filter_filter_not _ _ _
-  conv_lhs => rw [hpart]
-  rw [Finset.sum_union hdisj]
-  -- We bound ∑_{S0} and ∑_{S1} separately, then combine
-  suffices h_S0 : ∑ s ∈ S0, (ucb A R' lo hi σ2 δ (A s ω) s ω -
-        μ (A s ω)) ≤ (hi - lo) * ↑K by
-    suffices h_S1 : ∑ s ∈ S1, (ucb A R' lo hi σ2 δ (A s ω) s ω -
-        μ (A s ω))
-          ≤ 2 * √(8 * σ2 * Real.log (1 / δ)) * √(↑K * ↑n) by
-      have := Finset.sum_union hdisj (f := fun s =>
-        ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
-      rw [← hpart] at this; linarith
-    -- Bound ∑_{S1}: each term ≤ 2√(2σ2c/pc) = 2√(2σ2c/max(1,pc)), so ≤ full sum
-    calc ∑ s ∈ S1, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
-        ≤ ∑ s ∈ S1,
-            2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
-          sum_le_sum fun s hs => by
-            have hpc : pullCount A (A s ω) s ω ≠ 0 := (Finset.mem_filter.mp hs).2
+lemma sum_ucb_sub_mean_le {n : ℕ} {ω : Ω} (μ : Fin K → ℝ) (hμ : ∀ a, μ a ∈ Set.Icc l u) (hi : l ≤ u)
+    (hc : ∀ s < n, pullCount A (A s ω) s ω ≠ 0 → |empMean A R' (A s ω) s ω - μ (A s ω)|
+      < √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω))) :
+    ∑ s ∈ range n, (ucb A R' l u σ2 δ (A s ω) s ω - μ (A s ω))
+      ≤ (u - l) * K + 4 * √(2 * σ2 * Real.log (1 / δ) * K * n) := by
+  let S₀ := {s ∈ range n | pullCount A (A s ω) s ω = 0}
+  let S₁ := {s ∈ range n | pullCount A (A s ω) s ω ≠ 0}
+  have hu : S₀ ∪ S₁ = range n := filter_union_filter_not_eq _ _
+  have hd : Disjoint S₀ S₁ := disjoint_filter_filter_not _ _ _
+  rw [← hu, sum_union hd]
+  gcongr
+  · calc ∑ s ∈ S₀, (ucb A R' l u σ2 δ (A s ω) s ω - μ (A s ω))
+        ≤ ∑ s ∈ S₀, (u - l) :=
+          have (s : ℕ) : ucb A R' l u σ2 δ (A s ω) s ω ∈ Set.Icc l u := ucb_mem_Icc hi
+          sum_le_sum (by grind)
+      _ = ∑ s ∈ range n, if pullCount A (A s ω) s ω = 0 then (u - l) else 0 := by
+          rw [sum_filter]
+      _ = ∑ a, ∑ j ∈ range (pullCount A a n ω), if j = 0 then (u - l) else 0 :=
+          sum_comp_pullCount (fun j => if j = 0 then (u - l) else 0) n ω
+      _ ≤ ∑ a, (u - l) := by
+          gcongr
+          rw [sum_ite_eq']
+          grind
+      _ = (u - l) * K := by
+          rw [Fin.sum_const, nsmul_eq_mul, mul_comm]
+  · calc ∑ s ∈ S₁, (ucb A R' l u σ2 δ (A s ω) s ω - μ (A s ω))
+          ≤ ∑ s ∈ S₁, 2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω)) := by
+            gcongr with s hs
             unfold ucb
             grind
-      _ ≤ ∑ s ∈ range n,
-            2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω : ℝ)) :=
-          Finset.sum_le_sum_of_subset_of_nonneg
-            (Finset.filter_subset _ _) fun s _ _ => by positivity
-      _ ≤ 2 * √(8 * σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
-          set c := Real.log (1 / δ)
-          by_cases hc : 0 ≤ 2 * σ2 * c
-          · open Real in
-            calc ∑ s ∈ range n, 2 * √(2 * σ2 * c / ↑(pullCount A (A s ω) s ω))
-                = ∑ s ∈ range n, √(8 * σ2 * c) *
-                    (1 / √(↑(pullCount A (A s ω) s ω) : ℝ)) :=
-                  sum_congr rfl fun s _ => by
-                    rw [show (8 : ℝ) * σ2 * c = (2 : ℝ) ^ 2 * (2 * σ2 * c) from by ring]
-                    rw [sqrt_mul (by positivity : (0:ℝ) ≤ 2 ^ 2),
-                        sqrt_sq (by norm_num : (0:ℝ) ≤ 2)]
-                    rw [sqrt_div (by linarith : 0 ≤ 2 * σ2 * c)]; ring
-              _ = √(8 * σ2 * c) * ∑ s ∈ range n,
-                    (1 / √(↑(pullCount A (A s ω) s ω) : ℝ)) := by
-                  rw [mul_sum]
-              _ = √(8 * σ2 * c) * ∑ a : Fin K, ∑ j ∈ range (pullCount A a n ω),
-                    (1 / √(↑j : ℝ)) := by
-                  congr 1; exact sum_comp_pullCount (fun j => 1 / √(↑j : ℝ)) n ω
-              _ ≤ √(8 * σ2 * c) * ∑ a : Fin K, (2 * √↑(pullCount A a n ω)) := by
-                  gcongr with a
-                  by_cases ha : pullCount A a n ω = 0
-                  · simp [ha]
-                  · have := sum_inv_sqrt_le (Nat.pos_of_ne_zero ha)
-                    rw [sum_range_succ] at this
-                    linarith [div_nonneg zero_le_one
-                      (Real.sqrt_nonneg (↑(pullCount A a n ω) : ℝ))]
-              _ = √(8 * σ2 * c) * (2 * ∑ a : Fin K, √↑(pullCount A a n ω)) := by
-                simp only [mul_sum]
-              _ ≤ √(8 * σ2 * c) * (2 * √(↑K * ↑n)) := by
-                  gcongr
-                  calc ∑ a : Fin K, √↑(pullCount A a n ω)
-                      ≤ √(↑(Finset.univ.card) * ∑ a, ↑(pullCount A a n ω)) :=
-                        sum_sqrt_le Finset.univ fun a => by positivity
-                    _ = √(↑K * ↑n) := by
-                        congr 1; rw [Finset.card_fin]; congr 1
-                        have h := sum_pullCount (A := A) (t := n) (ω := ω)
-                        exact_mod_cast h
-              _ = 2 * √(8 * σ2 * c) * √(↑K * ↑n) := by ring
-          · have h0 : ∀ s ∈ range n,
-                2 * √(2 * σ2 * c / ↑(pullCount A (A s ω) s ω)) = 0 :=
-              fun s _ => by
-                open Real in
-                have : 2 * σ2 * c / ↑(pullCount A (A s ω) s ω) ≤ 0 :=
-                  div_nonpos_of_nonpos_of_nonneg (by linarith) (Nat.cast_nonneg _)
-                simp [sqrt_eq_zero'.mpr this]
-            rw [sum_congr rfl h0]; simp only [sum_const_zero]; positivity
-  -- Bound ∑_{S0}: each term = hi - μ ≤ hi - lo, and #S0 ≤ K
-  have hterm_S0 : ∀ s ∈ S0, ucb A R' lo hi σ2 δ (A s ω) s ω -
-      μ (A s ω) ≤ hi - lo := fun s hs => by
-    have hpc : pullCount A (A s ω) s ω = 0 := (Finset.mem_filter.mp hs).2
-    simp only [ucb, hpc, ↓reduceIte]
-    linarith [(hm (A s ω)).1]
-  have h_card_S0 : #S0 ≤ K := by
-    calc #S0 ≤ #(Finset.univ : Finset (Fin K)) :=
-          Finset.card_le_card_of_injOn (fun s => A s ω)
-            (fun _ _ => Finset.mem_coe.mpr (Finset.mem_univ _)) (by
-              intro s₁ hs₁ s₂ hs₂ heq
-              have hpc₁ := (Finset.mem_filter.mp (Finset.mem_coe.mp hs₁)).2
-              have hpc₂ := (Finset.mem_filter.mp (Finset.mem_coe.mp hs₂)).2
-              by_contra h_ne
-              rcases lt_or_gt_of_ne h_ne with h_lt | h_lt
-              · have : s₁ ∈ (range s₂).filter (fun i => A i ω = A s₂ ω) := by
-                  simp [mem_range.mpr h_lt, heq]
-                exact absurd hpc₂ (show pullCount A (A s₂ ω) s₂ ω ≠ 0 from
-                  Finset.card_ne_zero_of_mem this)
-              · have : s₂ ∈ (range s₁).filter (fun i => A i ω = A s₁ ω) := by
-                  simp [mem_range.mpr h_lt, ← heq]
-                exact absurd hpc₁ (show pullCount A (A s₁ ω) s₁ ω ≠ 0 from
-                  Finset.card_ne_zero_of_mem this))
-      _ = K := Finset.card_fin K
-  calc ∑ s ∈ S0, (ucb A R' lo hi σ2 δ (A s ω) s ω - μ (A s ω))
-      ≤ ∑ _s ∈ S0, (hi - lo) := sum_le_sum hterm_S0
-    _ = #S0 * (hi - lo) := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ ↑K * (hi - lo) := by gcongr; linarith
-    _ = (hi - lo) * ↑K := by ring
+        _ ≤ ∑ s ∈ range n, 2 * √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω)) :=
+            sum_le_sum_of_subset_of_nonneg (filter_subset _ _) (fun _ _ _ => by positivity)
+        _ = 2 * √(2 * σ2 * Real.log (1 / δ)) * ∑ s ∈ range n, (1 / √(pullCount A (A s ω) s ω)) := by
+            rw [mul_sum]
+            congr with s
+            rw [Real.sqrt_div' _ (by positivity)]
+            ring
+        _ = 2 * √(2 * σ2 * Real.log (1 / δ)) *
+              ∑ a, ∑ j ∈ range (pullCount A a n ω), (1 / √j) := by
+            rw [sum_comp_pullCount (fun j => 1 / √j)]
+        _ ≤ 2 * √(2 * σ2 * Real.log (1 / δ)) * (2 * ∑ a, √(pullCount A a n ω)) := by
+            rw [mul_sum _ _ 2]
+            gcongr with a
+            by_cases ha : pullCount A a n ω = 0
+            · simp [ha]
+            · have hi := sum_inv_sqrt_le (Nat.pos_of_ne_zero ha)
+              rw [sum_range_succ] at hi
+              have : 0 ≤ 1 / √(pullCount A a n ω) := by positivity
+              linarith
+        _ ≤ 2 * √(2 * σ2 * Real.log (1 / δ)) * (2 * √(K * ∑ a, (pullCount A a n ω))) := by
+            gcongr
+            have h := sum_sqrt_le Finset.univ (fun a => Nat.cast_nonneg (pullCount A a n ω))
+            rw [Finset.card_fin] at h
+            exact_mod_cast h
+        _ = 2 * √(2 * σ2 * Real.log (1 / δ)) * (2 * √(K * n)) := by
+            congr
+            exact sum_pullCount (ω := ω)
+        _ = 4 * √(2 * σ2 * Real.log (1 / δ) * K * n) := by
+            ring_nf
+            rw [← Real.sqrt_mul' _ (by positivity)]
+            ring_nf
+
 
 end UCB
 
@@ -670,7 +606,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P[IsBayesAlgEnvSeq.regret κ E A n]
       ≤ (u - l) * ↑K + 2 * (↑K + 1) * (u - l) * n ^ 2 * δ +
-        2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
+        4 * √(2 * ↑σ2 * Real.log (1 / δ) * ↑K * ↑n) := by
   have ⟨h1, h2⟩ := hm (Classical.arbitrary _) (Classical.arbitrary _)
   have hlo : l ≤ u := h1.trans h2
   let bestArm := IsBayesAlgEnvSeq.bestAction κ E
@@ -824,10 +760,10 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     linarith
   have h_second_Eδ : ∀ ω ∈ Eδ,
       ∑ s ∈ range n, (uc (A s ω) s ω - armMean (A s ω) ω)
-        ≤ (u - l) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n) := by
+        ≤ (u - l) * ↑K + 4 * √(2 * ↑σ2 * Real.log (1 / δ) * ↑K * ↑n) := by
     intro ω hω
-    exact sum_ucb_sub_mean_le (μ := fun a => armMean a ω)
-      (hm (E ω)) hlo (↑σ2) δ n ω hω
+    exact sum_ucb_sub_mean_le (fun a ↦ armMean a ω) (hm (E ω)) hlo
+      (fun s hs hpc => hω s hs (A s ω) hpc)
   have h_prob : P Eδᶜ ≤ ENNReal.ofReal (2 * K * n * δ) := by
     have : Eδᶜ = {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ)) ≤
@@ -878,7 +814,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     (armMean (bestArm ω) ω - uc (bestArm ω) s ω)
   set f2 : Ω → ℝ := fun ω ↦ ∑ s ∈ range n,
     (uc (A s ω) s ω - armMean (A s ω) ω)
-  set B := (u - l) * ↑K + 2 * √(8 * ↑σ2 * Real.log (1 / δ)) * √(↑K * ↑n)
+  set B := (u - l) * ↑K + 4 * √(2 * ↑σ2 * Real.log (1 / δ) * ↑K * ↑n)
   have h1g : ∫ ω in Fδ, f1 ω ∂P ≤ 0 :=
     setIntegral_nonpos hFδ_meas fun ω hω ↦ h_first_Fδ ω hω
   have h1b : ∫ ω in Fδᶜ, f1 ω ∂P ≤ ↑n * (u - l) * P.real Fδᶜ := by
@@ -954,19 +890,16 @@ lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
       rw [one_div_one_div, Real.log_pow]; norm_cast
     calc P[IsBayesAlgEnvSeq.regret κ E A t]
         ≤ (hi - lo) * ↑K + 2 * (↑K + 1) * (hi - lo) * ↑t ^ 2 * (1 / (↑t) ^ 2)
-          + 2 * √(8 * ↑σ2 * Real.log (1 / (1 / (↑t) ^ 2))) * √(↑K * ↑t) :=
+          + 4 * √(2 * ↑σ2 * Real.log (1 / (1 / (↑t) ^ 2)) * ↑K * ↑t) :=
           bayesRegret_le_of_delta (hK := hK) (E := E) (A := A) (R' := R') (Q := Q)
             (κ := κ) (P := P) h hσ2 hs hm t (1 / (↑t) ^ 2) hδ hδ1
-      _ = (3 * ↑K + 2) * (hi - lo) + 8 * (√(↑σ2 * Real.log ↑t) * √(↑K * ↑t)) := by
-          rw [h_first, h_log,
-            show (8 : ℝ) * ↑σ2 * (2 * Real.log ↑t) = 4 ^ 2 * (↑σ2 * Real.log ↑t) by ring,
-            Real.sqrt_mul (by positivity : (0 : ℝ) ≤ 4 ^ 2),
-            Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 4)]
-          ring
       _ = (3 * ↑K + 2) * (hi - lo) + 8 * √(↑σ2 * ↑K * ↑t * Real.log ↑t) := by
-          rw [← Real.sqrt_mul (by positivity :
-            0 ≤ ↑σ2 * Real.log ↑t)]
-          congr 1; ring_nf
+          rw [h_first, h_log]; congr 1
+          rw [show (2 : ℝ) * ↑σ2 * (2 * Real.log ↑t) * ↑K * ↑t =
+            (2 : ℝ) ^ 2 * (↑σ2 * ↑K * ↑t * Real.log ↑t) from by ring,
+            Real.sqrt_mul (by positivity : (0 : ℝ) ≤ 2 ^ 2),
+            Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 2)]
+          ring
 
 end TS
 

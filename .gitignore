@@ -37,3 +37,7 @@ blueprint/src/web.pdf
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
+## Verso
+/verso/.lake/
+/verso/html/
+/homepage/verso

@@ -1,5 +1,5 @@
-name = "LeanBandits"
-defaultTargets = ["LeanBandits"]
+name = "LeanMachineLearning"
+defaultTargets = ["LeanMachineLearning"]
 lintDriver = "batteries/runLinter"
 
 [leanOptions]
@@ -18,5 +18,9 @@ git = "https://github.com/leanprover-community/mathlib4.git"
 name = "checkdecls"
 git = "https://github.com/PatrickMassot/checkdecls.git"
 
+[[require]]
+name = "subverso"
+git = "https://github.com/leanprover/subverso"
+
 [[lean_lib]]
-name = "LeanBandits"
+name = "LeanMachineLearning"

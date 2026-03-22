@@ -51,6 +51,11 @@ jobs:
           lint: false
           mk_all-check: true
 
+      - name: Build Verso Documentation
+        run: |
+          cd verso
+          ./build_manual.sh
+
       - name: Compile blueprint and documentation
         uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
         with:

@@ -48,7 +48,7 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
 noncomputable
 def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (UCB.nextArm hK c) (by fun_prop) ⟨0, hK⟩
---- ANCHOR_END: UCB_def
+-- ANCHOR_END: UCB_def
 end Algorithm
 
 namespace UCB

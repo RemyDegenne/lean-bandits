@@ -168,32 +168,6 @@ lemma identDistrib_sum_range_snd (a : α) (k : ℕ) :
       (ν := streamMeasure ν), Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
 
-omit [Countable α] in
-lemma sumRewards_eq_sum_stream_of_pullCount_eq (a : α) (s m : ℕ) (ω : probSpace α ℝ)
-    (hpc : pullCount A a s ω = m) :
-    sumRewards A R a s ω = ∑ i ∈ range m, ω.2 i a := by
-  let ω' : probSpace α ℝ × (ℕ → α → ℝ) := (ω, ω.2)
-  have h_sum_rbc : sumRewards A R a s ω = ∑ i ∈ Icc 1 m, rewardByCount A R a i ω' := by
-    rw [← sum_rewardByCount_eq_sumRewards a s ω', hpc]
-  rw [h_sum_rbc]
-  have h_rbc_eq (i : ℕ) (hi : i ∈ Icc 1 m) : rewardByCount A R a i ω' = ω.2 (i - 1) a := by
-    have hi' := mem_Icc.mp hi
-    have hi_ne : i ≠ 0 := Nat.one_le_iff_ne_zero.mp hi'.1
-    have h_i_le : i ≤ pullCount A a s ω := hpc ▸ hi'.2
-    have hs_pos : 0 < s :=
-      Nat.pos_of_ne_zero (by rintro rfl; simp [pullCount] at hpc; omega)
-    have h_exists : ∃ t, pullCount A a (t + 1) ω = i :=
-      exists_pullCount_eq_of_le (n := s - 1) (Nat.sub_add_cancel hs_pos ▸ h_i_le) hi_ne
-    rw [rewardByCount_of_stepsUntil_ne_top (stepsUntil_ne_top h_exists)]
-    simp only [reward_eq]
-    have h_action : A (stepsUntil A a i ω).toNat ω = a :=
-      action_stepsUntil («A» := A) hi_ne h_exists
-    congr!
-    rw [h_action, pullCount_stepsUntil hi_ne h_exists]
-  calc ∑ i ∈ Icc 1 m, rewardByCount A R a i ω'
-    _ = ∑ i ∈ Icc 1 m, ω.2 (i - 1) a := Finset.sum_congr rfl h_rbc_eq
-    _ = ∑ j ∈ range m, ω.2 j a := sum_Icc_one_eq_sum_range (f := fun i => ω.2 i a)
-
 lemma prob_pullCount_prod_sumRewards_mem_le (a : α) (n : ℕ)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
@@ -255,7 +229,7 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le (a : α) (n m : ℕ)
         apply measure_mono
         intro ω ⟨s, _hs, hpc, hB'⟩
         -- When pullCount(s, ω) = m, sumRewards(s, ω) = ∑ i < m, ω.2 i a in the ArrayModel.
-        rw [sumRewards_eq_sum_stream_of_pullCount_eq a s m ω hpc] at hB'
+        rw [sumRewards_eq alg a s ω, hpc] at hB'
         exact hB'
     _ = streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
         have := (identDistrib_sum_range_snd (ν := ν) a m).map_eq

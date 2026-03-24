@@ -85,8 +85,8 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le (a : α) (m : ℕ) {B : Set
   calc
     _ ≤ 𝔓 {ω | ∑ i ∈ range m, ω.2 i a ∈ B} := by
         apply measure_mono
-        intro ω ⟨s, hp, hs⟩
-        rwa [sumRewards_eq alg a s ω, hp] at hs
+        intro ω ⟨n, hp, hn⟩
+        rwa [sumRewards_eq alg a n ω, hp] at hn
     _ = streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
         (identDistrib_sum_range_snd a m).measure_mem_eq hB
 
@@ -219,6 +219,48 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
       P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
   ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
+omit [DecidableEq α] in
+lemma _root_.Learning.IsAlgEnvSeq.identDistrib_trajectory
+    (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
+    IdentDistrib (fun ω n ↦ (A n ω, R n ω)) (fun ω n ↦ (A₂ n ω, R₂ n ω)) P P' :=
+  ⟨(measurable_pi_iff.mpr fun n ↦ (h1.measurable_A n).prodMk
+      (h1.measurable_R n)).aemeasurable,
+   (measurable_pi_iff.mpr fun n ↦ (h2.measurable_A n).prodMk
+      (h2.measurable_R n)).aemeasurable,
+   isAlgEnvSeq_unique h1 h2⟩
+
+lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards
+    (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
+    IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
+      (fun ω n a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' := by
+  let F : (ℕ → α × ℝ) → ℕ → α → ℕ × ℝ := fun p n a ↦
+    (∑ i ∈ range n, if (p i).1 = a then 1 else 0,
+     ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0)
+  have hF : Measurable F := by
+    rw [measurable_pi_iff]
+    intro n
+    rw [measurable_pi_iff]
+    intro a
+    simp only [F]
+    apply Measurable.prod
+    all_goals
+      dsimp only
+      refine measurable_sum _ fun i _ ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
+      exact (measurableSet_singleton _).preimage (by fun_prop)
+  have hid_traj := h1.identDistrib_trajectory h2
+  have h_eq1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
+      F ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+    ext ω n a : 3
+    simp only [Function.comp, F, pullCount, sumRewards, Finset.card_filter]
+  have h_eq2 : (fun ω n a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) =
+      F ∘ (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
+    ext ω n a : 3
+    simp only [Function.comp, F, pullCount, sumRewards, Finset.card_filter]
+  rw [h_eq1, h_eq2]
+  exact hid_traj.comp hF
+
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
@@ -278,60 +320,22 @@ lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable α]
   simpa [hm'] using h_le
 
 lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    {m : ℕ} {B : Set ℝ} (hB : MeasurableSet B) :
-    P {ω | ∃ s, s ≤ n ∧ pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B} ≤
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {m : ℕ} {B : Set ℝ} (hB : MeasurableSet B) :
+    P {ω | ∃ n, pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
       streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
-  have h_eq : {ω | ∃ s, s ≤ n ∧ pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B} =
-      ⋃ s ∈ range (n + 1), {ω | pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B} := by
-    ext ω; simp only [Set.mem_setOf_eq, Set.mem_iUnion, mem_range]
-    constructor <;> rintro ⟨s, hs, rest⟩ <;> exact ⟨s, by omega, rest⟩
-  rw [h_eq]
-  have h_AM := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le
-    (ν := ν) (alg := alg) a m hB
-  let pc := fun (p : ℕ → α × ℝ) (s : ℕ) ↦ ∑ i ∈ range s, if (p i).1 = a then 1 else 0
-  let sr := fun (p : ℕ → α × ℝ) (s : ℕ) ↦ ∑ i ∈ range s, if (p i).1 = a then (p i).2 else 0
-  let S := ⋃ s ∈ range (n + 1), {p : ℕ → α × ℝ | pc p s = m ∧ sr p s ∈ B}
+  let S := {f : ℕ → α → ℕ × ℝ | ∃ s, (f s a).1 = m ∧ (f s a).2 ∈ B}
   have hS : MeasurableSet S := by
-    simp only [S]
-    apply MeasurableSet.iUnion
-    intro s
-    apply MeasurableSet.iUnion
-    intro _
-    apply MeasurableSet.inter
-    · exact (measurableSet_singleton _).preimage
-        (measurable_sum _ fun i _ ↦ Measurable.ite
-          ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop))
-    · exact hB.preimage
-        (measurable_sum _ fun i _ ↦ Measurable.ite
-          ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop))
-  have h_eq1 : (⋃ s ∈ range (n + 1), {ω | pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B}) =
-      (fun ω t ↦ (A t ω, R t ω)) ⁻¹' S := by
-    ext ω
-    simp only [Set.mem_iUnion, mem_range, Set.mem_setOf_eq, Set.mem_preimage, S, pc, sr,
-      pullCount, sumRewards, Finset.card_filter]
-  have h_eq2 : (⋃ s ∈ range (n + 1), {ω | pullCount (ArrayModel.action alg) a s ω = m ∧
-      sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a s ω ∈ B}) =
-      (fun ω t ↦ (ArrayModel.action alg t ω, ArrayModel.reward alg t ω)) ⁻¹' S := by
-    ext ω
-    simp only [Set.mem_iUnion, mem_range, Set.mem_setOf_eq, Set.mem_preimage, S, pc, sr,
-      pullCount, sumRewards, Finset.card_filter]
-  have h_unique := isAlgEnvSeq_unique h (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)
-  calc P (⋃ s ∈ range (n + 1), {ω | pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B})
+    have : S = ⋃ s, (fun f ↦ f s a) ⁻¹' ({m} ×ˢ B) := by
+      ext f; simp [S, Set.mem_iUnion, Set.mem_prod]
+    rw [this]
+    exact .iUnion fun s ↦ ((measurableSet_singleton m).prod hB).preimage (by fun_prop)
+  calc _
     _ = (ArrayModel.arrayMeasure ν)
-          (⋃ s ∈ range (n + 1), {ω | pullCount (ArrayModel.action alg) a s ω = m ∧
-            sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a s ω ∈ B}) := by
-        rw [h_eq1, h_eq2, ← Measure.map_apply _ hS, ← Measure.map_apply _ hS, h_unique]
-        · rw [measurable_pi_iff]; intro t; exact (by fun_prop : Measurable fun ω ↦
-            (ArrayModel.action alg t ω, ArrayModel.reward alg t ω))
-        · rw [measurable_pi_iff]; intro t; exact (hA t).prodMk (hR t)
-    _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-        apply le_trans (measure_mono _) h_AM
-        intro ω hω
-        simp only [Set.mem_iUnion, mem_range, Set.mem_setOf_eq] at hω
-        exact hω.elim fun s ⟨_, rest⟩ ↦ ⟨s, rest⟩
+          {ω | ∃ n, pullCount (ArrayModel.action alg) a n ω = m ∧
+            sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω ∈ B} :=
+        (h.identDistrib_pullCount_sumRewards
+          (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)).measure_mem_eq hS
+    _ ≤ _ := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le a m hB
 
 lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : α) (n m₁ m₂ : ℕ) :
@@ -523,14 +527,11 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
         intro m hm
         calc P {ω | ∃ s, s < n ∧ pullCount A a s ω = m ∧
                 sumRewards A R a s ω ∈ B m}
-            ≤ P {ω | ∃ s, s ≤ n - 1 ∧ pullCount A a s ω = m ∧
-                sumRewards A R a s ω ∈ B m} := by
-              apply measure_mono
-              intro ω ⟨s, hs, hpc, hB⟩
-              exact ⟨s, Nat.le_sub_one_of_lt hs, hpc, hB⟩
+            ≤ P {ω | ∃ s, pullCount A a s ω = m ∧
+                sumRewards A R a s ω ∈ B m} :=
+              measure_mono fun ω ⟨s, _, hpc, hB⟩ ↦ ⟨s, hpc, hB⟩
           _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} :=
-              prob_exists_pullCount_eq_and_sumRewards_mem_le (n := n - 1)
-                h (hB_meas m)
+              prob_exists_pullCount_eq_and_sumRewards_mem_le h (hB_meas m)
     _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) :=
         Finset.sum_le_sum fun m hm ↦
           h_stream_bound m (Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1)

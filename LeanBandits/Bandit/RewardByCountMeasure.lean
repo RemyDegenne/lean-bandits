@@ -20,20 +20,20 @@ variable {α Ω : Type*} {mα : MeasurableSpace α} {mΩ : MeasurableSpace Ω} [
   {alg : Algorithm α ℝ} {ν : Kernel α ℝ} [IsMarkovKernel ν]
   {h_inter : IsAlgEnvSeq A R alg (stationaryEnv ν) P}
 
-local notation "𝔓'" => P.prod (Bandit.streamMeasure ν)
+local notation "𝔓" => P.prod (streamMeasure ν)
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
 lemma hasLaw_Z (a : α) (m : ℕ) :
-  HasLaw (fun ω ↦ ω.2 m a) (ν a) 𝔓' where
+  HasLaw (fun ω ↦ ω.2 m a) (ν a) 𝔓 where
   map_eq := by
-    calc (𝔓').map (fun ω ↦ ω.2 m a)
-    _ = ((𝔓').snd).map (fun ω ↦ ω m a) := by
+    calc (𝔓).map (fun ω ↦ ω.2 m a)
+    _ = ((𝔓).snd).map (fun ω ↦ ω m a) := by
       rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
       rfl
-    _ = (Bandit.streamMeasure ν).map (fun ω ↦ ω m a) := by simp
+    _ = (streamMeasure ν).map (fun ω ↦ ω m a) := by simp
     _ = ((Measure.infinitePi fun _ ↦ Measure.infinitePi ν).map (fun ω ↦ ω m)).map
         (fun ω ↦ ω a) := by
-      rw [Bandit.streamMeasure, Measure.map_map (by fun_prop) (by fun_prop)]
+      rw [streamMeasure, Measure.map_map (by fun_prop) (by fun_prop)]
       rfl
     _ = ν a := by simp_rw [(measurePreserving_eval_infinitePi _ _).map_eq]
 
@@ -44,21 +44,18 @@ notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s
 /-- Law of `Y` conditioned on the event that `X` equals `x`. -/
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
 
-local notation "𝔓t" => Bandit.trajMeasure alg ν
-local notation "𝔓" => Bandit.measure alg ν
-
 omit [DecidableEq α] in
 lemma condDistrib_reward'' [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (n : ℕ) :
-    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓'] =ᵐ[(𝔓').map (fun ω ↦ A n ω.1)] ν := by
+    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓] =ᵐ[(𝔓).map (fun ω ↦ A n ω.1)] ν := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   have h_ra' : 𝓛[R n | A n; P] =ᵐ[P.map (A n)] ν := h.condDistrib_reward_stationaryEnv n
-  have h_law : (𝔓').map (fun ω ↦ A n ω.1) = P.map (A n) := by
-    change ((𝔓').map (A n ∘ Prod.fst)) = _
+  have h_law : (𝔓).map (fun ω ↦ A n ω.1) = P.map (A n) := by
+    change ((𝔓).map (A n ∘ Prod.fst)) = _
     rw [← Measure.map_map (by fun_prop) (by fun_prop), ← Measure.fst, Measure.fst_prod]
   rw [h_law]
-  have h_prod : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓']
+  have h_prod : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓]
       =ᵐ[P.map (A n)] 𝓛[R n | A n; P] :=
     condDistrib_fst_prod _ (by fun_prop) _
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
@@ -67,13 +64,13 @@ lemma condDistrib_reward'' [Countable α]
 omit [DecidableEq α] in
 lemma reward_cond_action [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n : ℕ)
-    (hμa : (𝔓').map (fun ω ↦ A n ω.1) {a} ≠ 0) :
-    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓'] = ν a := by
+    (hμa : (𝔓).map (fun ω ↦ A n ω.1) {a} ≠ 0) :
+    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓] = ν a := by
   have hA := h.measurable_A
   have hR := h.measurable_R
-  have h_ra : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓'] =ᵐ[(𝔓').map (fun ω ↦ A n ω.1)] ν :=
+  have h_ra : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓] =ᵐ[(𝔓).map (fun ω ↦ A n ω.1)] ν :=
     condDistrib_reward'' h n
-  have h_eq := condDistrib_ae_eq_cond (μ := 𝔓')
+  have h_eq := condDistrib_ae_eq_cond (μ := 𝔓)
     (X := fun ω ↦ A n ω.1) (Y := fun ω ↦ R n ω.1) (by fun_prop) (by fun_prop)
   rw [Filter.EventuallyEq, ae_iff_of_countable] at h_ra h_eq
   specialize h_ra a hμa
@@ -104,46 +101,46 @@ lemma condIndepFun_reward_stepsUntil_action [StandardBorelSpace Ω] [Countable �
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : α) (m n : ℕ) :
     CondIndepFun (mα.comap (fun ω ↦ A n ω.1)) ((h.measurable_A n).comp measurable_fst).comap_le
-      (fun ω ↦ R n ω.1) ({ω | stepsUntil A a m ω.1 = ↑n}.indicator (fun _ ↦ 1)) 𝔓' := by
+      (fun ω ↦ R n ω.1) ({ω | stepsUntil A a m ω.1 = ↑n}.indicator (fun _ ↦ 1)) 𝔓 := by
   have hA := h.measurable_A
   have hR := h.measurable_R
-  exact condIndepFun_fst_prod (ν := Bandit.streamMeasure ν)
+  exact condIndepFun_fst_prod (ν := streamMeasure ν)
     (measurable_indicator_stepsUntil_eq hA hR a m n) (by fun_prop) (by fun_prop)
     (condIndepFun_reward_stepsUntil_action' h a m n)
 
 lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m n : ℕ)
-    (hm : m ≠ 0) (hμn : 𝔓' ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n}) ≠ 0) :
-    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ stepsUntil A a m ω.1 ← ↑n; 𝔓'] = ν a := by
+    (hm : m ≠ 0) (hμn : 𝔓 ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n}) ≠ 0) :
+    𝓛[fun ω ↦ R n ω.1 | fun ω ↦ stepsUntil A a m ω.1 ← ↑n; 𝔓] = ν a := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   have hμna :
-      𝔓' ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a}) ≠ 0 := by
+      𝔓 ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a}) ≠ 0 := by
     suffices ((fun ω : Ω × (ℕ → α → ℝ) ↦
           stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a})
         = (fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} by simpa [this] using hμn
     ext ω
     simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, and_iff_left_iff_imp]
     exact action_eq_of_stepsUntil_eq_coe hm
-  have hμa : (𝔓').map (fun ω ↦ A n ω.1) {a} ≠ 0 := by
+  have hμa : (𝔓).map (fun ω ↦ A n ω.1) {a} ≠ 0 := by
     rw [Measure.map_apply (by fun_prop) (measurableSet_singleton _)]
     refine fun h_zero ↦ hμn (measure_mono_null (fun ω ↦ ?_) h_zero)
     simp only [Set.mem_preimage, Set.mem_singleton_iff]
     exact action_eq_of_stepsUntil_eq_coe hm
-  calc 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ stepsUntil A a m ω.1 ← (n : ℕ∞); 𝔓']
-  _ = (𝔓'[|(fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a}]).map
+  calc 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ stepsUntil A a m ω.1 ← (n : ℕ∞); 𝔓]
+  _ = (𝔓[|(fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a}]).map
       (fun ω ↦ R n ω.1) := by
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, iff_self_and]
     exact action_eq_of_stepsUntil_eq_coe hm
-  _ = (𝔓'[|(fun ω ↦ A n ω.1) ⁻¹' {a}
+  _ = (𝔓[|(fun ω ↦ A n ω.1) ⁻¹' {a}
       ∩ {ω : Ω × (ℕ → α → ℝ) | stepsUntil A a m ω.1 = ↑n}.indicator 1 ⁻¹' {1} ]).map
       (fun ω ↦ R n ω.1) := by
     congr 2 with ω
     simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.indicator_apply,
       Set.mem_setOf_eq, Pi.one_apply, ite_eq_left_iff, zero_ne_one, imp_false, Decidable.not_not]
     rw [and_comm]
-  _ = 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓'] := by
+  _ = 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓] := by
     rw [cond_of_condIndepFun (by fun_prop)]
     · exact condIndepFun_reward_stepsUntil_action h a m n
     · refine measurable_one.indicator ?_
@@ -159,11 +156,11 @@ lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable α]
 given the time at which number of pulls is `m` is the constant kernel with value `ν a`. -/
 theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m : ℕ) (hm : m ≠ 0) :
-    condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓'
-      =ᵐ[(𝔓').map (fun ω ↦ stepsUntil A a m ω.1)] Kernel.const _ (ν a) := by
+    condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
+      =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)] Kernel.const _ (ν a) := by
   have hA := h.measurable_A
   have hR := h.measurable_R
-  refine (condDistrib_ae_eq_cond (μ := 𝔓')
+  refine (condDistrib_ae_eq_cond (μ := 𝔓)
     (X := fun ω ↦ stepsUntil A a m ω.1) (by fun_prop) (by fun_prop)).trans ?_
   rw [Filter.EventuallyEq, ae_iff_of_countable]
   intro n hn
@@ -192,134 +189,45 @@ theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 
 /-- The reward received at the `m`-th pull of action `a` has law `ν a`. -/
 lemma hasLaw_rewardByCount [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m : ℕ) (hm : m ≠ 0) :
-    HasLaw (rewardByCount A R a m) (ν a) 𝔓' where
+    HasLaw (rewardByCount A R a m) (ν a) 𝔓 where
   aemeasurable := (measurable_rewardByCount h.measurable_A h.measurable_R a m).aemeasurable
   map_eq := by
     have hA := h.measurable_A
     have hR := h.measurable_R
     have h_condDistrib :
-        condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓'
-        =ᵐ[(𝔓').map (fun ω ↦ stepsUntil A a m ω.1)]
+        condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
+        =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)]
           Kernel.const _ (ν a) := condDistrib_rewardByCount_stepsUntil h a m hm
-    calc (𝔓').map (rewardByCount A R a m)
-    _ = (condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓')
-        ∘ₘ ((𝔓').map (fun ω ↦ stepsUntil A a m ω.1)) := by
+    calc (𝔓).map (rewardByCount A R a m)
+    _ = (condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓)
+        ∘ₘ ((𝔓).map (fun ω ↦ stepsUntil A a m ω.1)) := by
       rw [condDistrib_comp_map (by fun_prop) (by fun_prop)]
-    _ = (Kernel.const _ (ν a)) ∘ₘ ((𝔓').map (fun ω ↦ stepsUntil A a m ω.1)) :=
+    _ = (Kernel.const _ (ν a)) ∘ₘ ((𝔓).map (fun ω ↦ stepsUntil A a m ω.1)) :=
       Measure.comp_congr h_condDistrib
     _ = ν a := by
-      have : IsProbabilityMeasure ((𝔓').map (fun ω ↦ stepsUntil A a m ω.1)) :=
+      have : IsProbabilityMeasure ((𝔓).map (fun ω ↦ stepsUntil A a m ω.1)) :=
         Measure.isProbabilityMeasure_map (by fun_prop)
       simp
 
 lemma identDistrib_rewardByCount [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n m : ℕ)
     (hn : n ≠ 0) (hm : m ≠ 0) :
-    IdentDistrib (rewardByCount A R a n) (rewardByCount A R a m) 𝔓' 𝔓' where
+    IdentDistrib (rewardByCount A R a n) (rewardByCount A R a m) 𝔓 𝔓 where
   aemeasurable_fst := (measurable_rewardByCount h.measurable_A h.measurable_R a n).aemeasurable
   aemeasurable_snd := (measurable_rewardByCount h.measurable_A h.measurable_R a m).aemeasurable
   map_eq := by rw [(hasLaw_rewardByCount h a n hn).map_eq, (hasLaw_rewardByCount h a m hm).map_eq]
 
 lemma identDistrib_rewardByCount_id [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n : ℕ) (hn : n ≠ 0) :
-    IdentDistrib (rewardByCount A R a n) id 𝔓' (ν a) where
+    IdentDistrib (rewardByCount A R a n) id 𝔓 (ν a) where
   aemeasurable_fst := (measurable_rewardByCount h.measurable_A h.measurable_R a n).aemeasurable
   aemeasurable_snd := Measurable.aemeasurable <| by fun_prop
   map_eq := by rw [(hasLaw_rewardByCount h a n hn).map_eq, Measure.map_id]
 
 lemma identDistrib_rewardByCount_eval [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n m : ℕ) (hn : n ≠ 0) :
-    IdentDistrib (rewardByCount A R a n) (fun ω ↦ ω m a) 𝔓' (Bandit.streamMeasure ν) :=
+    IdentDistrib (rewardByCount A R a n) (fun ω ↦ ω m a) 𝔓 (streamMeasure ν) :=
   (identDistrib_rewardByCount_id h a n hn).trans
     (identDistrib_eval_eval_id_streamMeasure ν m a).symm
-
--- lemma indepFun_rewardByCount_Iic [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α)
---     (n : ℕ) :
---     (rewardByCount A R a (n + 1)) ⟂ᵢ[𝔓'] fun ω (i : Iic n) ↦ rewardByCount A R a i ω := by
---   sorry
-
--- lemma iIndepFun_rewardByCount' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
---     iIndepFun (rewardByCount A R a) 𝔓' := by
---   have hA := h.measurable_A
---   have hR := h.measurable_R
---   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
---   exact indepFun_rewardByCount_Iic h a
-
--- lemma iIndepFun_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
---     iIndepFun (fun (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1)) 𝔓' := by
---   sorry
-
--- lemma identDistrib_rewardByCount_stream_all [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
---     IdentDistrib (fun ω (p : α × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
---       (fun ω p ↦ ω p.2 p.1) 𝔓' (Bandit.streamMeasure ν) := by
---   refine IdentDistrib.pi (fun p ↦ ?_) ?_ ?_
---   · refine identDistrib_rewardByCount_eval h p.1 (p.2 + 1) p.2 (by simp) (ν := ν)
---   · exact iIndepFun_rewardByCount h
---   · sorry
-
--- lemma identDistrib_rewardByCount_stream' [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
---     IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω n a)
---       𝔓' (Bandit.streamMeasure ν) := by
---   refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
---   · refine identDistrib_rewardByCount_eval h a (n + 1) n (by simp) (ν := ν)
---   · have h_indep := iIndepFun_rewardByCount' h a
---     exact iIndepFun.precomp (g := fun n ↦ n + 1) (fun i j hij ↦ by grind) h_indep
---   · exact iIndepFun_eval_streamMeasure'' ν a
-
-omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma identDistrib_eval_streamMeasure_measure (a : α) :
-    IdentDistrib (fun ω n ↦ ω n a) (fun ω n ↦ ω.2 n a)
-      (Bandit.streamMeasure ν) 𝔓 := by
-  refine IdentDistrib.pi (fun n ↦ ?_) ?_ ?_
-  · rw [← Bandit.snd_measure alg ν, Measure.snd,
-      identDistrib_map_left_iff (by fun_prop) (by fun_prop)
-        (Measurable.aemeasurable <| by fun_prop)]
-    exact IdentDistrib.refl (by fun_prop)
-  · exact iIndepFun_eval_streamMeasure'' ν a
-  · change iIndepFun (fun n ↦ ((fun ω ↦ ω n a) ∘ Prod.snd)) 𝔓
-    rw [← iIndepFun_map_iff (by fun_prop) (fun _ ↦ Measurable.aemeasurable (by fun_prop))]
-    rw [← Measure.snd, Bandit.snd_measure]
-    exact iIndepFun_eval_streamMeasure'' ν a
-
--- lemma identDistrib_rewardByCount_stream [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) :
---     IdentDistrib (fun ω n ↦ rewardByCount A R a (n + 1) ω) (fun ω n ↦ ω.2 n a) 𝔓' 𝔓 :=
---   (identDistrib_rewardByCount_stream' h a).trans (identDistrib_eval_streamMeasure_measure a)
-
--- lemma indepFun_rewardByCount_of_ne [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {a b : α} (hab : a ≠ b) :
---     IndepFun (fun ω s ↦ rewardByCount A R a s ω) (fun ω s ↦ rewardByCount A R b s ω) 𝔓' := by
---   sorry
-
--- lemma identDistrib_sum_Icc_rewardByCount [StandardBorelSpace Ω] [Nonempty Ω] [Countable α]
---     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (m : ℕ) (a : α) :
---     IdentDistrib (fun ω ↦ ∑ s ∈ Icc 1 m, rewardByCount A R a s ω)
---       (fun ω ↦ ∑ s ∈ range m, ω.2 s a) 𝔓' 𝔓 := by
---   have h1 (a : α) :
---       IdentDistrib (fun ω s ↦ rewardByCount A R a (s + 1) ω) (fun ω s ↦ ω.2 s a) 𝔓' 𝔓 :=
---     identDistrib_rewardByCount_stream h a
---   have h_eq (ω : Ω × (ℕ → α → ℝ)) : ∑ s ∈ Icc 1 m, rewardByCount A R a s ω
---       = ∑ s ∈ range m, rewardByCount A R a (s + 1) ω := by
---     let e : Icc 1 m ≃ range m :=
---     { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
---       invFun x := ⟨x + 1, by
---         have h := x.2
---         simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
---         simp only [mem_range] at h
---         grind⟩
---       left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
---       right_inv x := by have h := x.2; grind }
---     rw [← sum_coe_sort (Icc 1 m), ← sum_coe_sort (range m), sum_equiv e]
---     · simp
---     · simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Icc,
---         forall_and_index]
---       grind
---   simp_rw [h_eq]
---   exact IdentDistrib.comp (h1 a) (u := fun p ↦ ∑ s ∈ range m, p s) (by fun_prop)
 
 end Bandits

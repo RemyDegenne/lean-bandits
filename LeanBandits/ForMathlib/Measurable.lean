@@ -3,23 +3,33 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import Mathlib.MeasureTheory.MeasurableSpace.Basic
+import Mathlib.Analysis.Normed.Ring.Basic
+import Mathlib.MeasureTheory.Constructions.BorelSpace.Basic
 
 /-!
 # Measurability lemmas
 -/
 
+open Finset
+
 namespace MeasureTheory
 
-lemma measurable_comp_comap {α β γ : Type*} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    (f : α → β) {g : β → γ} (hg : Measurable g) :
+variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
+  {μ : Measure α}
+
+lemma ae_eq_set_iff {s t : Set α} : s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
+  rw [Filter.EventuallyEq]
+  simp only [eq_iff_iff]
+  congr!
+
+lemma measurable_comp_comap (f : α → β) {g : β → γ} (hg : Measurable g) :
     Measurable[mβ.comap f] (g ∘ f) := by
   rw [measurable_iff_comap_le, ← MeasurableSpace.comap_comp]
   refine MeasurableSpace.comap_mono ?_
   rw [← measurable_iff_comap_le]
   exact hg
 
-lemma MeasurableSet.imp {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
+lemma MeasurableSet.imp {p q : α → Prop}
     (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
     MeasurableSet {x | p x → q x} := by
   have h_eq : {x | p x → q x} = {x | p x}ᶜ ∪ {x | q x} := by
@@ -28,7 +38,7 @@ lemma MeasurableSet.imp {α : Type*} {mα : MeasurableSpace α} {p q : α → Pr
   rw [h_eq]
   exact MeasurableSet.union hs.compl ht
 
-lemma MeasurableSet.iff {α : Type*} {mα : MeasurableSpace α} {p q : α → Prop}
+lemma MeasurableSet.iff {p q : α → Prop}
     (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
     MeasurableSet {x | p x ↔ q x} := by
   have h_eq : {x | p x ↔ q x} = ({x | p x}ᶜ ∪ {x | q x}) ∩ ({x | q x}ᶜ ∪ {x | p x}) := by
@@ -37,5 +47,44 @@ lemma MeasurableSet.iff {α : Type*} {mα : MeasurableSpace α} {p q : α → Pr
     grind
   rw [h_eq]
   exact (MeasurableSet.union hs.compl ht).inter (MeasurableSet.union ht.compl hs)
+
+@[fun_prop]
+lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
+    Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
+
+@[fun_prop]
+lemma Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun a ↦ (f a).toNat) :=
+  Measurable.comp (by fun_prop) hf
+
+lemma Measure.trim_comap_apply {X : α → β} (hX : Measurable X) {s : Set β} (hs : MeasurableSet s) :
+    μ.trim hX.comap_le (X ⁻¹' s) = μ.map X s := by
+  rw [trim_measurableSet_eq, Measure.map_apply (by fun_prop) hs]
+  exact ⟨s, hs, rfl⟩
+
+lemma measurable_sum_range_of_le {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ}
+    (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i)) (hg : Measurable g) :
+    Measurable (fun a ↦ ∑ i ∈ range (g a), f i a) := by
+  have h_eq : (fun a ↦ ∑ i ∈ range (g a), f i a)
+      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ range i, f j a else 0 := by
+    ext ω
+    rw [sum_ite_eq_of_mem]
+    grind
+  rw [h_eq]
+  refine measurable_sum _ fun n hn ↦ ?_
+  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
+
+lemma measurable_sum_Icc_of_le {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ}
+    (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i)) (hg : Measurable g) :
+    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
+  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
+      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
+    ext ω
+    rw [sum_ite_eq_of_mem]
+    grind
+  rw [h_eq]
+  refine measurable_sum _ fun n hn ↦ ?_
+  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+  exact (measurableSet_singleton _).preimage (by fun_prop)
 
 end MeasureTheory

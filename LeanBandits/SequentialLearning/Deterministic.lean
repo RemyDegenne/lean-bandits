@@ -67,6 +67,38 @@ lemma action_detAlgorithm_ae_all_eq
 
 end IsAlgEnvSeq
 
+namespace IsAlgEnvSeqUntil
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
+  {alg : Algorithm α R} {ν : Kernel α R} [IsMarkovKernel ν]
+  {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R} {N n : ℕ}
+
+lemma HasLaw_action_zero_detAlgorithm
+    (h : IsAlgEnvSeqUntil A R' (detAlgorithm nextAction h_next action0) env P N) :
+    HasLaw (A 0) (Measure.dirac action0) P where
+  aemeasurable := have hA := h.measurable_A; by fun_prop
+  map_eq := (hasLaw_action_zero h).map_eq
+
+lemma action_zero_detAlgorithm
+    (h : IsAlgEnvSeqUntil A R' (detAlgorithm nextAction h_next action0) env P N) :
+    A 0 =ᵐ[P] fun _ ↦ action0 := by
+  have h_eq : ∀ᵐ x ∂(P.map (A 0)), x = action0 := by
+    rw [(hasLaw_action_zero h).map_eq]
+    simp [detAlgorithm]
+  have hA := h.measurable_A
+  exact ae_of_ae_map (by fun_prop) h_eq
+
+lemma action_detAlgorithm_ae_eq
+    (h : IsAlgEnvSeqUntil A R' (detAlgorithm nextAction h_next action0) env P N) (hn : n < N) :
+    A (n + 1) =ᵐ[P] fun ω ↦ nextAction n (IsAlgEnvSeq.hist A R' n ω) := by
+  have hA := h.measurable_A
+  have hR' := h.measurable_R
+  exact ae_eq_of_condDistrib_eq_deterministic (by fun_prop) (by fun_prop) (by fun_prop)
+    (h.hasCondDistrib_action n hn).condDistrib_eq
+
+end IsAlgEnvSeqUntil
+
 namespace IT
 
 local notation "𝔓" => trajMeasure (detAlgorithm nextAction h_next action0) env

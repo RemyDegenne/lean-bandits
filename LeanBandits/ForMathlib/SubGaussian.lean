@@ -10,6 +10,49 @@ open scoped ENNReal NNReal
 
 namespace ProbabilityTheory
 
+namespace HasCondSubgaussianMGF
+
+variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {hm : m ≤ mΩ} [StandardBorelSpace Ω]
+  {μ : Measure Ω} [IsFiniteMeasure μ] {X : Ω → ℝ} {c : ℝ≥0}
+
+lemma ae_trim_condExp_exp_sub_le_one (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) :
+    ∀ᵐ ω' ∂(μ.trim hm), (μ[fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)|m]) ω' ≤ 1 := by
+  have h_le : ∀ᵐ ω' ∂(μ.trim hm), μ[fun ω ↦ exp (t * X ω)|m] ω' ≤ exp (c * t ^ 2 / 2) :=
+    h.ae_trim_condExp_le t
+  have h_eq : μ[fun ω ↦ exp (t * X ω) / exp (c * t ^ 2 / 2)|m] =ᵐ[μ.trim hm]
+      fun ω ↦ μ[fun ω ↦ exp (t * X ω)|m] ω / exp (c * t ^ 2 / 2) := by
+    refine ae_eq_trim_of_measurable _ ?_ ?_ ?_
+    · exact stronglyMeasurable_condExp.measurable
+    · refine Measurable.div_const ?_ _
+      exact stronglyMeasurable_condExp.measurable
+    simp_rw [div_eq_inv_mul]
+    refine condExp_mul_of_stronglyMeasurable_left ?_ ?_ ?_
+    · fun_prop
+    · refine Integrable.const_mul ?_ _
+      exact h.integrable_exp_mul _
+    · exact h.integrable_exp_mul _
+  filter_upwards [h_le, h_eq] with ω hω_le hω_eq
+  simp_rw [exp_sub, hω_eq]
+  rwa [div_le_one (by positivity)]
+
+lemma ae_condExp_exp_sub_le_one (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) :
+    ∀ᵐ ω' ∂μ, (μ[fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)|m]) ω' ≤ 1 :=
+  ae_of_ae_trim hm (h.ae_trim_condExp_exp_sub_le_one t)
+
+lemma memLp_exp_mul_sub (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) (p : ℝ≥0) :
+    MemLp (fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)) p μ := by
+  have h_lp := h.memLp_exp_mul t p
+  simp_rw [sub_eq_add_neg, exp_add]
+  exact h_lp.mul_const _
+
+lemma integrable_exp_mul_sub (h : HasCondSubgaussianMGF m hm X c μ) (t : ℝ) :
+    Integrable (fun ω ↦ exp (t * X ω - c * t ^ 2 / 2)) μ := by
+  have h_int := h.integrable_exp_mul t
+  simp_rw [exp_sub]
+  exact h_int.div_const _
+
+end HasCondSubgaussianMGF
+
 namespace HasSubgaussianMGF
 
 variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X Y : Ω → ℝ} {c cX cY : ℝ≥0}

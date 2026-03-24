@@ -13,37 +13,18 @@ import LeanBandits.ForMathlib.SubGaussian
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal
 
-lemma measurable_sum_range_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ range (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ range (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ range i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
-
-lemma measurable_sum_Icc_of_le {α : Type*} {mα : MeasurableSpace α}
-    {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ} (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i))
-    (hg : Measurable g) :
-    Measurable (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a) := by
-  have h_eq : (fun a ↦ ∑ i ∈ Icc 1 (g a), f i a)
-      = fun a ↦ ∑ i ∈ range (n + 1), if g a = i then ∑ j ∈ Icc 1 i, f j a else 0 := by
-    ext ω
-    rw [sum_ite_eq_of_mem]
-    grind
-  rw [h_eq]
-  refine measurable_sum _ fun n hn ↦ ?_
-  refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
-  exact (measurableSet_singleton _).preimage (by fun_prop)
-
 namespace Bandits
 
 namespace ArrayModel
+
+lemma sum_Icc_one_eq_sum_range {m : ℕ} {f : ℕ → ℝ} :
+    ∑ i ∈ Icc 1 m, f (i - 1) = ∑ i ∈ range m, f i := by
+  have h : Icc 1 m = (range m).image (· + 1) := by
+    ext x; simp only [mem_Icc, mem_image, mem_range]; constructor
+    · intro ⟨h1, h2⟩; exact ⟨x - 1, by omega, by omega⟩
+    · rintro ⟨a, ha, rfl⟩; omega
+  rw [h, Finset.sum_image (fun _ _ _ _ h => by omega)]
+  simp
 
 variable {α : Type*} {mα : MeasurableSpace α} [DecidableEq α] [Countable α]
   [StandardBorelSpace α] [Nonempty α]
@@ -57,7 +38,7 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount' (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω.1,
         ∑ i ∈ Icc 1 (pullCount A a n ω.1), rewardByCount A R a i ω))
       (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ Icc 1 (pullCount A a n ω), ω.2 (i - 1) a))
-      ((𝔓).prod (Bandit.streamMeasure ν)) 𝔓 where
+      ((𝔓).prod (streamMeasure ν)) 𝔓 where
   aemeasurable_fst := by
     refine Measurable.aemeasurable ?_
     rw [measurable_pi_iff]
@@ -95,7 +76,7 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount' (n : ℕ) :
         ∑ i ∈ Icc 1 (pullCount A a n ω.1), ω.1.2 (i - 1) a :=
       Finset.sum_congr rfl fun i hi ↦ h_eq a i ω hi
     simp_rw [h_sum_eq]
-    conv_rhs => rw [← Measure.fst_prod (μ := 𝔓) (ν := Bandit.streamMeasure ν),
+    conv_rhs => rw [← Measure.fst_prod (μ := 𝔓) (ν := streamMeasure ν),
       Measure.fst]
     rw [AEMeasurable.map_map_of_aemeasurable _ (by fun_prop)]
     · rfl
@@ -109,33 +90,21 @@ lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω.1,
         ∑ i ∈ Icc 1 (pullCount A a n ω.1), rewardByCount A R a i ω))
       (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a))
-      ((𝔓).prod (Bandit.streamMeasure ν)) 𝔓 := by
+      ((𝔓).prod (streamMeasure ν)) 𝔓 := by
   convert identDistrib_pullCount_prod_sum_Icc_rewardByCount' n using 2 with ω
   rotate_left
   · infer_instance
   · infer_instance
   ext a : 1
   congr 1
-  let e : Icc 1 (pullCount A a n ω) ≃ range (pullCount A a n ω) :=
-  { toFun x := ⟨x - 1, by have h := x.2; simp only [mem_Icc] at h; simp; grind⟩
-    invFun x := ⟨x + 1, by
-      have h := x.2
-      simp only [mem_Icc, le_add_iff_nonneg_left, zero_le, true_and, ge_iff_le]
-      simp only [mem_range] at h
-      grind⟩
-    left_inv x := by have h := x.2; simp only [mem_Icc] at h; grind
-    right_inv x := by have h := x.2; grind }
-  rw [← sum_coe_sort (Icc 1 (pullCount A a n ω)), ← sum_coe_sort (range (pullCount A a n ω)),
-    sum_equiv e]
-  · simp
-  · simp [e]
+  exact sum_Icc_one_eq_sum_range.symm
 
 lemma identDistrib_pullCount_prod_sumRewards (n : ℕ) :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
       (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) 𝔓 𝔓 := by
   suffices IdentDistrib (fun ω a ↦ (pullCount A a n ω.1, sumRewards A R a n ω.1))
       (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a))
-      ((𝔓).prod (Bandit.streamMeasure ν)) 𝔓 by
+      ((𝔓).prod (streamMeasure ν)) 𝔓 by
     -- todo: missing lemma about IdentDistrib?
     constructor
     · refine Measurable.aemeasurable ?_
@@ -145,7 +114,7 @@ lemma identDistrib_pullCount_prod_sumRewards (n : ℕ) :
       refine fun a ↦ Measurable.prod (by fun_prop) ?_
       exact measurable_sum_range_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
     have h_eq := this.map_eq
-    nth_rw 1 [← Measure.fst_prod (μ := 𝔓) (ν := Bandit.streamMeasure ν), Measure.fst,
+    nth_rw 1 [← Measure.fst_prod (μ := 𝔓) (ν := streamMeasure ν), Measure.fst,
       Measure.map_map (by fun_prop) (by fun_prop)]
     exact h_eq
   simp_rw [← sum_rewardByCount_eq_sumRewards]
@@ -191,19 +160,19 @@ lemma identDistrib_sumRewards_arm (a : α) (n : ℕ) :
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
 lemma identDistrib_sum_range_snd (a : α) (k : ℕ) :
     IdentDistrib (fun ω ↦ ∑ i ∈ range k, ω.2 i a) (fun ω ↦ ∑ i ∈ range k, ω i a)
-      𝔓 (Bandit.streamMeasure ν) where
+      𝔓 (streamMeasure ν) where
   aemeasurable_fst := by fun_prop
   aemeasurable_snd := (measurable_sum _ fun i _ ↦ by fun_prop).aemeasurable
   map_eq := by
     rw [← Measure.snd_prod (μ := (Measure.infinitePi fun (_ : ℕ) ↦ (volume : Measure unitInterval)))
-      (ν := Bandit.streamMeasure ν), Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
+      (ν := streamMeasure ν), Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
 
 lemma prob_pullCount_prod_sumRewards_mem_le (a : α) (n : ℕ)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
-        Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+        streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
   have h_ident := identDistrib_pullCount_prod_sumRewards_arm a n (ν := ν) (alg := alg)
   have : 𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} =
       (𝔓).map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) s := by
@@ -223,10 +192,10 @@ lemma prob_pullCount_prod_sumRewards_mem_le (a : α) (n : ℕ)
   _ ≤ ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
       𝔓 {ω | ∑ i ∈ range k, ω.2 i a ∈ Prod.mk k ⁻¹' s} := measure_biUnion_finset_le _ _
   _ = ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
-      (Bandit.streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+      (streamMeasure ν) {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
     congr with k
     have : (𝔓).map (fun ω ↦ ∑ i ∈ range k, ω.2 i a) =
-        (Bandit.streamMeasure ν).map (fun ω ↦ ∑ i ∈ range k, ω i a) :=
+        (streamMeasure ν).map (fun ω ↦ ∑ i ∈ range k, ω i a) :=
       (identDistrib_sum_range_snd a k).map_eq
     rw [Measure.ext_iff] at this
     specialize this (Prod.mk k ⁻¹' s) (hs.preimage (by fun_prop))
@@ -237,7 +206,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (a : α) (n : ℕ)
     {s : Set ℕ} [DecidablePred (· ∈ s)] (hs : MeasurableSet s) {B : Set ℝ} (hB : MeasurableSet B) :
     𝔓 {ω | pullCount A a n ω ∈ s ∧ sumRewards A R a n ω ∈ B} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ s),
-        Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
+        streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
   classical
   rcases Set.eq_empty_or_nonempty B with h_empty | h_nonempty
   · simp [h_empty]
@@ -253,7 +222,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (a : α) (n : ℕ)
 lemma prob_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ) :
     (𝔓) {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      Bandit.streamMeasure ν
+      streamMeasure ν
         {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
   have h_ident := identDistrib_pullCount_prod_sumRewards_two_arms (bestArm ν) a n
     (ν := ν) (alg := alg)
@@ -279,10 +248,10 @@ lemma prob_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ)
       refine measure_mono fun ω hω ↦ ?_
       simp only [Set.preimage_setOf_eq, Set.mem_setOf_eq] at hω ⊢
       grind
-  _ = Bandit.streamMeasure ν
+  _ = streamMeasure ν
       {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
     rw [← Measure.snd_prod (μ := (Measure.infinitePi fun (_ : ℕ) ↦ (volume : Measure unitInterval)))
-      (ν := Bandit.streamMeasure ν), Measure.snd, Measure.map_apply (by fun_prop)]
+      (ν := streamMeasure ν), Measure.snd, Measure.map_apply (by fun_prop)]
     · rfl
     simp only [measurableSet_setOf]
     fun_prop
@@ -290,7 +259,7 @@ lemma prob_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ)
 lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ) :
     (𝔓).real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      (Bandit.streamMeasure ν).real
+      (streamMeasure ν).real
         {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
   simp_rw [measureReal_def]
   gcongr
@@ -391,38 +360,8 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) := by
-  have hA := h1.measurable_A
-  have hR := h1.measurable_R
-  have hA2 := h2.measurable_A
-  have hR2 := h2.measurable_R
-  have h_unique := isAlgEnvSeq_unique h1 h2
-  let f := fun p : ℕ → α × ℝ ↦ (∑ i ∈ range n, if (p i).1 = a then 1 else 0,
-    ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0)
-  have hf : Measurable f := by
-    refine Measurable.prod ?_ ?_
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-  have h_eq_comp : (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      = f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
-    ext ω : 1
-    rw [pullCount_eq_comp (R := R), sumRewards_eq_comp]
-    grind
-  have h_eq_comp2 : (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω))
-      = f ∘ (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
-    ext ω : 1
-    rw [pullCount_eq_comp (R := R₂), sumRewards_eq_comp]
-    grind
-  rw [h_eq_comp, h_eq_comp2, ← Measure.map_map hf, h_unique, Measure.map_map hf,
-    ← h_eq_comp2]
-  · rw [measurable_pi_iff]
-    exact fun n ↦ Measurable.prodMk (hA2 n) (hR2 n)
-  · rw [measurable_pi_iff]
-    exact fun n ↦ Measurable.prodMk (hA n) (hR n)
+      P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
+  ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
@@ -430,7 +369,7 @@ lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
-        Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+        streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
   have hA := h.measurable_A
   have hR := h.measurable_R
   calc P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s}
@@ -444,7 +383,7 @@ lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
       sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω) ∈ s} := by
     rw [Measure.map_apply (by fun_prop) hs]; rfl
   _ ≤ ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
-      Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
+      streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     ArrayModel.prob_pullCount_prod_sumRewards_mem_le a n hs
 
 lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable α]
@@ -452,7 +391,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable α]
     {s : Set ℕ} [DecidablePred (· ∈ s)] (hs : MeasurableSet s) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω ∈ s ∧ sumRewards A R a n ω ∈ B} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ s),
-        Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
+        streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
   classical
   rcases Set.eq_empty_or_nonempty B with h_empty | h_nonempty
   · simp [h_empty]
@@ -468,7 +407,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable α]
 lemma prob_sumRewards_mem_le [Countable α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {B : Set ℝ} (hB : MeasurableSet B) :
     P (sumRewards A R a n ⁻¹' B) ≤
-      ∑ k ∈ range (n + 1), Bandit.streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
+      ∑ k ∈ range (n + 1), streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
   classical
   have h_le := prob_pullCount_mem_and_sumRewards_mem_le h .univ hB (a := a) (n := n)
   simpa using h_le
@@ -477,7 +416,7 @@ lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {m : ℕ} (hm : m ≤ n) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
-      Bandit.streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
+      streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
   have h_le := prob_pullCount_mem_and_sumRewards_mem_le h (s := {m}) (by simp) hB (a := a) (n := n)
   have hm' : m < n + 1 := by lia
   simpa [hm'] using h_le
@@ -486,7 +425,7 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
     (a : α) (n m₁ m₂ : ℕ) :
     P.real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      (Bandit.streamMeasure ν).real
+      (streamMeasure ν).real
         {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
   have hA := h.measurable_A
   have hR := h.measurable_R
@@ -517,14 +456,14 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 section Subgaussian
 
 omit [DecidableEq α] [StandardBorelSpace α] in
-lemma probReal_sum_le_sum_streamMeasure [Fintype α]
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) (a : α) (m : ℕ) :
-    (Bandit.streamMeasure ν).real
+lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) c (ν a)) (a : α) (m : ℕ) :
+    (streamMeasure ν).real
         {ω | ∑ s ∈ range m, ω s (bestArm ν) ≤ ∑ s ∈ range m, ω s a} ≤
-      Real.exp (-↑m * gap ν a ^ 2 / 4) := by
+      Real.exp (-↑m * gap ν a ^ 2 / (4 * c)) := by
   by_cases ha : a = bestArm ν
   · simp [ha]
-  refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ 1) (cY := fun _ ↦ 1)
+  refine (HasSubgaussianMGF.measure_sum_le_sum_le' (cX := fun _ ↦ c) (cY := fun _ ↦ c)
     ?_ ?_ ?_ ?_ ?_ ?_).trans_eq ?_
   · exact iIndepFun_eval_streamMeasure'' ν (bestArm ν)
   · exact iIndepFun_eval_streamMeasure'' ν a
@@ -542,70 +481,120 @@ lemma probReal_sum_le_sum_streamMeasure [Fintype α]
     exact le_bestArm a
   · congr 1
     simp_rw [integral_eval_streamMeasure]
-    simp only [id_eq, sum_const, card_range, nsmul_eq_mul, mul_one, NNReal.coe_natCast,
+    simp only [id_eq, sum_const, card_range, nsmul_eq_mul, NNReal.coe_mul, NNReal.coe_natCast,
       gap_eq_bestArm_sub, neg_mul]
     field_simp
     ring
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma prob_sum_le_sqrt_log
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
-    (a : α) (k : ℕ) (hk : k ≠ 0) :
-    Bandit.streamMeasure ν
-        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * Real.log (n + 1))} ≤
-      1 / (n + 1) ^ (c / 2) := by
+lemma prob_sum_le_sqrt_log {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) {c : ℝ} (hc : 0 ≤ c) (a : α) (k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν
+        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * Real.log (n + 1))} ≤
+      1 / (n + 1) ^ c := by
   calc
-    Bandit.streamMeasure ν
-      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(c * k * Real.log (n + 1))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(c * k * Real.log (n + 1))) ^ 2 / (2 * k * 1))) := by
+    streamMeasure ν
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * Real.log (n + 1))}
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
     rw [← ofReal_measureReal]
     gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := 1) ?_ ?_ (by positivity))
+    refine (HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
     · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
         (fun _ ↦ by fun_prop)
     · intro i him
       refine (hν a).congr_identDistrib ?_
       exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-  _ = 1 / (n + 1) ^ (c / 2) := by
+  _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
     field_simp
-    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+    rw [← Real.log_rpow (by positivity), ← Real.log_inv,
       Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
       ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
-    congr 2
-    · norm_cast
-    · field
+    norm_cast
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma prob_sum_ge_sqrt_log
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) 1 (ν a)) {c : ℝ} (hc : 0 ≤ c)
-    (a : α) (k : ℕ) (hk : k ≠ 0) :
-    Bandit.streamMeasure ν
-        {ω | √(c * k * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} ≤
-      1 / (n + 1) ^ (c / 2) := by
+lemma prob_sum_ge_sqrt_log {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (hσ2 : σ2 ≠ 0) {c : ℝ} (hc : 0 ≤ c) (a : α) (k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν
+        {ω | √(2 * c * k * σ2 * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} ≤
+      1 / (n + 1) ^ c := by
   calc
-    Bandit.streamMeasure ν
-      {ω | √(c * k * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(c * k * Real.log (n + 1))) ^ 2 / (2 * k * 1))) := by
+    streamMeasure ν
+      {ω | √(2 * c * k * σ2 * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))}
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
     rw [← ofReal_measureReal]
     gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := 1) ?_ ?_ (by positivity))
+    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
     · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
         (fun _ ↦ by fun_prop)
     · intro i him
       refine (hν a).congr_identDistrib ?_
       exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
-  _ = 1 / (n + 1) ^ (c / 2) := by
+  _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
     field_simp
-    rw [div_eq_inv_mul, ← mul_assoc, ← Real.log_rpow (by positivity), ← Real.log_inv,
+    rw [← Real.log_rpow (by positivity), ← Real.log_inv,
       Real.exp_log (by positivity), one_div, ENNReal.ofReal_inv_of_pos (by positivity),
       ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
-    congr 2
-    · norm_cast
-    · field
+    norm_cast
+
+open Real
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma todo {σ2 : ℝ≥0} {c : ℝ}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
+    (hc : 0 ≤ c) (a : α) (n k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]} ≤
+      1 / (n + 1) ^ c := by
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
+  calc
+    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) / k + √(2 * c * σ2 * log (n + 1) / k) ≤ (ν a)[id]}
+  _ = streamMeasure ν
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) / k ≤ - √(2 * c * σ2 * log (n + 1) / k)} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = streamMeasure ν
+      {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * log (n + 1))} := by
+    congr with ω
+    field_simp
+    congr! 2
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_assoc (k : ℝ), mul_assoc (k : ℝ), mul_assoc (k : ℝ),
+      sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_le_sqrt_log hν hσ2 hc a k hk
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma todo' {σ2 : ℝ≥0} {c : ℝ}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0)
+    (hc : 0 ≤ c) (a : α) (n k : ℕ) (hk : k ≠ 0) :
+    streamMeasure ν
+        {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 *log (n + 1) / k)} ≤
+      1 / (n + 1) ^ c := by
+  have h_log_nonneg : 0 ≤ log (n + 1) := log_nonneg (by simp)
+  calc
+    streamMeasure ν {ω | (ν a)[id] ≤ (∑ m ∈ range k, ω m a) / k - √(2 * c * σ2 * log (n + 1) / k)}
+  _ = streamMeasure ν
+      {ω | √(2 * c * σ2 * log (n + 1) / k) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id])) / k} := by
+    congr with ω
+    field_simp
+    rw [Finset.sum_sub_distrib]
+    simp
+    grind
+  _ = streamMeasure ν
+      {ω | √(2 * c * k * σ2 * log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
+    congr with ω
+    field_simp
+    congr! 1
+    rw [sqrt_div (by positivity), ← mul_div_assoc, mul_comm, mul_div_assoc, div_sqrt,
+      mul_comm _ (k : ℝ), sqrt_mul (x := (k : ℝ)) (by positivity), mul_comm]
+  _ ≤ 1 / (n + 1) ^ c := prob_sum_ge_sqrt_log hν hσ2 hc a k hk
 
 end Subgaussian
 

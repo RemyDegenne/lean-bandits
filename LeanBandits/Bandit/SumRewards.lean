@@ -79,23 +79,16 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (a : α) (n : ℕ)
       exists_eq_right, mem_filter, mem_range] at hk
     simp [hk.2.1]
 
-lemma prob_exists_pullCount_eq_and_sumRewards_mem_le (a : α) (n m : ℕ)
-    {B : Set ℝ} (hB : MeasurableSet B) :
-    𝔓 {ω | ∃ s, s ≤ n ∧ pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B} ≤
-      streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-  calc 𝔓 {ω | ∃ s, s ≤ n ∧ pullCount A a s ω = m ∧ sumRewards A R a s ω ∈ B}
+lemma prob_exists_pullCount_eq_and_sumRewards_mem_le (a : α) (m : ℕ) {B : Set ℝ}
+    (hB : MeasurableSet B) : 𝔓 {ω | ∃ n, pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
+      streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
+  calc
     _ ≤ 𝔓 {ω | ∑ i ∈ range m, ω.2 i a ∈ B} := by
-        -- Show the containment: the existential set ⊆ {sum ∈ B}
         apply measure_mono
-        intro ω ⟨s, _hs, hpc, hB'⟩
-        -- When pullCount(s, ω) = m, sumRewards(s, ω) = ∑ i < m, ω.2 i a in the ArrayModel.
-        rw [sumRewards_eq alg a s ω, hpc] at hB'
-        exact hB'
-    _ = streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-        have := (identDistrib_sum_range_snd (ν := ν) a m).map_eq
-        rw [Measure.ext_iff] at this
-        specialize this B hB
-        rwa [Measure.map_apply (by fun_prop) hB, Measure.map_apply (by fun_prop) hB] at this
+        intro ω ⟨s, hp, hs⟩
+        rwa [sumRewards_eq alg a s ω, hp] at hs
+    _ = streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
+        (identDistrib_sum_range_snd a m).measure_mem_eq hB
 
 lemma prob_sumRewards_le_sumRewards_le [Fintype α] (a : α) (n m₁ m₂ : ℕ) :
     (𝔓) {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
@@ -297,7 +290,7 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable α]
     constructor <;> rintro ⟨s, hs, rest⟩ <;> exact ⟨s, by omega, rest⟩
   rw [h_eq]
   have h_AM := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le
-    (ν := ν) (alg := alg) a n m hB
+    (ν := ν) (alg := alg) a m hB
   let pc := fun (p : ℕ → α × ℝ) (s : ℕ) ↦ ∑ i ∈ range s, if (p i).1 = a then 1 else 0
   let sr := fun (p : ℕ → α × ℝ) (s : ℕ) ↦ ∑ i ∈ range s, if (p i).1 = a then (p i).2 else 0
   let S := ⋃ s ∈ range (n + 1), {p : ℕ → α × ℝ | pc p s = m ∧ sr p s ∈ B}
@@ -335,14 +328,10 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable α]
             (ArrayModel.action alg t ω, ArrayModel.reward alg t ω))
         · rw [measurable_pi_iff]; intro t; exact (hA t).prodMk (hR t)
     _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-        have h_set_eq : (⋃ s ∈ range (n + 1), {ω | pullCount (ArrayModel.action alg) a s ω = m ∧
-            sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a s ω ∈ B}) =
-            {ω | ∃ s, s ≤ n ∧ pullCount (ArrayModel.action alg) a s ω = m ∧
-              sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a s ω ∈ B} := by
-          ext ω; simp only [Set.mem_iUnion, mem_range, Set.mem_setOf_eq]
-          constructor <;> rintro ⟨s, hs, rest⟩ <;> exact ⟨s, by omega, rest⟩
-        rw [h_set_eq]
-        exact h_AM
+        apply le_trans (measure_mono _) h_AM
+        intro ω hω
+        simp only [Set.mem_iUnion, mem_range, Set.mem_setOf_eq] at hω
+        exact hω.elim fun s ⟨_, rest⟩ ↦ ⟨s, rest⟩
 
 lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : α) (n m₁ m₂ : ℕ) :

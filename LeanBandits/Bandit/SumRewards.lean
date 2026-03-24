@@ -219,47 +219,34 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
       P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
   ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
-omit [DecidableEq α] in
-lemma _root_.Learning.IsAlgEnvSeq.identDistrib_trajectory
-    (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
-    IdentDistrib (fun ω n ↦ (A n ω, R n ω)) (fun ω n ↦ (A₂ n ω, R₂ n ω)) P P' :=
-  ⟨(measurable_pi_iff.mpr fun n ↦ (h1.measurable_A n).prodMk
-      (h1.measurable_R n)).aemeasurable,
-   (measurable_pi_iff.mpr fun n ↦ (h2.measurable_A n).prodMk
-      (h2.measurable_R n)).aemeasurable,
-   isAlgEnvSeq_unique h1 h2⟩
-
 lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards
     (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      (fun ω n a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' := by
-  let F : (ℕ → α × ℝ) → ℕ → α → ℕ × ℝ := fun p n a ↦
-    (∑ i ∈ range n, if (p i).1 = a then 1 else 0,
-     ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0)
-  have hF : Measurable F := by
-    rw [measurable_pi_iff]
-    intro n
-    rw [measurable_pi_iff]
-    intro a
-    simp only [F]
+      (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) P P' := by
+  let f (τ : ℕ → α × ℝ) (n : ℕ) (a : α) : ℕ × ℝ :=
+    (∑ i ∈ range n, if (τ i).1 = a then 1 else 0,
+     ∑ i ∈ range n, if (τ i).1 = a then (τ i).2 else 0)
+  have hc1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
+      f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+    ext ω n a : 3
+    simp_rw [Function.comp, f, pullCount, Finset.card_filter, sumRewards]
+  have hc2 : (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) =
+      f ∘ (fun ω' n ↦ (A₂ n ω', R₂ n ω')) := by
+    ext ω' n a : 3
+    simp_rw [Function.comp, f, pullCount, Finset.card_filter, sumRewards]
+  have hf : Measurable f := by
+    simp_rw [f, measurable_pi_iff]
+    intro n a
     apply Measurable.prod
-    all_goals
-      dsimp only
-      refine measurable_sum _ fun i _ ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-  have hid_traj := h1.identDistrib_trajectory h2
-  have h_eq1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      F ∘ (fun ω n ↦ (A n ω, R n ω)) := by
-    ext ω n a : 3
-    simp only [Function.comp, F, pullCount, sumRewards, Finset.card_filter]
-  have h_eq2 : (fun ω n a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) =
-      F ∘ (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
-    ext ω n a : 3
-    simp only [Function.comp, F, pullCount, sumRewards, Finset.card_filter]
-  rw [h_eq1, h_eq2]
-  exact hid_traj.comp hF
+    · dsimp only
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
+    · dsimp only
+      exact measurable_sum _ fun i _ ↦ .ite
+        ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop)
+  rw [hc1, hc2]
+  exact (h1.identDistrib_trajectory h2).comp hf
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]

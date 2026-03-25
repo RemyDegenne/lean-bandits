@@ -243,8 +243,8 @@ lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards
       exact measurable_sum _
         (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
     · dsimp only
-      exact measurable_sum _ fun i _ ↦ .ite
-        ((measurableSet_singleton _).preimage (by fun_prop)) (by fun_prop) (by fun_prop)
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
   rw [hc1, hc2]
   exact (h1.identDistrib_trajectory h2).comp hf
 
@@ -307,21 +307,20 @@ lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable α]
   simpa [hm'] using h_le
 
 lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable α]
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {m : ℕ} {B : Set ℝ} (hB : MeasurableSet B) :
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m : ℕ) {B : Set ℝ}
+    (hB : MeasurableSet B) :
     P {ω | ∃ n, pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
-      streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
-  let S := {f : ℕ → α → ℕ × ℝ | ∃ s, (f s a).1 = m ∧ (f s a).2 ∈ B}
-  have hS : MeasurableSet S := by
-    have : S = ⋃ s, (fun f ↦ f s a) ⁻¹' ({m} ×ˢ B) := by
-      ext f; simp [S, Set.mem_iUnion, Set.mem_prod]
-    rw [this]
-    exact .iUnion fun s ↦ ((measurableSet_singleton m).prod hB).preimage (by fun_prop)
-  calc _
-    _ = (ArrayModel.arrayMeasure ν)
-          {ω | ∃ n, pullCount (ArrayModel.action alg) a n ω = m ∧
+      streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
+  let s := {p : ℕ → α → ℕ × ℝ | ∃ n, (p n a).1 = m ∧ (p n a).2 ∈ B}
+  have : s = ⋃ n, (fun p ↦ p n a) ⁻¹' ({m} ×ˢ B) := by
+    ext p
+    simp [s]
+  have hs : MeasurableSet s := by measurability
+  calc P {ω | ∃ n, pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B}
+    _ = (ArrayModel.arrayMeasure ν) {ω | ∃ n, pullCount (ArrayModel.action alg) a n ω = m ∧
             sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω ∈ B} :=
         (h.identDistrib_pullCount_sumRewards
-          (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)).measure_mem_eq hS
+          (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)).measure_mem_eq hs
     _ ≤ _ := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le a m hB
 
 lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
@@ -518,7 +517,7 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
                 sumRewards A R a s ω ∈ B m} :=
               measure_mono fun ω ⟨s, _, hpc, hB⟩ ↦ ⟨s, hpc, hB⟩
           _ ≤ streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} :=
-              prob_exists_pullCount_eq_and_sumRewards_mem_le h (hB_meas m)
+              prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (hB_meas m)
     _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) :=
         Finset.sum_le_sum fun m hm ↦
           h_stream_bound m (Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1)

@@ -200,7 +200,7 @@ variable [IsMarkovKernel κ]
 lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     {alg : Algorithm (Fin K) ℝ}
     (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
@@ -261,8 +261,8 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
           |empMean IT.action IT.reward a s ω - ((κ.sectR e) a)[id]|} := by
       simp only [badSetIT, Kernel.sectR_apply]
     rw [this]
-    have h_cf := prob_abs_sumRewards_sub_mean_ge_fintype_le (n := n) hσ2
-      (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e) h_isAlgEnvSeq hδ hδ1
+    have h_cf := prob_abs_sumRewards_sub_mean_ge_fintype_le (n := n) (hσ2)
+      (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e) h_isAlgEnvSeq hδ
     simp only [Fintype.card_fin] at h_cf
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_cf
     simp only [Set.mem_setOf_eq, empMean] at hω
@@ -307,7 +307,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
 lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
     {alg : Algorithm (Fin K) ℝ}
     (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
     P {ω | ∃ s < n, pullCount A (IsBayesAlgEnvSeq.bestAction κ E ω) s ω ≠ 0 ∧
@@ -362,9 +362,10 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
       intro a; simp only [badSetIT, Kernel.sectR_apply]
     rw [h_eq]
     set ba := IsBayesAlgEnvSeq.bestAction κ id e
-    have h_ccb := prob_abs_sumRewards_sub_mean_ge_le (a := ba) (n := n) hσ2
+    have h_ccb := prob_abs_sumRewards_sub_mean_ge_le (a := ba) (n := n)
+      (hσ2)
       (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e)
-      h_isAlgEnvSeq hδ hδ1
+      h_isAlgEnvSeq hδ
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_ccb
     simp only [Set.mem_iUnion, Finset.mem_range, Set.mem_setOf_eq] at hω ⊢
     obtain ⟨s, hs, hpc, hle⟩ := hω
@@ -485,7 +486,7 @@ lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
 
 lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     {l u : ℝ} (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u))
     (n : ℕ) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
@@ -731,7 +732,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
 
 lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hs : ∀ a e, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     {lo hi : ℝ} (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc lo hi)) (t : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E A t]

@@ -357,107 +357,92 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
 
 section Subgaussian
 
-/-! ### Sub-Gaussian tail bounds (δ-parameterized) -/
-
-private lemma exp_neg_sq_div_eq_delta {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
-    ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
-      (2 * k * ↑σ2))) = ENNReal.ofReal δ := by
-  have hk_pos : (0 : ℝ) < k := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hk)
-  have hσ2_pos : (0 : ℝ) < ↑σ2 := NNReal.coe_pos.mpr (pos_iff_ne_zero.mpr hσ2)
-  have hlog : 0 < Real.log (1 / δ) :=
-    Real.log_pos (by rw [one_div]; exact one_lt_inv₀ hδ |>.mpr hδ1)
-  rw [Real.sq_sqrt (by positivity)]
-  simp only [neg_div, Real.exp_neg]
-  rw [show 2 * (k : ℝ) * ↑σ2 * Real.log (1 / δ) / (2 * k * ↑σ2) =
-    Real.log (1 / δ) from by field_simp [ne_of_gt hσ2_pos, ne_of_gt hk_pos]]
-  rw [Real.exp_log (by positivity : (0 : ℝ) < 1 / δ), one_div, inv_inv]
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma streamMeasure_sum_sub_mean_le_le {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) (k : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    streamMeasure ν {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ -ε} ≤
+      ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * k * σ2))) := by
+  rw [← ofReal_measureReal]
+  gcongr
+  refine HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_ hε
+  · exact (iIndepFun_eval_streamMeasure'' ν a).comp
+      (fun i ω ↦ ω - (ν a)[id]) (fun _ ↦ by fun_prop)
+  · intro i _; exact (hν a).congr_identDistrib
+      ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma streamMeasure_sum_sub_mean_le_le {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+lemma streamMeasure_sum_sub_mean_ge_le {σ2 : ℝ≥0}
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (a : α) (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
-    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) +
-        √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤ k * (ν a)[id]} ≤
-      ENNReal.ofReal δ := by
-  calc
-    streamMeasure ν {ω | (∑ m ∈ range k, ω m a) +
-        √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤ k * (ν a)[id]}
-  _ = streamMeasure ν
-        {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤
-          -√(2 * k * ↑σ2 * Real.log (1 / δ))} := by
-      congr with ω
-      rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
-      constructor <;> intro h <;> linarith
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
-        (2 * k * ↑σ2))) := by
-      rw [← ofReal_measureReal]
-      gcongr
-      refine HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_
-        (by positivity)
-      · exact (iIndepFun_eval_streamMeasure'' ν a).comp
-          (fun i ω ↦ ω - (ν a)[id]) (fun _ ↦ by fun_prop)
-      · intro i _; exact (hν a).congr_identDistrib
-          ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
-  _ = ENNReal.ofReal δ := exp_neg_sq_div_eq_delta hσ2 k hk δ hδ hδ1
+    (a : α) (k : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    streamMeasure ν {ω | ε ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))} ≤
+      ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * k * σ2))) := by
+  rw [← ofReal_measureReal]
+  gcongr
+  refine HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_ hε
+  · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
+      (fun _ ↦ by fun_prop)
+  · intro i _; exact (hν a).congr_identDistrib
+      ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
 
 omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma streamMeasure_sum_sub_mean_ge_le {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+lemma streamMeasure_sum_sub_mean_mem_le {σ2 : ℝ≥0}
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (a : α) (k : ℕ) (hk : k ≠ 0) (δ : ℝ) (hδ : 0 < δ) (hδ1 : δ < 1) :
-    streamMeasure ν {ω | k * (ν a)[id] +
-        √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤ (∑ m ∈ range k, ω m a)} ≤
-      ENNReal.ofReal δ := by
-  calc
-    streamMeasure ν {ω | k * (ν a)[id] +
-        √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤ (∑ m ∈ range k, ω m a)}
-  _ = streamMeasure ν
-        {ω | √(2 * k * ↑σ2 * Real.log (1 / δ)) ≤
-          (∑ s ∈ range k, (ω s a - (ν a)[id]))} := by
-      congr with ω
-      rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
-      constructor <;> intro h <;> linarith
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * k * ↑σ2 * Real.log (1 / δ)))^2 /
-        (2 * k * ↑σ2))) := by
-      rw [← ofReal_measureReal]
-      gcongr
-      refine HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_
-        (by positivity)
-      · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
-          (fun _ ↦ by fun_prop)
-      · intro i _; exact (hν a).congr_identDistrib
-          ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
-  _ = ENNReal.ofReal δ := exp_neg_sq_div_eq_delta hσ2 k hk δ hδ hδ1
-
-omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
-lemma streamMeasure_sum_sub_mean_mem_le {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (a : α) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) (m : ℕ) (hm : m ≠ 0) :
-    streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
-        {x | x + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ m * (ν a)[id]} ∪
-        {x | m * (ν a)[id] + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ x}} ≤
-      ENNReal.ofReal (2 * δ) :=
-  calc streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈
-        {x | x + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ m * (ν a)[id]} ∪
-        {x | m * (ν a)[id] + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ x}}
-      ≤ streamMeasure ν {ω | (∑ i ∈ range m, ω i a) +
-            √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ m * (ν a)[id]} +
-          streamMeasure ν {ω | m * (ν a)[id] +
-            √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ (∑ i ∈ range m, ω i a)} := by
+    (a : α) (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    streamMeasure ν {ω | ε ≤ |(∑ i ∈ range m, ω i a) - m * (ν a)[id]|} ≤
+      ENNReal.ofReal (2 * Real.exp (-ε ^ 2 / (2 * m * σ2))) := by
+  have h_eq : {ω : ℕ → α → ℝ | ε ≤ |(∑ i ∈ range m, ω i a) - ↑m * (ν a)[id]|} =
+      {ω | ε ≤ |∑ s ∈ range m, (ω s a - (ν a)[id])|} := by
+    congr with ω
+    rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+  rw [h_eq]
+  calc streamMeasure ν {ω | ε ≤ |∑ s ∈ range m, (ω s a - (ν a)[id])|}
+      ≤ streamMeasure ν {ω | (∑ s ∈ range m, (ω s a - (ν a)[id])) ≤ -ε} +
+          streamMeasure ν {ω | ε ≤ (∑ s ∈ range m, (ω s a - (ν a)[id]))} := by
         apply (measure_mono (fun ω hω ↦ ?_)).trans (measure_union_le _ _)
-        simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢; exact hω
-    _ ≤ ENNReal.ofReal δ + ENNReal.ofReal δ := by
+        simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢
+        exact (le_abs.mp hω).symm.imp le_neg.mp id
+    _ ≤ ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * m * σ2))) +
+          ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * m * σ2))) := by
         gcongr
-        · exact streamMeasure_sum_sub_mean_le_le hσ2 hν a m hm δ hδ hδ1
-        · exact streamMeasure_sum_sub_mean_ge_le hσ2 hν a m hm δ hδ hδ1
-    _ = ENNReal.ofReal (2 * δ) := by
+        · exact streamMeasure_sum_sub_mean_le_le hν a m hε
+        · exact streamMeasure_sum_sub_mean_ge_le hν a m hε
+    _ = ENNReal.ofReal (2 * Real.exp (-ε ^ 2 / (2 * m * σ2))) := by
         rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
 
+private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : 0 < σ2) {m : ℕ} (hm : 0 < m)
+    {δ : ℝ} (hδ : 0 < δ) :
+    Real.exp (-√(2 * ↑m * ↑σ2 * Real.log (1 / δ)) ^ 2 / (2 * ↑m * ↑σ2)) ≤ δ := by
+  by_cases hδ1 : δ < 1
+  · have : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div hδ).2 hδ1)
+    have : Real.exp (-√(2 * ↑m * ↑σ2 * Real.log (1 / δ)) ^ 2 / (2 * ↑m * ↑σ2)) = δ := by
+      rw [Real.sq_sqrt (by positivity), neg_div]
+      field_simp
+      simp [Real.exp_log (by positivity)]
+    linarith
+  · calc Real.exp _ ≤ Real.exp 0 := by
+          gcongr
+          simp only [neg_div, neg_nonpos]
+          positivity
+      _ ≤ δ := by
+          simp [Real.exp_zero]
+          linarith
+
+omit [DecidableEq α] [StandardBorelSpace α] [Nonempty α] in
+lemma streamMeasure_sum_sub_mean_mem_le' {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
+    (a : α) (m : ℕ) (hm : 0 < m) {δ : ℝ} (hδ : 0 < δ) :
+    streamMeasure ν {ω | √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤
+        |(∑ i ∈ range m, ω i a) - m * (ν a)[id]|} ≤
+      ENNReal.ofReal (2 * δ) :=
+  (streamMeasure_sum_sub_mean_mem_le hν a m (by positivity)).trans
+    (by gcongr; exact exp_neg_sqrt_sq_div_le hσ2 hm hδ)
+
 lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) :
+    {δ : ℝ} (hδ : 0 < δ) :
     P (⋃ s ∈ Finset.range n, {ω | pullCount A a s ω ≠ 0 ∧
         √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
           |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|}) ≤
@@ -465,16 +450,10 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
   by_cases hn : n = 0
   · simp [hn]
   have hn : 0 < n := Nat.pos_of_ne_zero hn
-  let B := fun m : ℕ ↦
-    {x : ℝ | x + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ m * (ν a)[id]} ∪
-    {x : ℝ | m * (ν a)[id] + √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ x}
-  have h_stream_bound : ∀ m : ℕ, m ≠ 0 →
-      streamMeasure ν {ω : ℕ → α → ℝ | ∑ i ∈ range m, ω i a ∈ B m} ≤
-        ENNReal.ofReal (2 * δ) :=
-    fun m hm0 ↦ streamMeasure_sum_sub_mean_mem_le hσ2 hν a hδ hδ1 m hm0
-  have hB_meas : ∀ m, MeasurableSet (B m) := fun m ↦
-    MeasurableSet.union (measurableSet_le (by fun_prop) (by fun_prop))
-      (measurableSet_le (by fun_prop) (by fun_prop))
+  let B := fun m : ℕ ↦ {x : ℝ | √(2 * m * ↑σ2 * Real.log (1 / δ)) ≤ |x - m * (ν a)[id]|}
+  have hB_meas : ∀ m, MeasurableSet (B m) := fun m ↦ by
+    simp only [B]
+    measurability
   let S := Finset.Icc 1 (n - 1)
   have hS_card : S.card = n - 1 := by simp only [Nat.card_Icc, S]; omega
   have h_decomp : ⋃ s ∈ Finset.range n, {ω | pullCount A a s ω ≠ 0 ∧
@@ -492,16 +471,10 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
       have hm_le : m ≤ n - 1 := by
         have h1 : m ≤ s := pullCount_le (A := A) a s ω
         omega
-      refine ⟨m, ⟨hm_pos, hm_le⟩, s, hs, rfl, ?_⟩
-      simp only [Set.mem_union, B, Set.mem_setOf_eq]
-      rcases le_abs'.mp hbad.2 with h | h <;> [left; right] <;> linarith
+      exact ⟨m, ⟨hm_pos, hm_le⟩, s, hs, rfl, hbad.2⟩
     · rintro ⟨m, ⟨hm_pos, hm_le⟩, s, hs, hpc, hB⟩
-      refine ⟨s, hs, ?_, ?_⟩
-      · rw [hpc]; omega
-      · simp only [hpc, Set.mem_union, B, Set.mem_setOf_eq] at hB ⊢
-        rcases hB with h | h
-        · exact le_abs.mpr (.inr (by linarith))
-        · exact le_abs.mpr (.inl (by linarith))
+      subst hpc
+      exact ⟨s, hs, by omega, hB⟩
   rw [h_decomp]
   calc P (⋃ m ∈ S, {ω | ∃ s, s < n ∧ pullCount A a s ω = m ∧
           sumRewards A R a s ω ∈ B m})
@@ -520,7 +493,7 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
               prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (hB_meas m)
     _ ≤ ∑ _m ∈ S, ENNReal.ofReal (2 * δ) :=
         Finset.sum_le_sum fun m hm ↦
-          h_stream_bound m (Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1)
+          streamMeasure_sum_sub_mean_mem_le' hσ2 hν a m (Finset.mem_Icc.mp hm).1 hδ
     _ = (n - 1) • ENNReal.ofReal (2 * δ) := by
         simp only [Finset.sum_const, hS_card]
     _ ≤ ENNReal.ofReal (2 * n * δ) := by
@@ -530,10 +503,10 @@ lemma prob_abs_sumRewards_sub_mean_ge_le [Countable α]
           nlinarith [(Nat.cast_le (α := ℝ)).mpr (Nat.sub_le n 1), hδ.le])
 
 lemma prob_abs_sumRewards_sub_mean_ge_fintype_le [Fintype α]
-    {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0)
+    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) :
+    {δ : ℝ} (hδ : 0 < δ) :
     P {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
       √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
         |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|} ≤
@@ -552,7 +525,7 @@ lemma prob_abs_sumRewards_sub_mean_ge_fintype_le [Fintype α]
   have h_arm_bound : ∀ a : α,
       P (⋃ s ∈ Finset.range n, badSet a s) ≤ ENNReal.ofReal (2 * n * δ) := by
     intro a
-    exact prob_abs_sumRewards_sub_mean_ge_le hσ2 hν h hδ hδ1
+    exact prob_abs_sumRewards_sub_mean_ge_le hσ2 hν h hδ
   calc P (⋃ a : α, ⋃ s ∈ Finset.range n, badSet a s)
       ≤ ∑ a : α, P (⋃ s ∈ Finset.range n, badSet a s) :=
         measure_iUnion_fintype_le _ _

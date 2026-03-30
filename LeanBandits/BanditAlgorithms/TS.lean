@@ -261,7 +261,7 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
           |empMean IT.action IT.reward a s ω - ((κ.sectR e) a)[id]|} := by
       simp only [badSetIT, Kernel.sectR_apply]
     rw [this]
-    have h_cf := prob_abs_sumRewards_sub_ge_fintype_le (n := n) (hσ2)
+    have h_cf := prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype (n := n) (hσ2)
       (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e) h_isAlgEnvSeq hδ
     simp only [Fintype.card_fin] at h_cf
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_cf
@@ -362,9 +362,9 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
       intro a; simp only [badSetIT, Kernel.sectR_apply]
     rw [h_eq]
     set ba := IsBayesAlgEnvSeq.bestAction κ id e
-    have h_ccb := prob_abs_sumRewards_sub_ge_le (a := ba) (n := n)
+    have h_ccb := prob_abs_sumRewards_sub_pullCount_mul_ge_le (a := ba) (n := n)
       (hσ2)
-      (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e)
+      (by simp only [Kernel.sectR_apply]; exact hs ba e)
       h_isAlgEnvSeq hδ
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_ccb
     simp only [Set.mem_iUnion, Finset.mem_range, Set.mem_setOf_eq] at hω ⊢

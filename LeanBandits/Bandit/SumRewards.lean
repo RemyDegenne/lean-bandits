@@ -431,33 +431,28 @@ end StreamMeasure
 lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le [Countable α] {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {δ : ℝ} (hδ : 0 < δ) :
-    P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧
-        √(2 * (pullCount A a t ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
-          |sumRewards A R a t ω - (pullCount A a t ω : ℝ) * (ν a)[id]|} ≤
-            ENNReal.ofReal (2 * n * δ) :=
+    P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧ √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
+      |sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]|} ≤
+        ENNReal.ofReal (2 * (n - 1) * δ) :=
   let B (m : ℕ) := {x : ℝ | √(2 * m * σ2 * Real.log (1 / δ)) ≤ |x - m * (ν a)[id]|}
   calc
-    _ ≤ P (⋃ m ∈ Finset.Icc 1 (n - 1), {ω | ∃ s, s < n ∧ pullCount A a s ω = m ∧
-          sumRewards A R a s ω ∈ B m}) := by
+    _ ≤ P (⋃ m ∈ Finset.Icc 1 (n - 1), {ω | ∃ t, t < n ∧ pullCount A a t ω = m ∧
+          sumRewards A R a t ω ∈ B m}) := by
         apply measure_mono
-        intro ω ⟨s, hs, hne, hbad⟩
-        simp only [Set.mem_iUnion, exists_prop, Finset.mem_Icc]
-        exact ⟨_, ⟨Nat.pos_of_ne_zero hne,
-          (pullCount_le (A := A) a s ω).trans (by omega)⟩, s, hs, rfl, hbad⟩
-    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), P {ω | ∃ s, s < n ∧ pullCount A a s ω = m ∧
-          sumRewards A R a s ω ∈ B m} :=
+        intro ω ⟨t, ht, hp, hb⟩
+        have hm : pullCount A a t ω ∈ Finset.Icc 1 (n - 1) :=
+          Finset.mem_Icc.mpr ⟨Nat.pos_of_ne_zero hp, (pullCount_le a t ω).trans (by omega)⟩
+        exact Set.mem_biUnion hm ⟨t, ht, rfl, hb⟩
+    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), P {ω | ∃ t, t < n ∧ pullCount A a t ω = m ∧
+          sumRewards A R a t ω ∈ B m} :=
         measure_biUnion_finset_le _ _
-    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), P {ω | ∃ s, pullCount A a s ω = m ∧
-          sumRewards A R a s ω ∈ B m} := by
-        apply Finset.sum_le_sum
-        intro m _
-        apply measure_mono
-        intro ω ⟨s, _, h⟩
-        exact ⟨s, h⟩
-    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} := by
-        gcongr with m hm
-        exact prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (by measurability)
-    _ ≤ ∑ _m ∈ (Finset.Icc 1 (n - 1)), ENNReal.ofReal (2 * δ) := by
+    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), P {ω | ∃ t, pullCount A a t ω = m ∧
+          sumRewards A R a t ω ∈ B m} :=
+        Finset.sum_le_sum (fun _ _ ↦ measure_mono (fun _ ⟨s, _, h⟩ ↦ ⟨s, h⟩))
+    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} :=
+        Finset.sum_le_sum
+          (fun m _ ↦ prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (by measurability))
+    _ ≤ ∑ m ∈ Finset.Icc 1 (n - 1), ENNReal.ofReal (2 * δ) := by
         apply sum_le_sum
         intro m hm
         convert StreamMeasure.prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF'
@@ -465,12 +460,16 @@ lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le [Countable α] {σ2 : ℝ≥0}
         simp_rw [B, Set.mem_setOf_eq, Finset.sum_sub_distrib, Finset.sum_const,
           Finset.card_range, nsmul_eq_mul]
     _ = (n - 1) • ENNReal.ofReal (2 * δ) := by
-        simp [Finset.sum_const, Nat.card_Icc]
-    _ ≤ ENNReal.ofReal (2 * n * δ) := by
+        rw [Finset.sum_const]
+        congr 1
+        simp [Nat.card_Icc]
+    _ = ENNReal.ofReal (↑(n - 1) * (2 * δ)) := by
         rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (n - 1),
-          ← ENNReal.ofReal_mul (Nat.cast_nonneg (n - 1))]
-        exact ENNReal.ofReal_le_ofReal (by
-          nlinarith [(Nat.cast_le (α := ℝ)).mpr (Nat.sub_le n 1), hδ.le])
+          ← ENNReal.ofReal_mul (Nat.cast_nonneg _)]
+    _ = ENNReal.ofReal (2 * (n - 1) * δ) := by
+        by_cases hn : n = 0
+        · simp [hn, hδ.le]
+        · congr 1; rw [Nat.cast_sub (by omega : 1 ≤ n)]; ring
 
 lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype α]
     {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
@@ -480,7 +479,7 @@ lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype α]
     P {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
       √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
         |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|} ≤
-      ENNReal.ofReal (2 * Fintype.card α * n * δ) :=
+      ENNReal.ofReal (2 * Fintype.card α * (n - 1) * δ) :=
   calc
     _ ≤ P (⋃ a : α, {ω | ∃ s < n, pullCount A a s ω ≠ 0 ∧
           √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
@@ -492,15 +491,15 @@ lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype α]
           √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
             |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|} :=
         measure_iUnion_fintype_le _ _
-    _ ≤ ∑ _a : α, ENNReal.ofReal (2 * n * δ) :=
-        Finset.sum_le_sum fun a _ ↦ prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ
-    _ = Fintype.card α • ENNReal.ofReal (2 * n * δ) := by
+    _ ≤ ∑ _a : α, ENNReal.ofReal (2 * (n - 1) * δ) :=
+        Finset.sum_le_sum fun a _ ↦
+          prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ
+    _ = Fintype.card α • ENNReal.ofReal (2 * (n - 1) * δ) := by
         simp [Finset.sum_const]
-    _ = ENNReal.ofReal (2 * Fintype.card α * n * δ) := by
-        simp only [nsmul_eq_mul]
-        rw [← ENNReal.ofReal_natCast (Fintype.card α),
+    _ = ENNReal.ofReal (2 * Fintype.card α * (n - 1) * δ) := by
+        rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (Fintype.card α),
           ← ENNReal.ofReal_mul (Nat.cast_nonneg (Fintype.card α))]
-        congr 1; ring
+        ring_nf
 
 omit [DecidableEq α] [StandardBorelSpace α] in
 lemma probReal_sum_le_sum_streamMeasure [Fintype α] {c : ℝ≥0}

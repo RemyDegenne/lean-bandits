@@ -114,6 +114,7 @@ private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1
       have : √n * √n = n := Real.mul_self_sqrt (by positivity)
       nlinarith
 
+/-- This bound could be improved. -/
 lemma sum_ucb_sub_mean_le {n : ℕ} {ω : Ω} (μ : Fin K → ℝ) (hμ : ∀ a, μ a ∈ Set.Icc l u) (hi : l ≤ u)
     (hc : ∀ s < n, pullCount A (A s ω) s ω ≠ 0 → |empMean A R' (A s ω) s ω - μ (A s ω)|
       < √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω))) :
@@ -264,6 +265,8 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
     have h_cf := prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype (n := n) (hσ2)
       (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e) h_isAlgEnvSeq hδ
     simp only [Fintype.card_fin] at h_cf
+    replace h_cf : _ ≤ ENNReal.ofReal (2 * K * n * δ) :=
+      h_cf.trans (ENNReal.ofReal_le_ofReal (by nlinarith [Nat.cast_nonneg (α := ℝ) K]))
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_cf
     simp only [Set.mem_setOf_eq, empMean] at hω
     obtain ⟨s, hs, a, hpc, hle⟩ := hω
@@ -362,10 +365,10 @@ lemma prob_concentration_bestArm_fail_delta [Nonempty (Fin K)]
       intro a; simp only [badSetIT, Kernel.sectR_apply]
     rw [h_eq]
     set ba := IsBayesAlgEnvSeq.bestAction κ id e
-    have h_ccb := prob_abs_sumRewards_sub_pullCount_mul_ge_le (a := ba) (n := n)
-      (hσ2)
-      (by simp only [Kernel.sectR_apply]; exact hs ba e)
-      h_isAlgEnvSeq hδ
+    have h_ccb : _ ≤ ENNReal.ofReal (2 * n * δ) :=
+      (prob_abs_sumRewards_sub_pullCount_mul_ge_le (a := ba) (n := n) hσ2
+        (by simp only [Kernel.sectR_apply]; exact hs ba e)
+        h_isAlgEnvSeq hδ).trans (ENNReal.ofReal_le_ofReal (by nlinarith))
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_ccb
     simp only [Set.mem_iUnion, Finset.mem_range, Set.mem_setOf_eq] at hω ⊢
     obtain ⟨s, hs, hpc, hle⟩ := hω

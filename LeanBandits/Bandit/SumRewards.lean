@@ -402,30 +402,29 @@ lemma prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF {σ2 : ℝ≥0}
     _ = ENNReal.ofReal (2 * Real.exp (-ε ^ 2 / (2 * n * σ2))) := by
         rw [← ENNReal.ofReal_add (by positivity) (by positivity), ← two_mul]
 
+/-- Auxiliary lemma for `prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF'`. -/
 private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : 0 < σ2) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
     Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2)) ≤ δ := by
-  by_cases hδ1 : δ < 1
-  · have : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div hδ).2 hδ1)
-    have : Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2)) = δ := by
-      rw [Real.sq_sqrt (by positivity), neg_div]
-      field_simp
-      simp [Real.exp_log (by positivity)]
-    linarith
-  · calc Real.exp _ ≤ Real.exp 0 := by
-          gcongr
-          simp only [neg_div, neg_nonpos]
-          positivity
-      _ ≤ δ := by
-          simp [Real.exp_zero]
-          linarith
+  by_cases hd : δ < 1
+  · have hl : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div hδ).2 hd)
+    rw [Real.sq_sqrt (by positivity)]
+    field_simp
+    simp [Real.exp_log hδ]
+  · push_neg at hd
+    have hl : Real.log (1 / δ) ≤ 0 := Real.log_nonpos (by positivity) (div_le_one_of_le₀ hd (hδ.le))
+    rw [Real.sqrt_eq_zero_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (by positivity) hl)]
+    simp [hd]
 
 lemma prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF' {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
     streamMeasure ν {ω | √(2 * n * σ2 * Real.log (1 / δ)) ≤
-        |∑ k ∈ range n, (ω k a - (ν a)[id])|} ≤ ENNReal.ofReal (2 * δ) := by
-  apply (prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF h (by positivity) n).trans
-  gcongr
-  exact exp_neg_sqrt_sq_div_le hσ2 hδ hn
+        |∑ k ∈ range n, (ω k a - (ν a)[id])|} ≤ ENNReal.ofReal (2 * δ) :=
+  calc
+    _ ≤ ENNReal.ofReal (2 * Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2))) :=
+        prob_abs_sum_range_sub_ge_le_of_HasSubgaussianMGF h (by positivity) n
+    _ ≤ ENNReal.ofReal (2 * δ) := by
+        gcongr
+        exact exp_neg_sqrt_sq_div_le hσ2 hδ hn
 
 end StreamMeasure
 

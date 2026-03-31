@@ -257,10 +257,12 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
         (condDistrib (IsBayesAlgEnvSeq.trajectory A R') E P e) := by
       rw [h.hasLaw_env.map_eq]; exact IsBayesAlgEnvSeq.ae_IsAlgEnvSeq h
     filter_upwards [h_cond_ae] with e h_isAlgEnvSeq
-    have : badSetIT e = {ω | ∃ s < n, ∃ a, pullCount IT.action a s ω ≠ 0 ∧
+    have : badSetIT e = {ω | ∃ a, ∃ s < n, pullCount IT.action a s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount IT.action a s ω : ℝ)) ≤
           |empMean IT.action IT.reward a s ω - ((κ.sectR e) a)[id]|} := by
       simp only [badSetIT, Kernel.sectR_apply]
+      ext ω; simp only [Set.mem_setOf_eq]
+      exact ⟨fun ⟨s, hs, a, ha⟩ ↦ ⟨a, s, hs, ha⟩, fun ⟨a, s, hs, ha⟩ ↦ ⟨s, hs, a, ha⟩⟩
     rw [this]
     have h_cf := prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype (n := n) (hσ2)
       (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs a e) h_isAlgEnvSeq hδ
@@ -269,11 +271,11 @@ lemma prob_concentration_fail_delta [Nonempty (Fin K)]
       h_cf.trans (ENNReal.ofReal_le_ofReal (by nlinarith [Nat.cast_nonneg (α := ℝ) K]))
     refine le_trans (measure_mono fun ω hω ↦ ?_) h_cf
     simp only [Set.mem_setOf_eq, empMean] at hω
-    obtain ⟨s, hs, a, hpc, hle⟩ := hω
+    obtain ⟨a, s, hs, hpc, hle⟩ := hω
     simp only [Set.mem_setOf_eq]
     have hk : (0 : ℝ) < pullCount IT.action a s ω :=
       Nat.cast_pos.mpr (Nat.pos_of_ne_zero hpc)
-    refine ⟨s, hs, a, hpc, ?_⟩
+    refine ⟨a, s, hs, hpc, ?_⟩
     rw [show sumRewards IT.action IT.reward a s ω / ↑(pullCount IT.action a s ω) -
         ((κ.sectR e) a)[id] = (sumRewards IT.action IT.reward a s ω -
         ↑(pullCount IT.action a s ω) * ((κ.sectR e) a)[id]) /

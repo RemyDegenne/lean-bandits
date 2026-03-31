@@ -463,34 +463,23 @@ lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le [Countable α] {σ2 : ℝ≥0}
             Nat.cast_sub (Nat.one_le_iff_ne_zero.mpr hn)]
           ring_nf
 
-lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype α]
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
+lemma prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype α] {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    {δ : ℝ} (hδ : 0 < δ) :
-    P {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
-      √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
-        |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|} ≤
-      ENNReal.ofReal (2 * Fintype.card α * (n - 1) * δ) :=
+    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {δ : ℝ} (hδ : 0 < δ) :
+    P {ω | ∃ a, ∃ t < n, pullCount A a t ω ≠ 0 ∧
+        √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
+          |sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]|} ≤
+            ENNReal.ofReal (2 * Fintype.card α * (n - 1) * δ) :=
   calc
-    _ ≤ P (⋃ a : α, {ω | ∃ s < n, pullCount A a s ω ≠ 0 ∧
-          √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
-            |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|}) := by
-        apply measure_mono
-        intro ω ⟨s, hs, a, ha⟩
-        exact Set.mem_iUnion.mpr ⟨a, s, hs, ha⟩
-    _ ≤ ∑ a : α, P {ω | ∃ s < n, pullCount A a s ω ≠ 0 ∧
-          √(2 * (pullCount A a s ω : ℝ) * ↑σ2 * Real.log (1 / δ)) ≤
-            |sumRewards A R a s ω - (pullCount A a s ω : ℝ) * (ν a)[id]|} :=
-        measure_iUnion_fintype_le _ _
-    _ ≤ ∑ _a : α, ENNReal.ofReal (2 * (n - 1) * δ) :=
-        sum_le_sum fun a _ ↦
-          prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ
-    _ = Fintype.card α • ENNReal.ofReal (2 * (n - 1) * δ) := by
-        simp [sum_const]
+    _ ≤ ∑ a, P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧
+          √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
+            |sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]|} := by
+        rw [Set.setOf_exists]
+        exact measure_iUnion_fintype_le _ _
+    _ ≤ ∑ a, ENNReal.ofReal (2 * (n - 1) * δ) :=
+        sum_le_sum fun a _ ↦ prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ
     _ = ENNReal.ofReal (2 * Fintype.card α * (n - 1) * δ) := by
-        rw [nsmul_eq_mul, ← ENNReal.ofReal_natCast (Fintype.card α),
-          ← ENNReal.ofReal_mul (Nat.cast_nonneg (Fintype.card α))]
+        rw [sum_const, Finset.card_univ, ← ENNReal.ofReal_nsmul, nsmul_eq_mul]
         ring_nf
 
 omit [DecidableEq α] [StandardBorelSpace α] in

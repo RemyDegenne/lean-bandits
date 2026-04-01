@@ -9,7 +9,6 @@ import LeanBandits.OptimizationAlgorithms.Utils.Uniform
 import LeanBandits.OptimizationAlgorithms.Utils.EuclideanSpace
 import LeanBandits.SequentialLearning.Algorithm
 
-
 open MeasureTheory ProbabilityTheory Finset NNReal Learning
 
 /-!

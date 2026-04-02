@@ -119,14 +119,11 @@ theorem convergence (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
       · measurability
     simp_rw [prod_law]
     simp only [prod_const, Nat.card_Iic]
-    suffices μ {x | ε ≤ dist x a} < 1 by
-      refine Tendsto.comp ?_ <| tendsto_add_atTop_nat 1
-      exact tendsto_pow_atTop_nhds_zero_of_lt_one this
+    refine Tendsto.comp (tendsto_pow_atTop_nhds_zero_of_lt_one ?_) (tendsto_add_atTop_nat 1)
     have compl : {x | ε ≤ dist x a} = {x | dist x a < ε}ᶜ := by
       ext a
       simp
-    rw [compl]
-    rw [measure_compl (by measurability) (by simp), measure_univ]
+    rw [compl, measure_compl (by measurability) (by simp), measure_univ]
     refine ENNReal.sub_lt_self (by simp) (by simp) ?_
     exact (Metric.measure_ball_pos μ a hε).ne'
   · intro n

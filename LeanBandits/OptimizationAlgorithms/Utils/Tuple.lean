@@ -46,7 +46,7 @@ lemma measurable_max {n : ℕ} : Measurable (fun (t : Iic n → ℝ) => Tuple.ma
   fun_prop
 
 @[fun_prop]
-lemma measurable_min_fst {n : ℕ} : Measurable (fun (t : Iic n → ℝ) => Tuple.min t) := by
+lemma measurable_min {n : ℕ} : Measurable (fun (t : Iic n → ℝ) => Tuple.min t) := by
   unfold Tuple.min
   have : Nonempty (Iic n) := inferInstance
   simp_all only [mem_Iic, nonempty_subtype]

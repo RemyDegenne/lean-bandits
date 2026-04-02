@@ -7,6 +7,8 @@ Authors: Gaëtan Serré
 import LeanBandits.SequentialLearning.Algorithm
 import LeanBandits.OptimizationAlgorithms.Utils.Tuple
 import LeanBandits.SequentialLearning.EvaluationEnv
+import LeanBandits.ForMathlib.IndepFun
+import Mathlib
 
 open MeasureTheory ProbabilityTheory Learning
 
@@ -16,59 +18,122 @@ Implementation of the _Pure Random Search_ algorithm, which samples from the uni
 distribution on the input space at each iteration.
 -/
 
-variable {α β : Type*} [MeasureSpace α] [IsFiniteMeasure (ℙ : Measure α)]
-  [NeZero (ℙ : Measure α)] [MeasurableSpace β]
+section
 
-open Set in
-noncomputable
-def PRS : Algorithm α β where
-  policy _ := Kernel.const _ ((ℙ (univ : Set α))⁻¹ • ℙ)
-  p0 := (ℙ (univ : Set α))⁻¹ • ℙ
-  h_policy _ := ⟨fun _ ↦ by simp [isProbabilityMeasure_iff]⟩
-  hp0 := by simp [isProbabilityMeasure_iff]
+lemma hasLaw_of_hasCondDistrib_const {β' Ω' Ω'' : Type*}
+    [MeasurableSpace β'] [MeasurableSpace Ω'] [StandardBorelSpace Ω'] [Nonempty Ω']
+    [MeasurableSpace Ω'']
+    {X : Ω'' → β'} {Y : Ω'' → Ω'} {μ : Measure Ω'}
+    {Q : Measure Ω''} [IsProbabilityMeasure Q] [SFinite μ]
+    (h : HasCondDistrib Y X (Kernel.const _ μ) Q) : HasLaw Y μ Q := by
+    obtain ⟨hY, hX, h⟩ := h
+    refine ⟨hY, ?_⟩
+    have h_snd : (Q.map (fun ω => (X ω, Y ω))).snd = μ := by
+      have h_map : Q.map (fun ω => (X ω, Y ω)) = (Q.map X) ⊗ₘ (Kernel.const _ μ) :=
+        have h_map : Q.map (fun ω => (X ω, Y ω)) = (Q.map X) ⊗ₘ (condDistrib Y X Q) :=
+        (compProd_map_condDistrib hY).symm
+        h_map.trans (Measure.compProd_congr h)
+      rw [h_map, MeasureTheory.Measure.snd_compProd]
+      simp [MeasureTheory.Measure.map_apply_of_aemeasurable hX]
+    rwa [Measure.snd_map_prodMk₀ hX] at h_snd
 
-open Finset
-
-variable {f : ℝ → ℝ} (hf : Continuous f) (c : ℝ) (hfc : ∀ x, f x ≤ f c)
-  (A : ℕ → ℝ → ℝ) (R : ℕ → ℝ → ℝ)
-
-noncomputable abbrev IsAlgEnvSeq.argmax (A : ℕ → ℝ → ℝ) (R : ℕ → ℝ → ℝ) (n : ℕ) (ω : ℝ) : ℝ :=
-  A (Tuple.argmax (fun (i : Iic n) ↦ R i ω)) ω
-
-noncomputable abbrev IsAlgEnvSeq.max (R : ℕ → ℝ → ℝ) (n : ℕ) (ω : ℝ) : ℝ :=
-  R (Tuple.argmax (fun (i : Iic n) ↦ R i ω)) ω
-
-open Filter Topology ENNReal in
+open ENNReal Filter Topology in
 lemma ENNReal.tendsto_zero_le {α : Type*} {f g : α → ℝ≥0∞} {ι : Filter α}
     (hg : Tendsto g ι (𝓝 0)) (h : f ≤ g) : Tendsto f ι (𝓝 0) := by
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le (g := fun _ ↦ 0) tendsto_const_nhds hg ?_ h
   intro
   simp
 
-variable [IsFiniteMeasure (ℙ : Measure ℝ)] -- False, but assumed now for simplicity
+end
 
-open Filter Topology ENNReal in
-example (h' : IsAlgEnvSeq A R PRS (evalEnv hf.measurable) ((ℙ (Set.univ : Set ℝ))⁻¹ • ℙ)) :
-    TendstoInMeasure ((ℙ (Set.univ : Set α))⁻¹ • ℙ) (IsAlgEnvSeq.max R) atTop (fun _ ↦ f c) := by
-  set μ := ((ℙ (Set.univ : Set α))⁻¹ • (ℙ : Measure ℝ))
-  rw [tendstoInMeasure_iff_dist]
-  intro ε₁ hε₁
-  rw [Metric.continuous_iff] at hf
-  specialize hf c ε₁ hε₁
-  obtain ⟨δ, hδ, hf⟩ := hf
-  let h : ℕ → ℝ≥0∞ := fun n ↦ μ {x | δ ≤ dist (IsAlgEnvSeq.argmax A R n x) c}
-  refine tendsto_zero_le (g := h) ?_ ?_
-  · sorry
+variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] (μ : Measure α)
+  [IsProbabilityMeasure μ]
+
+open Set in
+@[simps]
+noncomputable
+def PRS : Algorithm α β where
+  policy _ := Kernel.const _ μ
+  p0 := μ
+  h_policy _ := ⟨fun _ ↦ inferInstance⟩
+  hp0 := inferInstance
+
+namespace PRS
+
+variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace β] [Nonempty β]
+  {Ω : Type*} [MeasurableSpace Ω] (P : Measure Ω) [IsProbabilityMeasure P]
+  (A : ℕ → Ω → α) (R : ℕ → Ω → β) {f : α → β} (hf : Measurable f)
+
+lemma hasLaw_action
+    (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P)
+    (n : ℕ) : HasLaw (A n) (PRS (β := β) μ).p0 P := by
+  by_cases hn : n = 0
+  · rw [hn]
+    exact h'.hasLaw_action_zero
+  · push_neg at hn
+    obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
+    exact hasLaw_of_hasCondDistrib_const <| h'.hasCondDistrib_action k
+
+lemma iIndep_actions (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
+    iIndepFun A P := by
+  have hA := h'.measurable_A
+  set PRS_alg := PRS (β := β) μ
+  rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
+  intro n
+  sorry
+
+variable [PseudoMetricSpace α] [SecondCountableTopology α] [OpensMeasurableSpace α]
+  [μ.IsOpenPosMeasure]
+
+open Finset Preorder Filter Topology ENNReal in
+/-- The probability of sampling points at distance at least ε from a given point goes to zero
+as the number of samples goes to infinity. -/
+theorem convergence (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
+    ∀ ε, 0 < ε → Tendsto (fun i => P
+      {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (A j.1 x) a)}) atTop (𝓝 0) := by
+  set PRS_alg := PRS (β := β) μ
+  intro ε hε
+  refine tendsto_zero_le (g := fun n ↦ P (⋂ i ∈ Iic n, {x | ε ≤ dist (A i x) a})) ?_ ?_
+  · have inter_prod (n : ℕ) : P (⋂ j ∈ Iic n, {x | ε ≤ dist (A j x) a}) =
+        ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} := by
+      refine iIndepSet.meas_biInter ?_ _
+      rw [iIndepSet_iff_meas_biInter fun i ↦ ?_]
+      · intro s
+        have iIndep_actions := PRS.iIndep_actions μ P A R hf h'
+        rw [iIndepFun_iff_measure_inter_preimage_eq_mul] at iIndep_actions
+        have meas_dist : ∀ i ∈ s, MeasurableSet {x | ε ≤ dist x a} := by
+          intro i hs
+          measurability
+        specialize iIndep_actions s meas_dist
+        simpa only [Set.preimage] using iIndep_actions
+      · have hAi := h'.measurable_A i
+        measurability
+    simp_rw [inter_prod]
+    have prod_law (n : ℕ) : ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} =
+        ∏ j ∈ Iic n, μ {x | ε ≤ dist x a} := by
+      refine prod_congr rfl fun j hj ↦ ?_
+      have hlaw (n : ℕ) : HasLaw (A n) μ P := PRS.hasLaw_action μ P A R hf h' n
+      rw [← (hlaw j).map_eq, P.map_apply]
+      · simp
+      · exact h'.measurable_A j
+      · measurability
+    simp_rw [prod_law]
+    simp only [prod_const, Nat.card_Iic]
+    suffices μ {x | ε ≤ dist x a} < 1 by
+      refine Tendsto.comp ?_ <| tendsto_add_atTop_nat 1
+      exact tendsto_pow_atTop_nhds_zero_of_lt_one this
+    have compl : {x | ε ≤ dist x a} = {x | dist x a < ε}ᶜ := by
+      ext a
+      simp
+    rw [compl]
+    rw [measure_compl (by measurability) (by simp), measure_univ]
+    refine ENNReal.sub_lt_self (by simp) (by simp) ?_
+    exact (Metric.measure_ball_pos μ a hε).ne'
   · intro n
-    simp only [h]
     refine measure_mono ?_
-    simp only [Set.setOf_subset_setOf]
-    intro a
-    by_contra! h''
-    specialize hf (IsAlgEnvSeq.argmax A R n a) h''.2
-    have := h''.1
-    suffices IsAlgEnvSeq.max R n a = f (IsAlgEnvSeq.argmax A R n a) by
-      rw [← this] at hf
-      linarith
+    simp only [mem_Iic, Set.subset_iInter_iff, Set.setOf_subset_setOf]
+    intro i hi ω (hω : ε ≤ Tuple.min (fun (j : Iic n) ↦ dist (A j.1 ω) a))
+    unfold Tuple.min at hω
+    simp_all
 
-    sorry
+end PRS

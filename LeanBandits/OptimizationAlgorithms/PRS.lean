@@ -18,7 +18,7 @@ Implementation of the _Pure Random Search_ algorithm, which samples from the uni
 distribution on the input space at each iteration.
 -/
 
-section
+section -- Move this somewhere else
 
 lemma hasLaw_of_hasCondDistrib_const {β' Ω' Ω'' : Type*}
     [MeasurableSpace β'] [MeasurableSpace Ω'] [StandardBorelSpace Ω'] [Nonempty Ω']
@@ -55,8 +55,6 @@ noncomputable
 def PRS : Algorithm α β where
   policy _ := Kernel.const _ μ
   p0 := μ
-  h_policy _ := ⟨fun _ ↦ inferInstance⟩
-  hp0 := inferInstance
 
 namespace PRS
 

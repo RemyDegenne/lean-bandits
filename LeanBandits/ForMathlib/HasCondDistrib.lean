@@ -216,4 +216,17 @@ lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+lemma hasLaw_of_hasCondDistrib_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const _ Q) μ) : HasLaw Y Q μ := by
+  obtain ⟨hY, hX, h⟩ := h
+  refine ⟨hY, ?_⟩
+  have h_snd : (μ.map (fun ω => (X ω, Y ω))).snd = Q := by
+    have h_map : μ.map (fun ω => (X ω, Y ω)) = (μ.map X) ⊗ₘ (Kernel.const _ Q) :=
+      have h_map : μ.map (fun ω => (X ω, Y ω)) = (μ.map X) ⊗ₘ (condDistrib Y X μ) :=
+      (compProd_map_condDistrib hY).symm
+      h_map.trans (Measure.compProd_congr h)
+    rw [h_map, MeasureTheory.Measure.snd_compProd]
+    simp [MeasureTheory.Measure.map_apply_of_aemeasurable hX]
+  rwa [Measure.snd_map_prodMk₀ hX] at h_snd
+
 end ProbabilityTheory

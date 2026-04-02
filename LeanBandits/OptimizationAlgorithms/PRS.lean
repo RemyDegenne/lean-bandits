@@ -46,21 +46,21 @@ lemma ENNReal.tendsto_zero_le {α : Type*} {f g : α → ℝ≥0∞} {ι : Filte
 
 end
 
-variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] (μ : Measure α)
-  [IsProbabilityMeasure μ]
+variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
 
 open Set in
 @[simps]
 noncomputable
-def PRS : Algorithm α β where
+def PRS (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
   policy _ := Kernel.const _ μ
   p0 := μ
 
 namespace PRS
 
 variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace β] [Nonempty β]
-  {Ω : Type*} [MeasurableSpace Ω] (P : Measure Ω) [IsProbabilityMeasure P]
-  (A : ℕ → Ω → α) (R : ℕ → Ω → β) {f : α → β} (hf : Measurable f)
+  {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+  {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f) {μ : Measure α}
+  [IsProbabilityMeasure μ]
 
 lemma hasLaw_action
     (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P)
@@ -72,13 +72,20 @@ lemma hasLaw_action
     obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
     exact hasLaw_of_hasCondDistrib_const <| h'.hasCondDistrib_action k
 
+open Finset in
 lemma iIndep_actions (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
     iIndepFun A P := by
   have hA := h'.measurable_A
-  set PRS_alg := PRS (β := β) μ
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
-  sorry
+  have condDistrib_eq := (h'.hasCondDistrib_action n).condDistrib_eq
+  have law_eq := (hasLaw_action hf h' (n + 1)).map_eq
+  simp only [PRS_p0, PRS_policy] at law_eq condDistrib_eq
+  rw [← law_eq, ← indepFun_iff_condDistrib_eq_const ?_ (by fun_prop)] at condDistrib_eq
+  · have meas_fst : Measurable (fun (f : Iic n → α × β) ↦ (fun i ↦ (f i).1)) := by
+      fun_prop
+    exact (condDistrib_eq.comp meas_fst measurable_id).symm
+  · exact (IsAlgEnvSeq.measurable_hist (h'.measurable_A) (h'.measurable_R) n).aemeasurable
 
 variable [PseudoMetricSpace α] [SecondCountableTopology α] [OpensMeasurableSpace α]
   [μ.IsOpenPosMeasure]
@@ -97,7 +104,7 @@ theorem convergence (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
       refine iIndepSet.meas_biInter ?_ _
       rw [iIndepSet_iff_meas_biInter fun i ↦ ?_]
       · intro s
-        have iIndep_actions := PRS.iIndep_actions μ P A R hf h'
+        have iIndep_actions := PRS.iIndep_actions hf h'
         rw [iIndepFun_iff_measure_inter_preimage_eq_mul] at iIndep_actions
         have meas_dist : ∀ i ∈ s, MeasurableSet {x | ε ≤ dist x a} := by
           intro i hs
@@ -110,7 +117,7 @@ theorem convergence (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
     have prod_law (n : ℕ) : ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} =
         ∏ j ∈ Iic n, μ {x | ε ≤ dist x a} := by
       refine prod_congr rfl fun j hj ↦ ?_
-      have hlaw (n : ℕ) : HasLaw (A n) μ P := PRS.hasLaw_action μ P A R hf h' n
+      have hlaw (n : ℕ) : HasLaw (A n) μ P := PRS.hasLaw_action hf h' n
       rw [← (hlaw j).map_eq, P.map_apply]
       · simp
       · exact h'.measurable_A j

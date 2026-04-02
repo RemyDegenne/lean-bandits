@@ -62,9 +62,8 @@ variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace β] [Nonempty
   {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f) {μ : Measure α}
   [IsProbabilityMeasure μ]
 
-lemma hasLaw_action
-    (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P)
-    (n : ℕ) : HasLaw (A n) (PRS (β := β) μ).p0 P := by
+lemma hasLaw_action (h' : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) :
+    HasLaw (A n) (PRS (β := β) μ).p0 P := by
   by_cases hn : n = 0
   · rw [hn]
     exact h'.hasLaw_action_zero

@@ -50,8 +50,23 @@ lemma reward_eq_evals_actions_comp (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n 
   simp_rw [hω]
 
 lemma neg [Neg R] [MeasurableNeg R] (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
-    IsAlgEnvSeq A (-R') alg (evalEnv <| Measurable.neg hf) P := by
-  sorry
+    IsAlgEnvSeq A (-R') alg (evalEnv <| Measurable.neg hf) P where
+  measurable_A n := h.measurable_A n
+  measurable_R n := Measurable.neg <| h.measurable_R n
+  hasLaw_action_zero := h.hasLaw_action_zero
+  hasCondDistrib_reward_zero := by
+    have hA := h.measurable_A 0
+    have hR := h.measurable_R 0
+    refine ⟨(Measurable.neg <| h.measurable_R 0).aemeasurable, by fun_prop, ?_⟩
+    have : (- R') 0 =ᶠ[ae P] (-f) ∘ A 0 := by
+      have := reward_eq_eval_action hf h 0
+      filter_upwards [this] with ω hω
+      simp [hω]
+    rw [condDistrib_congr this (ae_eq_rfl)]
+    filter_upwards [condDistrib_comp_self (f := (-f)) (A 0) (Measurable.neg hf)] with ω hω
+    simpa using hω
+  hasCondDistrib_action := by sorry
+  hasCondDistrib_reward := by sorry
 
 end IsAlgEnvSeq
 

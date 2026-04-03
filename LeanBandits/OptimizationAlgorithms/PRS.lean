@@ -41,7 +41,7 @@ lemma hasLaw_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) : H
   by_cases hn : n = 0
   · rw [hn]
     exact h.hasLaw_action_zero
-  · push_neg at hn
+  · push Not at hn
     obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
     exact hasLaw_of_hasCondDistrib_const <| h.hasCondDistrib_action k
 
@@ -166,15 +166,15 @@ lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
   have hmf_min (x : α) : -f a ≤ -f x := by
     specialize hf_max x
     linarith
-  have := tendsto_min (continuous_neg_iff.mpr hfc) (IsAlgEnvSeq.neg hfc.measurable h) hmf_min
-  rw [tendstoInMeasure_iff_dist] at this ⊢
+  have h' := tendsto_min (continuous_neg_iff.mpr hfc) (IsAlgEnvSeq.neg hfc.measurable h) hmf_min
+  rw [tendstoInMeasure_iff_dist] at h' ⊢
   intro ε hε
-  specialize this ε hε
+  specialize h' ε hε
   have dist_neg (n : ℕ) : {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R i x) (f a)} =
       {x | ε ≤ dist (-(Tuple.max fun (i : Iic n) ↦ R i x)) (-f a)} := by
     simp [dist_neg_neg]
   simp_rw [dist_neg]
-  convert this with n ω
+  convert h' with n ω
   exact Tuple.neg_max_eq_min_neg _
 
 end Real

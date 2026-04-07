@@ -33,25 +33,6 @@ lemma measurable_comp_comap (f : α → β) {g : β → γ} (hg : Measurable g) 
   rw [← measurable_iff_comap_le]
   exact hg
 
-lemma MeasurableSet.imp {p q : α → Prop}
-    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
-    MeasurableSet {x | p x → q x} := by
-  have h_eq : {x | p x → q x} = {x | p x}ᶜ ∪ {x | q x} := by
-    ext x
-    grind
-  rw [h_eq]
-  exact MeasurableSet.union hs.compl ht
-
-lemma MeasurableSet.iff {p q : α → Prop}
-    (hs : MeasurableSet {x | p x}) (ht : MeasurableSet {x | q x}) :
-    MeasurableSet {x | p x ↔ q x} := by
-  have h_eq : {x | p x ↔ q x} = ({x | p x}ᶜ ∪ {x | q x}) ∩ ({x | q x}ᶜ ∪ {x | p x}) := by
-    ext x
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_union, Set.mem_compl_iff]
-    grind
-  rw [h_eq]
-  exact (MeasurableSet.union hs.compl ht).inter (MeasurableSet.union ht.compl hs)
-
 @[fun_prop]
 lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
     Measurable (fun a ↦ (f a : ℕ∞)) := Measurable.comp (by fun_prop) hf
@@ -59,11 +40,6 @@ lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :
 @[fun_prop]
 lemma Measurable.toNat {f : α → ℕ∞} (hf : Measurable f) : Measurable (fun a ↦ (f a).toNat) :=
   Measurable.comp (by fun_prop) hf
-
-lemma Measure.trim_comap_apply {X : α → β} (hX : Measurable X) {s : Set β} (hs : MeasurableSet s) :
-    μ.trim hX.comap_le (X ⁻¹' s) = μ.map X s := by
-  rw [trim_measurableSet_eq, Measure.map_apply (by fun_prop) hs]
-  exact ⟨s, hs, rfl⟩
 
 lemma measurable_sum_range_of_le {f : ℕ → α → ℝ} {g : α → ℕ} {n : ℕ}
     (hg_le : ∀ a, g a ≤ n) (hf : ∀ i, Measurable (f i)) (hg : Measurable g) :

@@ -3,9 +3,13 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import Mathlib.MeasureTheory.Function.FactorsThrough
-import Mathlib.Probability.Independence.Basic
-import Mathlib.Probability.Independence.Conditional
+module
+
+public import Mathlib.MeasureTheory.Function.FactorsThrough
+public import Mathlib.Probability.Independence.Basic
+public import Mathlib.Probability.Independence.Conditional
+
+@[expose] public section
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/

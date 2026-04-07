@@ -3,11 +3,14 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.Bandit.Bandit
-import Mathlib.Probability.IdentDistribIndep
+module
+
+public import LeanMachineLearning.Bandit.Bandit
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal

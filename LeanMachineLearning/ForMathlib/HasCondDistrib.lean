@@ -3,12 +3,16 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanMachineLearning.ForMathlib.CondDistrib
-import Mathlib.Probability.HasLaw
+module
+
+public import LeanMachineLearning.ForMathlib.CondDistrib
+public import Mathlib.Probability.HasLaw
 
 /-!
 # A predicate for having a specified conditional distribution
 -/
+
+@[expose] public section
 
 open MeasureTheory
 
@@ -73,7 +77,7 @@ lemma HasCondDistrib.snd {Y : α → Ω × Ω'} {κ : Kernel β (Ω × Ω')} [Is
 
 lemma HasCondDistrib.comp_right [IsFiniteMeasure μ] [IsFiniteKernel κ] (h : HasCondDistrib Y X κ μ)
     (f : β ≃ᵐ γ) :
-    HasCondDistrib Y (f ∘ X) (κ.comap f.symm (by fun_prop)) μ := by
+    HasCondDistrib Y (f ∘ X) (κ.comap f.symm (by fun_prop) : Kernel γ Ω) μ := by
   have hY := h.aemeasurable_fst
   have hX := h.aemeasurable_snd
   refine ⟨h.aemeasurable_fst, by fun_prop, ?_⟩

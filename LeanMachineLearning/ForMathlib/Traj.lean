@@ -3,9 +3,13 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanMachineLearning.ForMathlib.HasCondDistrib
-import Mathlib.Probability.Kernel.IonescuTulcea.Traj
-import Mathlib.Probability.Process.FiniteDimensionalLaws
+module
+
+public import LeanMachineLearning.ForMathlib.HasCondDistrib
+public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+public import Mathlib.Probability.Process.FiniteDimensionalLaws
+
+@[expose] public section
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory
 

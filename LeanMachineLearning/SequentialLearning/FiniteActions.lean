@@ -3,9 +3,11 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanMachineLearning.SequentialLearning.Algorithm
-import Mathlib.Order.CompletePartialOrder
-import Mathlib.Probability.Martingale.BorelCantelli
+module
+
+public import LeanMachineLearning.SequentialLearning.Algorithm
+public import Mathlib.Order.CompletePartialOrder
+public import Mathlib.Probability.Martingale.BorelCantelli
 
 /-!
 # Bookkeeping definitions for finite action space sequential learning problems
@@ -19,6 +21,8 @@ other parameters, we put the time and history at the end in this order, so that 
 be seen as a stochastic process indexed by time `t` on the measurable space `ℕ → α × R`.
 
 -/
+
+@[expose] public section
 
 open MeasureTheory Finset Learning
 

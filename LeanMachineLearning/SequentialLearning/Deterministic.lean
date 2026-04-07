@@ -3,11 +3,15 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+module
+
+public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
 # Deterministic algorithms
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Filter Real Finset
 

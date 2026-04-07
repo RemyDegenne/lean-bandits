@@ -3,10 +3,14 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.ForMathlib.KernelSub
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mathlib.Probability.Independence.Basic
-import Mathlib.Probability.Independence.Conditional
+module
+
+public import LeanMachineLearning.ForMathlib.KernelSub
+public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+public import Mathlib.Probability.Independence.Basic
+public import Mathlib.Probability.Independence.Conditional
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal
@@ -411,7 +415,7 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
     (hX : Measurable X) (hY : Measurable Y) (hZ : Measurable Z)
     (κ : Kernel (β × Ω') Ω) [IsFiniteKernel κ]
     (h_cond : ∀ b, μ (Z ⁻¹' {b}) ≠ 0 → condDistrib Y X μ[|Z ⁻¹' {b}] =ᵐ[μ[|Z ⁻¹' {b}].map X]
-      (κ.comap (fun ω ↦ (ω, b)) (by fun_prop))) :
+      (κ.comap (fun ω ↦ (ω, b)) (by fun_prop) : Kernel β Ω)) :
     condDistrib Y (fun ω ↦ (X ω, Z ω)) μ =ᵐ[μ.map (fun ω ↦ (X ω, Z ω))] κ := by
   refine condDistrib_ae_eq_of_measure_eq_compProd _ (by fun_prop) ?_
   ext s hs

@@ -3,12 +3,16 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanMachineLearning.ForMathlib.Measurable
-import LeanMachineLearning.ForMathlib.Traj
+module
+
+public import LeanMachineLearning.ForMathlib.Measurable
+public import LeanMachineLearning.ForMathlib.Traj
 
 /-!
 # Algorithms
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Filter Real Finset
 

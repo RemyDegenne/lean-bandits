@@ -3,12 +3,16 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.Bandit.Bandit
-import LeanMachineLearning.Bandit.Regret
-import LeanMachineLearning.ForMathlib.SubGaussian
+module
+
+public import LeanMachineLearning.Bandit.Bandit
+public import LeanMachineLearning.Bandit.Regret
+public import LeanMachineLearning.ForMathlib.SubGaussian
 
 /-! # Law of the sum of rewards
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal

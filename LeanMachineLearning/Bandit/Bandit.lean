@@ -3,19 +3,23 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanMachineLearning.ForMathlib.CondIndepFun
-import LeanMachineLearning.ForMathlib.IndepFun
-import LeanMachineLearning.ForMathlib.IndepInfinitePi
-import LeanMachineLearning.ForMathlib.Integrable
-import LeanMachineLearning.ForMathlib.StandardBorel
-import LeanMachineLearning.SequentialLearning.FiniteActions
-import LeanMachineLearning.SequentialLearning.StationaryEnv
-import Mathlib.MeasureTheory.Constructions.UnitInterval
-import Mathlib.Probability.Kernel.Representation
+module
+
+public import LeanMachineLearning.ForMathlib.CondIndepFun
+public import LeanMachineLearning.ForMathlib.IndepFun
+public import LeanMachineLearning.ForMathlib.IndepInfinitePi
+public import LeanMachineLearning.ForMathlib.Integrable
+public import LeanMachineLearning.ForMathlib.StandardBorel
+public import LeanMachineLearning.SequentialLearning.FiniteActions
+public import LeanMachineLearning.SequentialLearning.StationaryEnv
+public import Mathlib.Probability.Independence.Integration
+public import Mathlib.Probability.Kernel.Representation
 
 /-!
 # Bandit
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Filter Real Finset Learning
 
@@ -877,8 +881,8 @@ lemma indepFun_snd_hist_cond [Countable α] (alg : Algorithm α R)
         pullCount (action alg) a (n + 1) ω = m}).indicator (fun _ ↦ 1)) ⁻¹' {1}]]
       fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
         else Nonempty.some inferInstance else ω.2 k b) by
-    convert this
-    ext ω
+    convert this using 1
+    congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
       Set.mem_setOf_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
       Classical.not_imp, Decidable.not_not, and_congr_right_iff]

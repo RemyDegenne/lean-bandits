@@ -3,13 +3,17 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.Bandit.SumRewards
-import LeanMachineLearning.BanditAlgorithms.RoundRobin
-import LeanMachineLearning.ForMathlib.MeasurableArgMax
+module
+
+public import LeanMachineLearning.Bandit.SumRewards
+public import LeanMachineLearning.BanditAlgorithms.RoundRobin
+public import LeanMachineLearning.ForMathlib.MeasurableArgMax
 
 /-! # The Explore-Then-Commit Algorithm
 
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal

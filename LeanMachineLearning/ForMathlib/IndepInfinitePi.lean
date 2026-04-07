@@ -1,4 +1,8 @@
-import Mathlib.Probability.Independence.InfinitePi
+module
+
+public import Mathlib.Probability.Independence.InfinitePi
+
+@[expose] public section
 
 open MeasureTheory Measure ProbabilityTheory Set Function
 

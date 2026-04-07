@@ -3,16 +3,20 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LeanMachineLearning.BanditAlgorithms.AuxSums
-import LeanMachineLearning.SequentialLearning.Deterministic
-import LeanMachineLearning.SequentialLearning.FiniteActions
-import LeanMachineLearning.SequentialLearning.StationaryEnv
+module
+
+public import LeanMachineLearning.BanditAlgorithms.AuxSums
+public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.FiniteActions
+public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Round-Robin algorithm
 
 That algorithm pulls each arm in a round-robin fashion.
 
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped ENNReal NNReal

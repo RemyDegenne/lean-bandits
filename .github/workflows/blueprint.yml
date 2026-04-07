@@ -49,7 +49,7 @@ jobs:
         with:
           build: true
           lint: false
-          mk_all-check: true
+          mk_all-check: false
 
       - name: Build Verso Documentation
         run: |

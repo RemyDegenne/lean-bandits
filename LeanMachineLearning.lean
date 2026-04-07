@@ -12,7 +12,6 @@ import LeanMachineLearning.ForMathlib.HasCondDistrib
 import LeanMachineLearning.ForMathlib.IndepFun
 import LeanMachineLearning.ForMathlib.IndepInfinitePi
 import LeanMachineLearning.ForMathlib.Integrable
-import LeanMachineLearning.ForMathlib.KernelRepresentation
 import LeanMachineLearning.ForMathlib.KernelSub
 import LeanMachineLearning.ForMathlib.Measurable
 import LeanMachineLearning.ForMathlib.MeasurableArgMax

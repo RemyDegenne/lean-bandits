@@ -23,7 +23,7 @@ lemma indepFun_cond_of_indepFun {α β γ : Type*} {mα : MeasurableSpace α} {m
   by_cases h_zero : μ[|Y ⁻¹' s] = 0
   · simp [h_zero]
   rw [cond_eq_zero] at h_zero
-  push_neg at h_zero -- `h_zero : μ (Y ⁻¹' s) ≠ ⊤ ∧ μ (Y ⁻¹' s) ≠ 0`
+  push Not at h_zero -- `h_zero : μ (Y ⁻¹' s) ≠ ⊤ ∧ μ (Y ⁻¹' s) ≠ 0`
   rw [indepFun_iff_measure_inter_preimage_eq_mul] at hXY ⊢
   intro u t hu ht
   rw [cond_apply (hs.preimage hY), cond_apply (hs.preimage hY), cond_apply (hs.preimage hY)]

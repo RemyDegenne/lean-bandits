@@ -7,10 +7,11 @@ import LeanMachineLearning.ForMathlib.CondIndepFun
 import LeanMachineLearning.ForMathlib.IndepFun
 import LeanMachineLearning.ForMathlib.IndepInfinitePi
 import LeanMachineLearning.ForMathlib.Integrable
-import LeanMachineLearning.ForMathlib.KernelRepresentation
 import LeanMachineLearning.ForMathlib.StandardBorel
 import LeanMachineLearning.SequentialLearning.FiniteActions
 import LeanMachineLearning.SequentialLearning.StationaryEnv
+import Mathlib.MeasureTheory.Constructions.UnitInterval
+import Mathlib.Probability.Kernel.Representation
 
 /-!
 # Bandit
@@ -128,29 +129,28 @@ variable [Nonempty α] [StandardBorelSpace α]
 /-- The initial action is the image of a uniform random variable by this function. -/
 noncomputable
 def initAlgFunction (alg : Algorithm α R) : I → α :=
-  (representation_measure alg.p0).choose
+  (Measure.exists_measurable_map_eq alg.p0).choose
 
 lemma initAlgFunction_map (alg : Algorithm α R) : volume.map (initAlgFunction alg) = alg.p0 :=
-  (representation_measure alg.p0).choose_spec.2
+  (Measure.exists_measurable_map_eq alg.p0).choose_spec.2
 
 @[fun_prop]
 lemma measurable_initAlgFunction (alg : Algorithm α R) :
-    Measurable (initAlgFunction alg) := (representation_measure alg.p0).choose_spec.1
-
+    Measurable (initAlgFunction alg) := (Measure.exists_measurable_map_eq alg.p0).choose_spec.1
 /-- The next action is the image of the history and a uniform random variable by this function. -/
 noncomputable
 def algFunction (alg : Algorithm α R) (n : ℕ) :
     (Iic n → α × R) → I → α :=
-  (Kernel.representation (alg.policy n)).choose
+  (Kernel.exists_measurable_map_eq_unitInterval (alg.policy n)).choose
 
 lemma algFunction_map (alg : Algorithm α R) (n : ℕ) (h : Iic n → α × R) :
       volume.map (algFunction alg n h) = alg.policy n h :=
-  (Kernel.representation (alg.policy n)).choose_spec.2 h
+  (Kernel.exists_measurable_map_eq_unitInterval (alg.policy n)).choose_spec.2 h
 
 @[fun_prop]
 lemma measurable_algFunction (alg : Algorithm α R) (n : ℕ) :
     Measurable (Function.uncurry (algFunction alg n)) :=
-  (Kernel.representation (alg.policy n)).choose_spec.1
+  (Kernel.exists_measurable_map_eq_unitInterval (alg.policy n)).choose_spec.1
 
 end ProbabilitySpace
 

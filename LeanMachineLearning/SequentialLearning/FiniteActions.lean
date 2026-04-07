@@ -286,7 +286,7 @@ lemma stepsUntil_eq_dite (a : α) (m : ℕ) (ω : Ω)
     · simp only [le_sInf_iff, Set.mem_image, Set.mem_setOf_eq, forall_exists_index, and_imp,
         forall_apply_eq_imp_iff₂, Nat.cast_le, Nat.find_le_iff]
       exact fun n hn ↦ ⟨n, le_rfl, hn⟩
-  · push_neg at h'
+  · push Not at h'
     suffices {s | pullCount A a (s + 1) ω = m} = ∅ by simp [this]
     ext s
     simpa using (h' s)
@@ -659,7 +659,9 @@ lemma rewardByCount_eq_ite (a : α) (m : ℕ) (ω : Ω × (ℕ → α → R)) :
     rewardByCount A R' a m ω =
       if (stepsUntil A a m ω.1) = ⊤ then ω.2 m a else R' (stepsUntil A a m ω.1).toNat ω.1 := by
   unfold rewardByCount
-  cases stepsUntil A a m ω.1 <;> simp
+  cases stepsUntil A a m ω.1
+  · simp; rfl
+  · simp
 
 lemma rewardByCount_eq_add [AddMonoid R] (a : α) (m : ℕ) :
     rewardByCount A R' a m =

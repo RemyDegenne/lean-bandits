@@ -183,8 +183,6 @@ end TS
 
 end Bandits
 
-open Bandits
-
 namespace Learning.IsBayesAlgEnvSeq
 
 variable {K : ℕ} [Nonempty (Fin K)]
@@ -201,44 +199,27 @@ lemma prob_abs_sumRewards_sub_pullCount_mul_actionMean_ge_le
       √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
         |sumRewards A R' a t ω - pullCount A a t ω * actionMean κ E a ω|}
       ≤ ENNReal.ofReal (2 * K * (n - 1) * δ) := by
-  let s (e : 𝓔) := {ω | ∃ a, ∃ s < n, pullCount IT.action a s ω ≠ 0 ∧
-    √(2 * pullCount IT.action a s ω * σ2 * Real.log (1 / δ)) ≤
-        |sumRewards IT.action IT.reward a s ω - pullCount IT.action a s ω * (κ (e, a))[id]|}
-  have : {p : 𝓔 × (ℕ → (Fin K) × ℝ) | p.2 ∈ s p.1} =
-      ⋃ a, ⋃ t ∈ Finset.range n,
-        (fun p : 𝓔 × (ℕ → (Fin K) × ℝ) ↦ (pullCount IT.action a t p.2,
-          sumRewards IT.action IT.reward a t p.2, (κ (p.1, a))[id])) ⁻¹'
-          {t : ℕ × ℝ × ℝ | t.1 ≠ 0 ∧
-            √(2 * t.1 * σ2 * Real.log (1 / δ)) ≤ |t.2.1 - t.1 * t.2.2|} := by
-    ext p
-    simp only [s, Set.mem_setOf_eq, Set.mem_iUnion, Set.mem_preimage, Finset.mem_range]
-    tauto
-  have (a : Fin K) : Measurable (fun p : 𝓔 × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
-    measurable_actionMean measurable_fst
-  calc P {ω | ∃ a, ∃ s < n, pullCount A a s ω ≠ 0 ∧
-        √(2 * pullCount A a s ω * σ2 * Real.log (1 / δ)) ≤
-          |sumRewards A R' a s ω - pullCount A a s ω * actionMean κ E a ω|}
-    _ = P ((fun ω ↦ (E ω, trajectory A R' ω)) ⁻¹' {p | p.2 ∈ s p.1}) := by
-        congr 1
-    _ = (P.map (fun ω ↦ (E ω, trajectory A R' ω))) {p | p.2 ∈ s p.1} :=
-        (Measure.map_apply (h.measurable_E.prodMk
-          (measurable_trajectory h.measurable_A h.measurable_R)) (by measurability)).symm
-    _ = (P.map E ⊗ₘ condDistrib (trajectory A R') E P) {p | p.2 ∈ s p.1} := by
-        rw [(compProd_map_condDistrib
-          (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable).symm]
-    _ = ∫⁻ e, (condDistrib (trajectory A R') E P e) (s e) ∂(P.map E) := by
+  have := h.measurable_E
+  have := h.measurable_A
+  have := h.measurable_R
+  let B e := {τ | ∃ a, ∃ t < n, pullCount IT.action a t τ ≠ 0 ∧
+    √(2 * pullCount IT.action a t τ * σ2 * Real.log (1 / δ)) ≤
+      |sumRewards IT.action IT.reward a t τ - pullCount IT.action a t τ * actionMean κ id a e|}
+  calc P ((fun ω ↦ (E ω, trajectory A R' ω)) ⁻¹' {(e, τ) :  𝓔 × (ℕ → Fin K × ℝ) | τ ∈ B e})
+    _ = (P.map (fun ω ↦ (E ω, trajectory A R' ω))) {(e, τ) :  𝓔 × (ℕ → Fin K × ℝ) | τ ∈ B e} :=
+        (Measure.map_apply (by fun_prop) (by measurability)).symm
+    _ = (P.map E ⊗ₘ condDistrib (trajectory A R') E P) {(e, τ) :  𝓔 × _ | τ ∈ B e} := by
+        rw [← compProd_map_condDistrib (by fun_prop)]
+    _ = ∫⁻ e, (condDistrib (trajectory A R') E P e) (B e) ∂(P.map E) := by
         rw [Measure.compProd_apply (by measurability)]
         rfl
-    _ ≤ ∫⁻ _, ENNReal.ofReal (2 * K * (n - 1) * δ) ∂(P.map E) := by
+    _ ≤ ∫⁻ e, ENNReal.ofReal (2 * (Fintype.card (Fin K)) * (n - 1) * δ) ∂(P.map E) := by
         apply lintegral_mono_ae
         rw [h.hasLaw_env.map_eq]
-        filter_upwards [ae_IsAlgEnvSeq h] with e he
-        simpa [Fintype.card_fin, s, Kernel.sectR_apply] using
-          prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype hσ2
-            (fun a ↦ by simp only [Kernel.sectR_apply]; exact hs e a) he hδ
+        filter_upwards [h.ae_IsAlgEnvSeq] with e he
+        exact Bandits.prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype hσ2 (hs e) he hδ
     _ = ENNReal.ofReal (2 * K * (n - 1) * δ) := by
-        rw [lintegral_const, Measure.map_apply h.measurable_E .univ]
-        simp [measure_univ]
+        simp [lintegral_const, Measure.map_apply h.measurable_E]
 
 lemma prob_abs_sumRewards_bestAction_sub_pullCount_mul_actionMean_ge_le
     (h : IsBayesAlgEnvSeq Q κ alg E A R' P) {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
@@ -251,23 +232,21 @@ lemma prob_abs_sumRewards_bestAction_sub_pullCount_mul_actionMean_ge_le
       ≤ ENNReal.ofReal (2 * (n - 1) * δ) := by
   by_cases hn : n = 0
   · simp [hn]
-  let s (a : Fin K) (t : ℕ) (e : 𝓔) := {ω : ℕ → (Fin K) × ℝ |
+  let B (a : Fin K) (t : ℕ) (e : 𝓔) := {ω : ℕ → (Fin K) × ℝ |
     pullCount IT.action a t ω ≠ 0 ∧
       √(2 * pullCount IT.action a t ω * σ2 * Real.log (1 / δ)) ≤
         |sumRewards IT.action IT.reward a t ω -
-          pullCount IT.action a t ω * (κ (e, a))[id]|}
-  have (a : Fin K) : Measurable (fun p : 𝓔 × (ℕ → (Fin K) × ℝ) ↦ (κ (p.1, a))[id]) :=
-    measurable_actionMean measurable_fst
+          pullCount IT.action a t ω * actionMean κ id a e|}
   have : {p : 𝓔 × (ℕ → (Fin K) × ℝ) |
-      p.2 ∈ ⋃ t ∈ Finset.range n, s (bestAction κ id p.1) t p.1} =
+      p.2 ∈ ⋃ t ∈ Finset.range n, B (bestAction κ id p.1) t p.1} =
     ⋃ a : Fin K, ((bestAction κ id ∘ Prod.fst) ⁻¹' {a} ∩
       ⋃ t ∈ Finset.range n,
         (fun p : 𝓔 × (ℕ → (Fin K) × ℝ) ↦ (pullCount IT.action a t p.2,
-          sumRewards IT.action IT.reward a t p.2, (κ (p.1, a))[id])) ⁻¹'
+          sumRewards IT.action IT.reward a t p.2, actionMean κ Prod.fst a p)) ⁻¹'
           {u : ℕ × ℝ × ℝ | u.1 ≠ 0 ∧
             √(2 * u.1 * σ2 * Real.log (1 / δ)) ≤ |u.2.1 - u.1 * u.2.2|}) := by
     ext p
-    simp only [s, Set.mem_setOf_eq, Set.mem_iUnion, Set.mem_inter_iff,
+    simp only [B, actionMean, Set.mem_setOf_eq, Set.mem_iUnion, Set.mem_inter_iff,
       Set.mem_preimage, Function.comp_apply, Set.mem_singleton_iff, Finset.mem_range]
     constructor
     · intro ⟨t, ht, hm⟩
@@ -279,34 +258,34 @@ lemma prob_abs_sumRewards_bestAction_sub_pullCount_mul_actionMean_ge_le
           |sumRewards A R' (bestAction κ E ω) t ω -
             pullCount A (bestAction κ E ω) t ω * actionMean κ E (bestAction κ E ω) ω|}
     _ = P ((fun ω ↦ (E ω, trajectory A R' ω)) ⁻¹'
-          {p | p.2 ∈ ⋃ t ∈ Finset.range n, s (bestAction κ id p.1) t p.1}) := by
+          {p | p.2 ∈ ⋃ t ∈ Finset.range n, B (bestAction κ id p.1) t p.1}) := by
         congr 1
         ext ω
         simp only [Set.mem_setOf_eq, Finset.mem_range, Set.mem_preimage,
-          Set.mem_iUnion, s, actionMean, exists_prop]
+          Set.mem_iUnion, B, actionMean, exists_prop]
         rfl
     _ = (P.map (fun ω ↦ (E ω, trajectory A R' ω)))
-          {p | p.2 ∈ ⋃ t ∈ Finset.range n, s (bestAction κ id p.1) t p.1} :=
+          {p | p.2 ∈ ⋃ t ∈ Finset.range n, B (bestAction κ id p.1) t p.1} :=
         (Measure.map_apply (h.measurable_E.prodMk
           (measurable_trajectory h.measurable_A h.measurable_R)) (by measurability)).symm
     _ = (P.map E ⊗ₘ condDistrib (trajectory A R') E P)
-          {p | p.2 ∈ ⋃ t ∈ Finset.range n, s (bestAction κ id p.1) t p.1} := by
+          {p | p.2 ∈ ⋃ t ∈ Finset.range n, B (bestAction κ id p.1) t p.1} := by
         rw [(compProd_map_condDistrib
           (measurable_trajectory h.measurable_A h.measurable_R).aemeasurable).symm]
     _ = ∫⁻ e, (condDistrib (trajectory A R') E P e)
-          (⋃ t ∈ Finset.range n, s (bestAction κ id e) t e) ∂(P.map E) := by
+          (⋃ t ∈ Finset.range n, B (bestAction κ id e) t e) ∂(P.map E) := by
         rw [Measure.compProd_apply (by measurability)]
         rfl
     _ ≤ ∫⁻ _, ENNReal.ofReal (2 * (n - 1) * δ) ∂(P.map E) := by
         apply lintegral_mono_ae
         rw [h.hasLaw_env.map_eq]
         filter_upwards [ae_IsAlgEnvSeq h] with e he
-        have : {ω | ∃ t < n, ω ∈ s (bestAction κ id e) t e} =
-            ⋃ t ∈ Finset.range n, s (bestAction κ id e) t e := by
+        have : {ω | ∃ t < n, ω ∈ B (bestAction κ id e) t e} =
+            ⋃ t ∈ Finset.range n, B (bestAction κ id e) t e := by
           ext ω
           simp [Finset.mem_range]
-        simp only [← this, s, Set.mem_setOf_eq]
-        exact prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2
+        simp only [← this, B, Set.mem_setOf_eq]
+        exact Bandits.prob_abs_sumRewards_sub_pullCount_mul_ge_le hσ2
           (by simp only [Kernel.sectR_apply]; exact hs e _) he hδ
     _ = ENNReal.ofReal (2 * (n - 1) * δ) := by
         rw [lintegral_const, Measure.map_apply h.measurable_E .univ]
@@ -380,9 +359,7 @@ lemma prob_abs_empMean_bestAction_sub_actionMean_ge_le
 
 end Learning.IsBayesAlgEnvSeq
 
-namespace Bandits
-
-section TSRegret
+namespace Bandits.TS
 
 variable {K : ℕ}
 variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
@@ -391,8 +368,6 @@ variable {Ω : Type*} [MeasurableSpace Ω]
 variable (E : Ω → 𝓔) (A : ℕ → Ω → (Fin K)) (R' : ℕ → Ω → ℝ)
 variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ]
 variable (P : Measure Ω) [IsProbabilityMeasure P]
-
-namespace TS
 
 lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (t : ℕ) :
@@ -714,8 +689,4 @@ lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
             Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 2)]
           ring
 
-end TS
-
-end TSRegret
-
-end Bandits
+end Bandits.TS

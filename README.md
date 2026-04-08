@@ -1,4 +1,4 @@
-# Bandit algorithms in Lean
+# Lean Machine Learning
 
 This repository contains a Lean formalization of regret bounds for several stochastic bandit algorithms.
 

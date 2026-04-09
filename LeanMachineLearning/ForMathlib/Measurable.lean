@@ -21,17 +21,10 @@ namespace MeasureTheory
 variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
   {μ : Measure α}
 
-lemma ae_eq_set_iff {s t : Set α} : s =ᵐ[μ] t ↔ ∀ᵐ a ∂μ, a ∈ s ↔ a ∈ t := by
-  rw [Filter.EventuallyEq]
-  simp only [eq_iff_iff]
-  congr!
-
 lemma measurable_comp_comap (f : α → β) {g : β → γ} (hg : Measurable g) :
     Measurable[mβ.comap f] (g ∘ f) := by
   rw [measurable_iff_comap_le, ← MeasurableSpace.comap_comp]
-  refine MeasurableSpace.comap_mono ?_
-  rw [← measurable_iff_comap_le]
-  exact hg
+  exact MeasurableSpace.comap_mono hg.comap_le
 
 @[fun_prop]
 lemma Measurable.coe_nat_enat {f : α → ℕ} (hf : Measurable f) :

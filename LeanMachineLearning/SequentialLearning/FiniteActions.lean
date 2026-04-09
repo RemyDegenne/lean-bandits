@@ -261,7 +261,6 @@ lemma exists_pullCount_eq (h' : stepsUntil A a m ω ≠ ⊤) :
   rw [← stepsUntil_eq_top_iff] at h_contra
   simp [h_contra] at h'
 
-set_option backward.isDefEq.respectTransparency false in
 lemma stepsUntil_zero_of_ne (hka : A 0 ω ≠ a) : stepsUntil A a 0 ω = 0 := by
   unfold stepsUntil
   simp_rw [← bot_eq_zero, sInf_eq_bot, bot_eq_zero]
@@ -277,7 +276,6 @@ lemma stepsUntil_zero_of_eq (hka : A 0 ω = a) : stepsUntil A a 0 ω = ⊤ := by
   rw [← hka, ← zero_add 1, pullCount_action_eq_pullCount_add_one]
   simp
 
-set_option backward.isDefEq.respectTransparency false in
 lemma stepsUntil_eq_dite (a : α) (m : ℕ) (ω : Ω)
     [Decidable (∃ s, pullCount A a (s + 1) ω = m)] :
     stepsUntil A a m ω =
@@ -337,7 +335,6 @@ lemma stepsUntil_pullCount_le (ω : Ω) (a : α) (t : ℕ) :
   rw [stepsUntil]
   exact csInf_le (OrderBot.bddBelow _) ⟨t, rfl, rfl⟩
 
-set_option backward.isDefEq.respectTransparency false in
 lemma stepsUntil_pullCount_eq (ω : Ω) (t : ℕ) :
     stepsUntil A (A t ω) (pullCount A (A t ω) (t + 1) ω) ω = t := by
   apply le_antisymm (stepsUntil_pullCount_le ω (A t ω) t)
@@ -353,7 +350,6 @@ lemma stepsUntil_one_of_eq (hka : A 0 ω = a) : stepsUntil A a 1 ω = 0 := by
   have h_le := stepsUntil_pullCount_le (A := A) ω a 0
   simpa [h_pull] using h_le
 
-set_option backward.isDefEq.respectTransparency false in
 lemma stepsUntil_eq_zero_iff :
     stepsUntil A a m ω = 0 ↔ (m = 0 ∧ A 0 ω ≠ a) ∨ (m = 1 ∧ A 0 ω = a) := by
   classical
@@ -420,7 +416,6 @@ lemma pullCount_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount A a (s + 
   swap; · simpa [stepsUntil_eq_top_iff]
   grind
 
-set_option backward.isDefEq.respectTransparency false in
 lemma pullCount_lt_of_le_stepsUntil (a : α) {n m : ℕ} (ω : Ω)
     (h_exists : ∃ s, pullCount A a (s + 1) ω = m) (hn : n < stepsUntil A a m ω) :
     pullCount A a (n + 1) ω < m := by
@@ -456,7 +451,6 @@ lemma pullCount_add_one_eq_of_stepsUntil_eq_coe {ω : Ω}
   rw [this, pullCount_stepsUntil_add_one]
   exact exists_pullCount_eq (by simp [h])
 
-set_option backward.isDefEq.respectTransparency false in
 lemma stepsUntil_eq_iff {ω : Ω} (n : ℕ) :
     stepsUntil A a m ω = n ↔
       pullCount A a (n + 1) ω = m ∧ (∀ k < n, pullCount A a (k + 1) ω < m) := by
@@ -550,7 +544,6 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass α]
     Measurable (fun ω : Ω × (ℕ → α → R) ↦ stepsUntil A a m ω.1) :=
   (measurable_stepsUntil hA a m).comp measurable_fst
 
-set_option backward.isDefEq.respectTransparency false in
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : α) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
@@ -564,8 +557,7 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α]
         false_and, or_false]
       refine Measurable.indicator measurable_const ?_
       refine (measurableSet_singleton _).compl.preimage ?_
-      rw [measurable_iff_comap_le]
-      rw [Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
+      rw [measurable_iff_comap_le, Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
       exact le_sup_of_le_right le_rfl
     · have : {ω | stepsUntil A a 0 ω = n} = ∅ := by
         ext ω
@@ -579,11 +571,9 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass α]
   simp_rw [stepsUntil_eq_iff' hm]
   refine Measurable.indicator measurable_const ?_
   refine ((measurableSet_singleton _).preimage ?_).inter ((measurableSet_singleton _).preimage ?_)
-  · rw [measurable_iff_comap_le]
-    rw [Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
+  · rw [measurable_iff_comap_le, Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
     exact le_sup_of_le_right le_rfl
-  · rw [measurable_iff_comap_le]
-    rw [Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
+  · rw [measurable_iff_comap_le, Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
     refine le_sup_of_le_left ?_
     rw [← measurable_iff_comap_le]
     by_cases hn : n = 0

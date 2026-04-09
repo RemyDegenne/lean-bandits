@@ -3,11 +3,15 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanBandits.Bandit.SumRewards
-import LeanBandits.BanditAlgorithms.Uniform
-import LeanBandits.SequentialLearning.AlgorithmDensity
+module
+
+public import LeanMachineLearning.Bandit.SumRewards
+public import LeanMachineLearning.BanditAlgorithms.Uniform
+public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 
 /-! # The Thompson Sampling Algorithm -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset Learning
 
@@ -309,7 +313,7 @@ private lemma abs_sumRewards_sub_pullCount_mul_ge {a : Fin K} {n : ℕ} {ω : Ω
             2 * σ2 * Real.log (1 / δ) / pullCount A a n ω * pullCount A a n ω ^ 2 := by
           field_simp
         rw [this, Real.sqrt_mul (div_nonneg hc hk.le), Real.sqrt_sq hk.le]
-      · rw [Real.sqrt_eq_zero_of_nonpos (by push_neg at hc; nlinarith)]
+      · rw [Real.sqrt_eq_zero_of_nonpos (by push Not at hc; nlinarith)]
         exact mul_nonneg (Real.sqrt_nonneg _) hk.le
     _ ≤ |sumRewards A R' a n ω / pullCount A a n ω - μ| * pullCount A a n ω :=
       mul_le_mul_of_nonneg_right h hk.le
@@ -561,7 +565,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     have : Eδᶜ = {ω | ∃ s < n, ∃ a, pullCount A a s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A a s ω : ℝ)) ≤
         |empMean A R' a s ω - armMean a ω|} := by
-      ext ω; simp only [Eδ, Set.mem_compl_iff, Set.mem_setOf_eq]; push_neg; rfl
+      ext ω; simp only [Eδ, Set.mem_compl_iff, Set.mem_setOf_eq]; push Not; rfl
     rw [this]
     exact (h.prob_abs_empMean_sub_actionMean_ge_le hσ2 hs hδ n).trans
       (ENNReal.ofReal_le_ofReal (by nlinarith [hδ.le, Nat.cast_nonneg (α := ℝ) K]))
@@ -598,7 +602,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     have : Fδᶜ = {ω | ∃ s < n, pullCount A (bestArm ω) s ω ≠ 0 ∧
         √(2 * ↑σ2 * Real.log (1 / δ) / (pullCount A (bestArm ω) s ω : ℝ)) ≤
           |empMean A R' (bestArm ω) s ω - armMean (bestArm ω) ω|} := by
-      ext ω; simp only [Fδ, Set.mem_compl_iff, Set.mem_setOf_eq]; push_neg; rfl
+      ext ω; simp only [Fδ, Set.mem_compl_iff, Set.mem_setOf_eq]; push Not; rfl
     rw [this]
     exact (h.prob_abs_empMean_bestAction_sub_actionMean_ge_le hσ2 hs hδ n).trans
       (ENNReal.ofReal_le_ofReal (by nlinarith [hδ.le]))

@@ -12,6 +12,7 @@ public import LeanMachineLearning.BanditAlgorithms.UCB
 public import LeanMachineLearning.BanditAlgorithms.Uniform
 public import LeanMachineLearning.ForMathlib.CondDistrib
 public import LeanMachineLearning.ForMathlib.CondIndepFun
+public import LeanMachineLearning.ForMathlib.FullSupport
 public import LeanMachineLearning.ForMathlib.HasCondDistrib
 public import LeanMachineLearning.ForMathlib.IndepFun
 public import LeanMachineLearning.ForMathlib.IndepInfinitePi
@@ -22,6 +23,7 @@ public import LeanMachineLearning.ForMathlib.MeasurableArgMax
 public import LeanMachineLearning.ForMathlib.StandardBorel
 public import LeanMachineLearning.ForMathlib.SubGaussian
 public import LeanMachineLearning.ForMathlib.Traj
+public import LeanMachineLearning.ForMathlib.WithDensity
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv

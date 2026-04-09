@@ -3,14 +3,19 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import Mathlib.Probability.Kernel.CompProdEqIff
-import Mathlib.Probability.Kernel.Composition.MeasureComp
+module
+
+public import Mathlib.Probability.Kernel.CompProdEqIff
+public import Mathlib.Probability.Kernel.Composition.MeasureComp
+
 /-!
 # Interactions of `withDensity` with `compProd`, `map`, and `swap`
 
 Lemmas for pushing `Measure.withDensity` and `Kernel.withDensity` through
 `compProd`, `MeasurableEquiv.map`, `Prod.swap`, and composition.
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory
 

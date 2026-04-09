@@ -3,10 +3,14 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanBandits.ForMathlib.FullSupport
-import LeanBandits.SequentialLearning.Algorithm
+module
+
+public import LeanMachineLearning.ForMathlib.FullSupport
+public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-! # The Uniform Algorithm -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Learning
 

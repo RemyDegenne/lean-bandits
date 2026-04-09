@@ -414,7 +414,7 @@ private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : 0 < σ2) {δ : ℝ}
     rw [Real.sq_sqrt (by positivity)]
     field_simp
     simp [Real.exp_log hδ]
-  · push_neg at hd
+  · push Not at hd
     have hl : Real.log (1 / δ) ≤ 0 := Real.log_nonpos (by positivity) (div_le_one_of_le₀ hd (hδ.le))
     rw [Real.sqrt_eq_zero_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (by positivity) hl)]
     simp [hd]

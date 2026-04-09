@@ -3,11 +3,15 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Paulo Rauber
 -/
-import LeanBandits.Bandit.Regret
-import LeanBandits.ForMathlib.MeasurableArgMax
-import LeanBandits.SequentialLearning.StationaryEnv
+module
+
+public import LeanMachineLearning.Bandit.Regret
+public import LeanMachineLearning.ForMathlib.MeasurableArgMax
+public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Bayesian stationary environments -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset
 

@@ -15,8 +15,6 @@ authors := ["Rémy Degenne, Paulo Rauber"]
 shortTitle := "Lean Machine Learning"
 %%%
 
-*The Lean Machine Learning library*
-
-TODO
+*Tutorials*
 
 {include 0 Manual.Pages.DefiningAlgorithm}

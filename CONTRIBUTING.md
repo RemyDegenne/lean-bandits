@@ -1,8 +1,27 @@
 # Contributing to Lean Machine Learning
 
-Thank you for your interest in contributing to Lean Machine Learning! We welcome contributions from the community and appreciate your efforts to improve the project. Please follow the guidelines below to ensure a smooth contribution process.
+We welcome contributions from the community and appreciate your efforts to improve the project. Please follow the guidelines below to ensure a smooth contribution process.
 
-[In Construction]
+## How to contribute
+
+Fork the repository and create a new branch for your contribution. Make your changes and submit a pull request to the main branch. Please provide a clear description of your changes and the motivation behind them.
+
+## What to contribute
+
+See the [Roadmap](ROADMAP.md).
+
+#### Finding tasks
+
+Head over to our github issues if you are looking for a short contribution.
+
+## Coordination
+
+Most contributions are welcome as straightforward PRs.
+However, for major developments, it is recommended to discuss it on zulip first.
+
+## Style and documentation
+
+We generally follow the [Mathlib style for coding and documentation](https://leanprover-community.github.io/contribute/style.html), so please read that.
 
 ## Code quality and LLM policy
 

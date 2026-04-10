@@ -1,8 +1,8 @@
 :root {
-  --accent: #657ed4;
-  --accent-compl: #d4bb65;
-  --background: #eef0f2;
-  --background-lighter: #fafafa;
+  --accent: #d65d5d;
+  --accent-compl: #e8a0a0;
+  --background: #fef9f9;
+  --background-lighter: #fefcfc;
 }
 
 @font-face {

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lean Machine Learning — Formalized ML Theory</title><link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/glightbox/css/glightbox.min.css">
+    <script src="/static/glightbox/js/glightbox.min.js"></script>
+    <script defer="">
+      document.addEventListener('DOMContentLoaded', () => { const lightbox = GLightbox(); });</script>
+    <base href="./"><style>:root {
+    /** Typography **/
+    /* The font family used for headers, ToC entries, etc */
+    --verso-structure-font-family: "Helvetica Neue", "Segoe UI", "Roboto", Arial, sans-serif;
+    /* The font family used for body text */
+    --verso-text-font-family: "Helvetica Neue", "Segoe UI", "Roboto", Arial, sans-serif;
+    /* The font family used for code */
+    --verso-code-font-family: monospace;
+
+    /** Text colors **/
+    --verso-text-color: black;
+    --verso-code-color: black;
+    --verso-structure-color: black;
+
+    /** Selected items (e.g. search results) */
+    --verso-selected-color: #def;
+
+    /** Message colors **/
+    /*
+    These colors are used to render Lean's feedback. They come in three severities and two
+    variants. The raw color itself is used for the text of a message of the indicated severity,
+    while the presence of such a message is indicated using the indicator color (e.g. via a
+    wavy underline or a bar in the margin).
+    */
+    --verso-info-color: black;
+    --verso-info-indicator-color: #4777ff;
+    --verso-warning-color: black;
+    --verso-warning-indicator-color: #e7a71d; /* 2.11 contrast ratio for white, 9.94 for black */
+    --verso-error-color: #cc0000;
+    --verso-error-indicator-color: #ff0000;
+
+    /** Code Highlighting **/
+    /*
+    These variables control the rendering of Lean code emitted by Verso. Each category that can be
+    highlighted supports the customization of color, weight, style, and family.
+    */
+    /* Constants (e.g. `List` or `id` or `none`) */
+    --verso-code-const-color: var(--verso-code-color);
+    --verso-code-const-weight: normal;
+    --verso-code-const-style: normal;
+    --verso-code-const-font-family: var(--verso-code-font-family);
+
+    /* Keywords/atoms (e.g. `for` or `def` or `induction`) */
+    --verso-code-keyword-color: var(--verso-code-color);
+    --verso-code-keyword-weight: bold;
+    --verso-code-keyword-style: normal;
+    --verso-code-keyword-font-family: var(--verso-code-font-family);
+
+    /* Local bindings (e.g. `x` in `let x := 5`) */
+    --verso-code-var-color: var(--verso-code-color);
+    --verso-code-var-weight: normal;
+    --verso-code-var-style: italic;
+    --verso-code-kw-font-family: var(--verso-code-font-family);
+}
+</style><script>
+      
+document.addEventListener("DOMContentLoaded", () => {
+    for (const m of document.querySelectorAll(".math.inline")) {
+        katex.render(m.textContent, m, {throwOnError: false, displayMode: false});
+    }
+    for (const m of document.querySelectorAll(".math.display")) {
+        katex.render(m.textContent, m, {throwOnError: false, displayMode: true});
+    }
+});
+</script>
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js" integrity="sha384-zbcZAIxlvJtNE3Dp5nxLXdXtXyxwOdnILY1TDPVmKFhl4r4nSUG1r8bcFXGVa4Te" crossorigin="anonymous"></script>
+    <script async="" src="https://plausible.io/js/pa--0OdxwGCKX8nhJ0vma6XG.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+          plausible.init()</script>
+    </head>
+  <body>
+    <header>
+      <nav class="navbar">
+        <div class="nav-inner">
+          <a class="logo" href="/">Lean Machine Learning</a><div class="nav-links">
+            <a href="#about">About</a><a href="#goals">Goals</a><a href="#roadmap">Roadmap</a><a href="#get-started">Get Started</a><span class="divider"> | </span><a href="blueprint">Blueprint</a><a href="tutorial">Tutorials</a><a href="docs">Documentation</a><a href="https://github.com/remydegenne/lean-bandits" aria-label="GitHub" target="_blank"><img src="/static/github.svg" alt="GitHub" width="22" height="22"></a></div>
+          </div>
+        </nav>
+      </header>
+    <main><article><h1>
+          Lean Machine Learning</h1>
+        <div class="hero">
+          <div class="hero-text">
+            <p>
+              Lean Machine Learning</p>
+            <p>
+              The Lean library for machine learning research</p>
+            <p>
+              Lean Machine Learning is a carefully curated library of formalized definitions and theorems in machine learning theory, verified in <a href="https://lean-lang.org">Lean</a>. It provides a trusted foundation for researchers to explore and formalize machine learning algorithms with mathematical rigor.</p>
+            <a class="hero-btn primary" href="https://github.com/remydegenne/lean-bandits"><img src="/static/arrow.svg" alt="" width="20" height="20"><p>
+                Get Started</p>
+              </a><a class="hero-btn secondary" href="tutorial"><img src="/static/book.svg" alt="" width="20" height="20"><p>
+                Tutorials</p>
+              </a><a class="hero-btn secondary" href="docs"><img src="/static/book.svg" alt="" width="20" height="20"><p>
+                Documentation</p>
+              </a></div>
+          </div>
+        <div class="pillars" id="about">
+          <div class="pillar">
+            <p>
+              <strong>Rigorous</strong></p>
+            <p>
+              Every definition and theorem is formally verified in Lean. Machine learning algorithms are precisely specified, and regret bounds are rigorously proven. From stochastic bandits to more complex algorithms, every claim is mathematically checked.</p>
+            </div>
+          <div class="pillar">
+            <p>
+              <strong>Research-Ready</strong></p>
+            <p>
+              Built for machine learning researchers. The library provides a framework for formalizing new algorithms and proving theoretical guarantees. Current results include regret bounds for Explore-Then-Commit and UCB algorithms, with infrastructure for expanding to other bandit variants and beyond.</p>
+            </div>
+          <div class="pillar">
+            <p>
+              <strong>Community-Driven</strong></p>
+            <p>
+              Open source and collaborative. Built with mathlib and modern Lean 4. We welcome contributions of new algorithms, theorems, and improvements. Join discussions on Zulip or contribute on GitHub.</p>
+            </div>
+          </div>
+        <div class="builds" id="goals">
+          <p>
+            <strong>Goals & Features</strong></p>
+          <p>
+            Lean Machine Learning is building a comprehensive foundation for formalized machine learning theory. The library provides high-quality formalizations, essential theorems, and a trusted framework for research in machine learning algorithms.</p>
+          <div class="build-cards">
+            <div class="build-card">
+              <p>
+                <strong>Formalized Definitions</strong></p>
+              <p>
+                Rigorous definitions of machine learning concepts: algorithms, environments, rewards, and regret</p>
+              </div>
+            <div class="build-card">
+              <p>
+                <strong>Proven Theorems</strong></p>
+              <p>
+                Essential theorems in machine learning theory with complete formal proofs</p>
+              </div>
+            <div class="build-card">
+              <p>
+                <strong>AI-Ready</strong></p>
+              <p>
+                Lean Machine Learning provides a common vocabulary of formal definitions that can be used by AI systems to generate theorems about objects we actually care about</p>
+              </div>
+            <div class="build-card">
+              <p>
+                <strong>Research Framework</strong></p>
+              <p>
+                Tools for formalizing new algorithms and proving theoretical guarantees</p>
+              </div>
+            <div class="build-card">
+              <p>
+                <strong>Documentation</strong></p>
+              <p>
+                Comprehensive documentation with examples and tutorials for researchers</p>
+              </div>
+            <div class="build-card">
+              <p>
+                <strong>Mathlib Integration</strong></p>
+              <p>
+                Contributions to probability theory and measure theory for machine learning</p>
+              </div>
+            </div>
+          </div>
+        <div class="showcase" id="roadmap">
+          <p>
+            <strong>Roadmap</strong></p>
+          <div class="showcase-cards">
+            <div class="showcase-card reference">
+              <p>
+                <a href="https://github.com/remydegenne/lean-bandits/tree/main/LeanMachineLearning/SequentialLearning"><strong>Algorithm Framework</strong></a></p>
+              <p>
+                A general framework for proving properties of stochastic machine learning algorithms in Lean</p>
+              </div>
+            <div class="showcase-card course">
+              <p>
+                <strong>Mathematical Foundations</strong></p>
+              <p>
+                Concentration inequalities, martingale theory, sub-Gaussian variables, and other foundational results</p>
+              </div>
+            <div class="showcase-card textbook">
+              <p>
+                <strong>Bandit Algorithms</strong> ✓</p>
+              <p>
+                Stochastic multi-armed bandits with regret bounds (ETC, Round-Robin, UCB) — partially complete</p>
+              </div>
+            <div class="showcase-card reference">
+              <p>
+                <strong>Statistical Learning Theory</strong></p>
+              <p>
+                PAC learning, VC dimension, Rademacher complexity, and learning bounds</p>
+              </div>
+            <div class="showcase-card textbook">
+              <p>
+                <strong>Optimization</strong></p>
+              <p>
+                Convex optimization, gradient descent, stochastic optimization algorithms</p>
+              </div>
+            </div>
+          </div>
+        <div id="get-started" class="get-started">
+          <p>
+            <strong>Get Started</strong></p>
+          <p>
+            Lean Machine Learning provides a trusted foundation for formalized machine learning research. Whether you're exploring bandit algorithms, contributing new proofs, or building on the existing framework, we welcome your participation.</p>
+          <div class="cta-buttons">
+            <a class="cta-btn primary" href="https://github.com/remydegenne/lean-bandits"><img src="/static/arrow.svg" alt="" width="20" height="20"><p>
+                View on GitHub</p>
+              </a><a class="cta-btn secondary" href="tutorial"><img src="/static/book.svg" alt="" width="20" height="20"><p>
+                Tutorials</p>
+              </a><a class="cta-btn secondary" href="docs"><img src="/static/book.svg" alt="" width="20" height="20"><p>
+                Documentation</p>
+              </a><a class="cta-btn secondary" href="https://leanprover.zulipchat.com/"><img src="/static/zulip.svg" alt="" width="20" height="20"><p>
+                Join Zulip</p>
+              </a></div>
+          </div>
+        </article></main><script>
+      window.addEventListener('load', () => {
+  if (typeof tippy === 'undefined') return;
+  document.querySelectorAll('.verso-source [data-tooltip]').forEach(el => {
+    el.setAttribute('data-tippy-theme', 'lean');
+  });
+  tippy('.verso-source [data-tooltip]', {
+    content(el) {
+      var raw = el.getAttribute('data-tooltip');
+      if (typeof marked !== 'undefined') {
+        var div = document.createElement('div');
+        div.classList.add('hover-info');
+        div.innerHTML = marked.parse(raw);
+        return div;
+      }
+      return raw;
+    },
+    allowHTML: true,
+    theme: 'lean',
+    placement: 'top',
+    delay: [100, null],
+    appendTo: () => document.body
+  });
+});</script>
+    <footer><div class="footer-inner">
+        <div class="footer-columns">
+          <div class="footer-col">
+            <h4>
+              Get Started</h4>
+            <a href="tutorial">Tutorials</a><a href="https://leanprover.zulipchat.com/">Community</a></div>
+          <div class="footer-col">
+            <h4>
+              Documentation</h4>
+            <a href="docs">API Docs</a><a href="https://github.com/remydegenne/lean-bandits/blob/main/ROADMAP.md">Roadmap</a><a href="https://github.com/remydegenne/lean-bandits">Source Code</a></div>
+          <div class="footer-col">
+            <h4>
+              Resources</h4>
+            <a href="https://lean-lang.org/">Lean</a><a href="https://leanprover-community.github.io/">Mathlib</a><a href="https://verso.lean-lang.org/">Verso</a></div>
+          <div class="footer-col">
+            <h4>
+              About</h4>
+            <a href="https://github.com/remydegenne/lean-bandits/blob/main/CONTRIBUTING.md">Contributing</a><a href="https://github.com/remydegenne/lean-bandits/blob/main/GOVERNANCE.md">Governance</a><a href="https://github.com/remydegenne/lean-bandits/blob/main/CODE_OF_CONDUCT.md">Code of Conduct</a><a href="https://github.com/remydegenne/lean-bandits/blob/main/LICENSE">License</a></div>
+          </div>
+        <p class="footer-copy">
+          © 2026 Lean Machine Learning Contributors</p>
+        </div>
+      </footer></body>
+  </html>
+

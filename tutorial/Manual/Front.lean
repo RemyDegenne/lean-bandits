@@ -1,3 +1,4 @@
+import Manual.Pages.Installation
 import Manual.Pages.DefiningAlgorithm
 import VersoManual
 
@@ -15,6 +16,7 @@ authors := ["Rémy Degenne, Paulo Rauber"]
 shortTitle := "Lean Machine Learning"
 %%%
 
-*Tutorials*
+
+{include 0 Manual.Pages.Installation}
 
 {include 0 Manual.Pages.DefiningAlgorithm}

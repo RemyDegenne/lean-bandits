@@ -76,7 +76,9 @@ Open source and collaborative. Built with mathlib and modern Lean 4. We welcome 
 
 *Goals & Features*
 
-Lean Machine Learning is building a comprehensive foundation for formalized machine learning theory. The library provides high-quality formalizations, essential theorems, and a trusted framework for research in machine learning algorithms.
+Lean Machine Learning is building a comprehensive foundation for formalized machine learning theory. The library provides high-quality formalizations, essential theorems, and a trusted framework for machine learning research.
+You proved that your new algorithm converges at the optimal rate and your LLM formalized the proof.
+Lean checked the proof. But who checked the Lean definition of optimal rate? We did. Since your LLM is using a Lean Machine Learning definition, you can trust it proved the right thing.
 
 :::::htmlDiv (class := "build-cards")
 
@@ -84,7 +86,7 @@ Lean Machine Learning is building a comprehensive foundation for formalized mach
 
 *Formalized Definitions*
 
-Rigorous definitions of machine learning concepts: algorithms, environments, rewards, and regret
+Rigorous definitions of machine learning concepts: algorithms, performance measures, etc. A common vocabulary for researchers and AI systems to build on.
 
 ::::
 
@@ -92,7 +94,7 @@ Rigorous definitions of machine learning concepts: algorithms, environments, rew
 
 *Proven Theorems*
 
-Essential theorems in machine learning theory with complete formal proofs
+Essential theorems in machine learning theory. Convergence guarantees, regret bounds, and foundational results in probability theory and optimization.
 
 ::::
 
@@ -100,7 +102,7 @@ Essential theorems in machine learning theory with complete formal proofs
 
 *AI-Ready*
 
-Lean Machine Learning provides a common vocabulary of formal definitions that can be used by AI systems to generate theorems about objects we actually care about
+Lean Machine Learning provides a common vocabulary of formal definitions that can be used by AI systems to generate theorems about objects we care about.
 
 ::::
 

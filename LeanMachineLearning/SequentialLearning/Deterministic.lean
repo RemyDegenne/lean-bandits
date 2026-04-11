@@ -9,6 +9,16 @@ public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
 # Deterministic algorithms
+
+A deterministic algorithm chooses its action in a deterministic way. That is, that action is given
+by a measurable function of the history and not by a Markov kernel.
+
+## Main definitions
+
+* `detAlgorithm nextAction h_next action0`: a deterministic algorithm that chooses its action
+  according to the measurable function `nextAction` (with proof of measurability `h_next`),
+  with initial action `action0`.
+
 -/
 
 @[expose] public section

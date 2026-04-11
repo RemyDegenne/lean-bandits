@@ -4,4 +4,5 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: David Thrane Christiansen
 -/
 import Site.FrontPage
+import Site.Roadmap
 import Site.Meta

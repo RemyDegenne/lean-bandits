@@ -48,17 +48,17 @@ Documentation
 
 ::::htmlDiv (class := "pillar")
 
-*Rigorous*
+*Rigorous Formalization*
 
-Every definition and theorem is formally verified in Lean. Machine learning algorithms are precisely specified, and regret bounds are rigorously proven. From stochastic bandits to more complex algorithms, every claim is mathematically checked.
+A library of high quality, human-checked, general definitions of machine learning concepts and the main theorems about them. We develop a carefully curated common vocabulary for researchers and AI systems to build on.
 
 ::::
 
 ::::htmlDiv (class := "pillar")
 
-*Research-Ready*
+*Algorithms*
 
-Built for machine learning researchers. The library provides a framework for formalizing new algorithms and proving theoretical guarantees. Current results include regret bounds for Explore-Then-Commit and UCB algorithms, with infrastructure for expanding to other bandit variants and beyond.
+Built for machine learning researchers. The library provides a framework for formalizing new algorithms and proving theoretical guarantees. It also provides executable implementations of machine learning algorithms, connected to formal specifications.
 
 ::::
 
@@ -66,7 +66,8 @@ Built for machine learning researchers. The library provides a framework for for
 
 *Community-Driven*
 
-Open source and collaborative. Built with mathlib and modern Lean 4. We welcome contributions of new algorithms, theorems, and improvements. Join discussions on Zulip or contribute on GitHub.
+Open source and collaborative. The library is built on top of Mathlib and we contribute to it.
+We welcome contributions of new algorithms, theorems, and improvements. Join discussions on Zulip or contribute on GitHub.
 
 ::::
 
@@ -102,15 +103,15 @@ Essential theorems in machine learning theory. Convergence guarantees, regret bo
 
 *AI-Ready*
 
-Lean Machine Learning provides a common vocabulary of formal definitions that can be used by AI systems to generate theorems about objects we care about.
+A common vocabulary of formal definitions that can be used by AI systems to generate theorems about objects we care about and avoid misformalization errors.
 
 ::::
 
 ::::htmlDiv (class := "build-card")
 
-*Research Framework*
+*Algorithmic Tools*
 
-Tools for formalizing new algorithms and proving theoretical guarantees
+A framework for defining and analyzing stochastic algorithms in Lean, and to connect formal specifications with executable implementations.
 
 ::::
 
@@ -118,65 +119,17 @@ Tools for formalizing new algorithms and proving theoretical guarantees
 
 *Documentation*
 
-Comprehensive documentation with examples and tutorials for researchers
+Comprehensive documentation with examples and tutorials to guide users through the library and its applications.
 
 ::::
 
 ::::htmlDiv (class := "build-card")
 
-*Mathlib Integration*
+*Collaborative*
 
-Contributions to probability theory and measure theory for machine learning
-
-::::
-
-:::::
-
-::::::
-
-::::::html div (class := "showcase") (id := "roadmap")
-
-*Roadmap*
-
-:::::htmlDiv (class := "showcase-cards")
-
-::::htmlDiv (class := "showcase-card reference")
-
-[*Algorithm Framework*](https://github.com/remydegenne/lean-bandits/tree/main/LeanMachineLearning/SequentialLearning)
-
-A general framework for proving properties of stochastic machine learning algorithms in Lean
-
-::::
-
-::::htmlDiv (class := "showcase-card course")
-
-*Mathematical Foundations*
-
-Concentration inequalities, martingale theory, sub-Gaussian variables, and other foundational results
-
-::::
-
-::::htmlDiv (class := "showcase-card textbook")
-
-*Bandit Algorithms* ✓
-
-Stochastic multi-armed bandits with regret bounds (ETC, Round-Robin, UCB) — partially complete
-
-::::
-
-::::htmlDiv (class := "showcase-card reference")
-
-*Statistical Learning Theory*
-
-PAC learning, VC dimension, Rademacher complexity, and learning bounds
-
-::::
-
-::::htmlDiv (class := "showcase-card textbook")
-
-*Optimization*
-
-Convex optimization, gradient descent, stochastic optimization algorithms
+Open source, collaborative, and integrated in the Lean ecosystem.
+We welcome contributions from the community.
+We build on top of Mathlib and contribute to it in return.
 
 ::::
 
@@ -188,7 +141,7 @@ Convex optimization, gradient descent, stochastic optimization algorithms
 
 *Get Started*
 
-Lean Machine Learning provides a trusted foundation for formalized machine learning research. Whether you're exploring bandit algorithms, contributing new proofs, or building on the existing framework, we welcome your participation.
+Learn more about Lean Machine Learning with the tutorials and documentation, or head over to GitHub to explore the code and contribute to the project.
 
 :::::htmlDiv (class := "cta-buttons")
 
@@ -208,6 +161,12 @@ Tutorials
 :::html img (src := "/static/book.svg") (alt := "") (width := "20") (height := "20")
 :::
 Documentation
+::::
+
+::::html a (class := "cta-btn secondary") (href := "roadmap")
+:::html img (src := "/static/book.svg") (alt := "") (width := "20") (height := "20")
+:::
+Roadmap
 ::::
 
 ::::html a (class := "cta-btn secondary") (href := "https://leanprover.zulipchat.com/")

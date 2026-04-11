@@ -41,12 +41,12 @@ def theme : Theme := { Theme.default with
                 <a class="logo" href="/">"Lean Machine Learning"</a>
                 <div class="nav-links">
                   <a href="#goals">"Goals"</a>
-                  <a href="#roadmap">"Roadmap"</a>
                   <a href="#get-started">"Get Started"</a>
                   <span class="divider">" | "</span>
-                  <a href="blueprint">"Blueprint"</a>
                   <a href="tutorial">"Tutorials"</a>
                   <a href="docs">"Documentation"</a>
+                  <a href="roadmap">"Roadmap"</a>
+                  <a href="blueprint">"Blueprint"</a>
                   <a href="https://github.com/remydegenne/lean-bandits" aria-label="GitHub" target="_blank">
                     <img src="/static/github.svg" alt="GitHub" width="22" height="22"/>
                   </a>
@@ -72,7 +72,7 @@ def theme : Theme := { Theme.default with
                 <div class="footer-col">
                   <h4>"Documentation"</h4>
                   <a href="docs">"API Docs"</a>
-                  <a href="https://github.com/remydegenne/lean-bandits/blob/main/ROADMAP.md">"Roadmap"</a>
+                  <a href="roadmap">"Roadmap"</a>
                   <a href="https://github.com/remydegenne/lean-bandits">"Source Code"</a>
                 </div>
                 <div class="footer-col">
@@ -98,6 +98,7 @@ def theme : Theme := { Theme.default with
   }
 
 def versoSite : Site := site Site.FrontPage /
+  "roadmap" Site.Roadmap
   static "static" ← "static_files"
 
 def main (args : List String) : IO UInt32 := do

@@ -16,7 +16,25 @@ public import Mathlib.Probability.Independence.Integration
 public import Mathlib.Probability.Kernel.Representation
 
 /-!
-# Bandit
+# Array-of-rewards probability space for stochastic bandits
+
+We build a particular probability space for stochastic bandits, called the "array model", in which
+an infinite array of i.i.d. rewards is first produced for all actions. When the algorithm chooses
+action `a` for the `n`th time, it receives the reward in the row `a` of the array and column `n`.
+
+Some statements about bandit algorithms are easier to prove in this space, and can then be
+transfered to any other probability space using the fact that the conditinonal distributions of the
+arms and rewards specified in the bandit model determine their laws uniquely.
+
+## Main definitions
+
+* `streamMeasure ν`: probability measure on the space of infinite arrays of rewards,
+  where the rewards in each row are i.i.d. according to `ν`.
+* `probSpace α R`: probability space for the array model of stochastic bandits with action space `α`
+  and reward space `R`.
+* `arrayMeasure ν`: probability measure on `probSpace α R` for the array model of stochastic bandits
+  with reward kernel `ν`.
+
 -/
 
 @[expose] public section

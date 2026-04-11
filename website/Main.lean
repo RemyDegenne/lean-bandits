@@ -40,7 +40,6 @@ def theme : Theme := { Theme.default with
               <div class="nav-inner">
                 <a class="logo" href="/">"Lean Machine Learning"</a>
                 <div class="nav-links">
-                  <a href="#about">"About"</a>
                   <a href="#goals">"Goals"</a>
                   <a href="#roadmap">"Roadmap"</a>
                   <a href="#get-started">"Get Started"</a>

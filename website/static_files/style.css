@@ -547,14 +547,16 @@ article > h1:first-child {
 /* Section titles (bold paragraphs used as headings) */
 .pillars > p:first-child > strong,
 .builds > p:first-child > strong,
-.showcase > p:first-child > strong {
+.showcase > p:first-child > strong,
+.sponsors > p:first-child > strong {
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--color-text);
 }
 
 .builds > p:first-child,
-.showcase > p:first-child {
+.showcase > p:first-child,
+.sponsors > p:first-child {
     text-align: center;
     margin-bottom: 1rem;
 }
@@ -695,6 +697,69 @@ article > h1:first-child {
     color: var(--color-text-muted);
     font-size: 0.95rem;
     margin-top: 0.25rem;
+}
+
+/* Maintainers section - center card content */
+#maintainers .showcase-card {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#maintainers .showcase-card img {
+    margin-top: 1rem;
+}
+
+/* Sponsors */
+.sponsors {
+    padding: 5rem 0;
+}
+
+.sponsors > p:nth-child(2) {
+    text-align: center;
+    color: var(--color-text-muted);
+    max-width: 650px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+}
+
+.sponsor-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 2rem;
+    margin-bottom: 3rem;
+    align-items: center;
+}
+
+.sponsor-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    transition: opacity 0.2s, transform 0.2s;
+    text-align: center;
+}
+
+.sponsor-card:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.sponsor-card img {
+    max-width: 100%;
+    height: auto;
+    max-height: 180px;
+    object-fit: contain;
+}
+
+.sponsor-card a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 /* Get Started (CTA section — inset blue card) */

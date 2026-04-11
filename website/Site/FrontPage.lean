@@ -219,3 +219,58 @@ Join Zulip
 :::::
 
 ::::::
+
+:::::::html div (class := "sponsors") (id := "sponsors")
+
+*Sponsors and Partners*
+
+We are grateful for the support of the following organizations.
+
+::::::htmlDiv (class := "sponsor-cards")
+
+:::::htmlDiv (class := "sponsor-card")
+::::html a (href := "https://www.inria.fr/")
+:::html img (src := "/static/Inria_logo_RGB.png") (alt := "Inria")
+:::
+::::
+Inria FORMAL exploratory action
+:::::
+
+::::::
+
+If you are interested in supporting Lean Machine Learning financially please reach out to Rémy Degenne at `remy [dot] degenne [at] inria [dot] fr` or on the Lean Zulip (preferred).
+
+:::::::
+
+
+::::::html div (class := "showcase") (id := "maintainers")
+
+*Maintainers*
+
+:::::htmlDiv (class := "showcase-cards")
+
+::::htmlDiv (class := "showcase-card reference")
+
+[*Rémy Degenne*](https://remydegenne.github.io/)
+
+Inria centre at the University of Lille
+
+:::html img (src := "https://remydegenne.github.io/images/avatar2.jpg") (alt := "Rémy Degenne") (style := "border-radius: 50%; width: 150px; height: 150px; object-fit: cover;")
+:::
+
+::::
+
+::::htmlDiv (class := "showcase-card reference")
+
+[*Paulo Rauber*](https://www.paulorauber.com/)
+
+Queen Mary University of London
+
+:::html img (src := "https://www.paulorauber.com/files/images/profile.jpg") (alt := "Paulo Rauber") (style := "border-radius: 50%; width: 150px; height: 150px; object-fit: cover;")
+:::
+
+::::
+
+:::::
+
+::::::

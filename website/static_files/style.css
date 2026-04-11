@@ -635,15 +635,6 @@ article > h1:first-child {
     margin-top: 0.25rem;
 }
 
-.build-card:last-child {
-    border-style: dashed;
-    border-color: #999;
-}
-
-.build-card:last-child strong {
-    font-style: italic;
-}
-
 /* Showcase */
 .showcase {
     padding: 5rem 0;

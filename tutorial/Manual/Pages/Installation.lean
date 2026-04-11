@@ -11,55 +11,53 @@ This tutorial guides you through installing Lean and setting up the Lean Machine
 
 # Installing Lean
 
-Before using the Lean Machine Learning library, you need to install Lean 4 and its build tool Lake.
+Before using the Lean Machine Learning library, you need to install Lean.
 
-Follow the official installation instructions at [https://lean-lang.org/lean4/doc/quickstart.html](https://lean-lang.org/lean4/doc/quickstart.html).
+Follow the official installation instructions at [https://lean-lang.org/install/](https://lean-lang.org/install/).
 
-The installation process will set up:
-- Lean 4 compiler
-- Lake (Lean's build tool and package manager)
-- VS Code extension (recommended IDE for Lean)
+The recommended installation process will set up VS Code with the Lean extension.
 
-# Cloning and Building the Library
+# Installing the Lean Machine Learning library
 
-Once Lean is installed, you can clone and build the Lean Machine Learning library:
+There are two ways to get the library depending on your needs:
+1. *Clone the repository*: if you want to explore the source code and experiment with modifications of the library, clone the GitHub repository
+2. *Use as a dependency*: if you want to use the library in your own Lean project, you can add it as a dependency in your `lakefile.toml` (instructions below)
+
+## Cloning the Repository
+
+Move to a directory where you want to store the library, then run:
 
 ```
 git clone https://github.com/remydegenne/lean-bandits.git
 cd lean-bandits
+```
+This will create a local copy of the repository on your machine and move to the project directory.
+We then need to buid the project.
+```
+lake exe cache get
 lake build
 ```
+The `lake exe cache get` will get the precompiled Mathlib cache, which significantly speeds up the build process. The `lake build` command will then compile the library and all its dependencies.
 
-The `lake build` command will:
-1. Download all dependencies (including mathlib)
-2. Compile the library
-3. Build the project files
+Note that if you want to contribute to the library, you should fork the repository and clone your fork instead of the main repository.
 
-This may take some time on the first run as it downloads and compiles dependencies.
+## Using as a Dependency
 
-# Creating Your First Algorithm
-
-To start working with the library, create a new file in the project. For example, create `Draft.lean` in the root directory:
+To use the library in your own Lean project (see the Lean installation instructions for how to create a project), add it as a dependency in your `lakefile.toml`:
 
 ```
-import LeanMachineLearning.Bandit.Bandit
-import LeanMachineLearning.SequentialLearning.Algorithm
-
-open LeanMachineLearning
-
--- Define a simple dummy algorithm that always plays the first action
-def dummyAlgorithm (numActions : ℕ) : Algorithm (Fin numActions) ℝ where
-  p0 := Measure.dirac 0
-  policy _ := fun _ => Measure.dirac 0
-
--- You can now use this algorithm to prove properties!
-example (n : ℕ) : dummyAlgorithm 5 = dummyAlgorithm 5 := rfl
+[[require]]
+name = "LeanMachineLearning"
+git = "https://github.com/leanprover/lean-bandits"
 ```
 
-Open this file in VS Code with the Lean extension, and you'll see:
-- Syntax highlighting
-- Error messages if any
-- Tactic state in the Infoview panel
-- Hover information for definitions
+# Testing the installation
 
-You're now ready to explore the library and formalize machine learning algorithms!
+Create a new Lean file in your project and add the following code:
+```
+import LeanMachineLearning
+
+#check Learning.Algorithm
+```
+
+If you don't see any errors, then the library is correctly installed and you can start using it in your own projects!

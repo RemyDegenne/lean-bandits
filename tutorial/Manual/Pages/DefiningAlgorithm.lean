@@ -169,11 +169,15 @@ The last argument `⟨0, hK⟩` is the first action of the algorithm, which is 0
 ## A theorem about UCB
 
 We can now state a theorem about the regret of UCB in a stochastic bandit environment (which we won't prove here).
+Let's first define the regret, which for stochastic bandits is the difference between the mean rewar that the algorithm would have obtained if it played always the best action, and the sum of mean rewards of the actions played.
 
 ```anchor regret (module := LeanMachineLearning.Bandit.Regret)
 def regret (ν : Kernel α ℝ) (A : ℕ → Ω → α) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
 ```
+The quantity `(ν a)[id]` is the mean reward of action `a` in the environment defined by `ν`.
+
+We can now state the regret bound for UCB.
 
 ```anchor UCB.regret_le (module := LeanMachineLearning.BanditAlgorithms.UCB)
 lemma regret_le [Nonempty (Fin K)]

@@ -24,6 +24,8 @@ Please see our [contribution guide](CONTRIBUTING.md) and [code of conduct](CODE_
 
 For discussions, you can reach out to us on the [Lean prover Zulip chat](https://leanprover.zulipchat.com/).
 
+You can also see the [roadmap](https://remydegenne.github.io/lean-bandits/roadmap) for ideas on what to work on.
+
 ## Current state of the library
 
 As a first proof of concept, the repository contains a formalization of regret bounds for several stochastic bandit algorithms.

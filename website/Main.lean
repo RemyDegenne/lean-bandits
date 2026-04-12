@@ -13,7 +13,7 @@ def theme : Theme := { Theme.default with
         <head>
           <meta charset="utf-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <title>"Lean Machine Learning — Formalized ML Theory"</title>
+          <title>"Lean Machine Learning"</title>
           <link rel="icon" type="image/svg+xml" href="/lean-bandits/static/favicon.svg"/>
           <link rel="stylesheet" href="/lean-bandits/static/style.css"/>
           <link rel="stylesheet" href= "/lean-bandits/static/glightbox/css/glightbox.min.css"/>

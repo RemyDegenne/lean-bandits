@@ -14,10 +14,10 @@ def theme : Theme := { Theme.default with
           <meta charset="utf-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
           <title>"Lean Machine Learning — Formalized ML Theory"</title>
-          <link rel="icon" type="image/svg+xml" href="./static/favicon.svg"/>
-          <link rel="stylesheet" href="./static/style.css"/>
-          <link rel="stylesheet" href= "./static/glightbox/css/glightbox.min.css"/>
-          <script src="./static/glightbox/js/glightbox.min.js"></script>
+          <link rel="icon" type="image/svg+xml" href="/lean-bandits/static/favicon.svg"/>
+          <link rel="stylesheet" href="/lean-bandits/static/style.css"/>
+          <link rel="stylesheet" href= "/lean-bandits/static/glightbox/css/glightbox.min.css"/>
+          <script src="/lean-bandits/static/glightbox/js/glightbox.min.js"></script>
           <script defer>
             r!"document.addEventListener('DOMContentLoaded', () => { const lightbox = GLightbox(); });"
           </script>
@@ -43,7 +43,7 @@ def theme : Theme := { Theme.default with
                   <a href="roadmap">"Roadmap"</a>
                   <a href="blueprint">"Blueprint"</a>
                   <a href="https://github.com/remydegenne/lean-bandits" aria-label="GitHub" target="_blank">
-                    <img src="./static/github.svg" alt="GitHub" width="22" height="22"/>
+                    <img src="/lean-bandits/static/github.svg" alt="GitHub" width="22" height="22"/>
                   </a>
                 </div>
               </div>

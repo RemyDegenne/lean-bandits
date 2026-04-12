@@ -10,6 +10,14 @@ public import LeanMachineLearning.SequentialLearning.FiniteActions
 /-!
 # Regret, gap, best arm
 
+## Main definitions
+
+* `gap ν a` is the gap of an action `a`, i.e., the difference between the highest mean of the
+  actions and the mean of `a`.
+* `regret ν A t ω` is the regret of a sequence of pulls `A : ℕ → Ω → α` at time `t` for the reward
+  kernel `ν : Kernel α ℝ` and the outcome `ω : Ω`.
+* `bestArm ν` is an action with the highest mean.
+
 -/
 
 @[expose] public section

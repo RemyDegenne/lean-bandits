@@ -9,6 +9,16 @@ public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
 # Stationary environments
+
+A stationary environment is an environment in which the distribution of the next reward depends only
+on the last action (and not on the past history).
+
+## Main definitions
+
+* `stationaryEnv ν`: a stationary environment, in which the distribution of the next reward depends
+  only on the last action (and not on the past history), and is given by a Markov kernel
+  `ν : Kernel α R`.
+
 -/
 
 @[expose] public section

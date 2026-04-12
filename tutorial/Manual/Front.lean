@@ -16,7 +16,7 @@ authors := ["Rémy Degenne, Paulo Rauber"]
 shortTitle := "Lean Machine Learning"
 %%%
 
-These tutorial pages will guide you through using the Lean Machine Learning library.
+These tutorial pages will guide you through using the [Lean Machine Learning](https://remydegenne.github.io/lean-bandits) library.
 
 {include 0 Manual.Pages.Installation}
 

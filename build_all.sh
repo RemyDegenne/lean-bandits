@@ -12,14 +12,6 @@ mkdir -p html/static
 cp static_files/* html/static
 cd ..
 
-# Build website
-cd website
-lake build
-rm -rf _site
-lake exe generate-site
-cd ..
-
 # Copy outputs to home_page
 mkdir -p home_page/tutorial
 cp -r tutorial/html/* home_page/tutorial
-cp -r website/_site/* home_page/

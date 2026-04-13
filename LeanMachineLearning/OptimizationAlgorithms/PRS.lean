@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
 
-import LeanBandits.ForMathlib.ENNReal
-import LeanBandits.ForMathlib.IndepFun
-import LeanBandits.OptimizationAlgorithms.Utils.Tuple
-import LeanBandits.SequentialLearning.EvaluationEnv
+import LeanMachineLearning.ForMathlib.ENNReal
+import LeanMachineLearning.ForMathlib.IndepFun
+import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.SequentialLearning.EvaluationEnv
 
 open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
 

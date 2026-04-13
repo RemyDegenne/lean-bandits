@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
 
-import LeanBandits.SequentialLearning.StationaryEnv
-import LeanBandits.ForMathlib.CondDistrib
+import LeanMachineLearning.SequentialLearning.StationaryEnv
+import LeanMachineLearning.ForMathlib.CondDistrib
 
 /-!
 # Function evaluation environments

@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
 
-import LeanBandits.OptimizationAlgorithms.Utils.Tuple
-import LeanBandits.OptimizationAlgorithms.Utils.Uniform
-import LeanBandits.OptimizationAlgorithms.Utils.EuclideanSpace
-import LeanBandits.SequentialLearning.Algorithm
+import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.OptimizationAlgorithms.Utils.Uniform
+import LeanMachineLearning.OptimizationAlgorithms.Utils.EuclideanSpace
+import LeanMachineLearning.SequentialLearning.Algorithm
 
 open MeasureTheory ProbabilityTheory Finset NNReal Learning
 

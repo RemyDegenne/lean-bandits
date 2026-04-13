@@ -5,15 +5,15 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Bandit.Regret
+public import LeanMachineLearning.Bandit.SumRewards
 public import LeanMachineLearning.ForMathlib.MeasurableArgMax
-public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Bayesian stationary environments -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset
+open scoped ENNReal NNReal
 
 namespace Learning
 
@@ -231,6 +231,99 @@ lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A R' P
   exact ⟨IT.measurable_action, IT.measurable_reward, ha0, hr0, hA, hR⟩
 
 end CondDistribIsAlgEnvSeq
+
+section HasSubgaussianMGF
+
+variable {K : ℕ} [Nonempty (Fin K)]
+variable {κ : Kernel (𝓔 × Fin K) ℝ} {alg : Algorithm (Fin K) ℝ}
+variable {A : ℕ → Ω → (Fin K)} {R' : ℕ → Ω → ℝ}
+variable [IsProbabilityMeasure P]
+
+private lemma sqrt_two_mul_le_abs_sub_of_sqrt_div_le {s μ σ L : ℝ} {k : ℕ} (hk : k ≠ 0)
+    (h : √(2 * σ * L / k) ≤ |s / k - μ|) : √(2 * k * σ * L) ≤ |s - k * μ| := by
+  have hkp : (0 : ℝ) < k := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hk)
+  have hks : s / (k : ℝ) - μ = (s - k * μ) / k := by field_simp
+  by_cases hc : 0 ≤ 2 * σ * L
+  · have hkc : (2 * k * σ * L : ℝ) = 2 * σ * L / k * k ^ 2 := by field_simp
+    calc √(2 * k * σ * L)
+      _ = √(2 * σ * L / k) * k := by
+          rw [hkc, Real.sqrt_mul (div_nonneg hc hkp.le), Real.sqrt_sq hkp.le]
+      _ ≤ |s / k - μ| * k := mul_le_mul_of_nonneg_right h hkp.le
+      _ = |s - k * μ| := by rw [hks, abs_div, abs_of_pos hkp, div_mul_cancel₀ _ (ne_of_gt hkp)]
+  · push Not at hc
+    calc √(2 * k * σ * L)
+      _ = 0 := Real.sqrt_eq_zero_of_nonpos (by nlinarith)
+      _ ≤ |s - k * μ| := abs_nonneg _
+
+lemma prob_abs_empMean_sub_actionMean_ge_le [IsMarkovKernel κ]
+    (h : IsBayesAlgEnvSeq Q κ alg E A R' P) {σ2 : ℝ≥0}
+    (hσ2 : 0 < σ2) (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
+    P {ω | ∃ t < n, ∃ a, pullCount A a t ω ≠ 0 ∧
+      √(2 * σ2 * Real.log (1 / δ) / pullCount A a t ω) ≤
+        |empMean A R' a t ω - actionMean κ E a ω|}
+      ≤ ENNReal.ofReal (2 * K * (n - 1) * δ) := by
+  have := h.measurable_E
+  have := h.measurable_A
+  have := h.measurable_R
+  let S : Set (𝓔 × (ℕ → Fin K × ℝ)) := {(e, τ) | ∃ a, ∃ t < n, pullCount IT.action a t τ ≠ 0 ∧
+    √(2 * pullCount IT.action a t τ * σ2 * Real.log (1 / δ)) ≤
+      |sumRewards IT.action IT.reward a t τ - pullCount IT.action a t τ * actionMean κ id a e|}
+  calc _
+    _ ≤ (P.map (fun ω ↦ (E ω, trajectory A R' ω))) S := by
+        rw [Measure.map_apply (by fun_prop) (by measurability)]
+        apply measure_mono
+        intro ω ⟨t, ht, a, hpc, hle⟩
+        exact ⟨a, t, ht, hpc,
+          sqrt_two_mul_le_abs_sub_of_sqrt_div_le hpc (by simpa [empMean] using hle)⟩
+    _ = (P.map E ⊗ₘ condDistrib (trajectory A R') E P) S := by
+        rw [← compProd_map_condDistrib (by fun_prop)]
+    _ = ∫⁻ e, condDistrib (trajectory A R') E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
+        Measure.compProd_apply (by measurability)
+    _ ≤ ∫⁻ _, ENNReal.ofReal (2 * K * (n - 1) * δ) ∂(P.map E) := by
+        apply lintegral_mono_ae
+        rw [h.hasLaw_env.map_eq]
+        filter_upwards [h.ae_IsAlgEnvSeq] with e he
+        convert Bandits.prob_abs_sumRewards_sub_pullCount_mul_ge_le_of_Fintype hσ2 (hs e) he hδ
+        exact (Fintype.card_fin K).symm
+    _ = _ := by simp [Measure.map_apply h.measurable_E]
+
+lemma prob_abs_empMean_bestAction_sub_actionMean_ge_le [IsMarkovKernel κ]
+    (h : IsBayesAlgEnvSeq Q κ alg E A R' P) {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
+    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
+    P {ω | ∃ t < n, pullCount A (bestAction κ E ω) t ω ≠ 0 ∧
+      √(2 * σ2 * Real.log (1 / δ) / (pullCount A (bestAction κ E ω) t ω : ℝ)) ≤
+        |empMean A R' (bestAction κ E ω) t ω - actionMean κ E (bestAction κ E ω) ω|}
+      ≤ ENNReal.ofReal (2 * (n - 1) * δ) := by
+  have := h.measurable_E
+  have := h.measurable_A
+  have := h.measurable_R
+  let S : Set (𝓔 × (ℕ → Fin K × ℝ)) :=
+    {(e, τ) | ∃ t < n, pullCount IT.action (bestAction κ id e) t τ ≠ 0 ∧
+      √(2 * pullCount IT.action (bestAction κ id e) t τ * σ2 * Real.log (1 / δ)) ≤
+        |sumRewards IT.action IT.reward (bestAction κ id e) t τ -
+          pullCount IT.action (bestAction κ id e) t τ * actionMean κ id (bestAction κ id e) e|}
+  calc _
+    _ ≤ (P.map (fun ω ↦ (E ω, trajectory A R' ω))) S := by
+        rw [Measure.map_apply (by fun_prop) (by measurability)]
+        apply measure_mono
+        intro ω ⟨t, ht, hpc, hle⟩
+        exact ⟨t, ht, hpc,
+          sqrt_two_mul_le_abs_sub_of_sqrt_div_le hpc (by simpa [empMean] using hle)⟩
+    _ = (P.map E ⊗ₘ condDistrib (trajectory A R') E P) S := by
+        rw [← compProd_map_condDistrib (by fun_prop)]
+    _ = ∫⁻ e, condDistrib (trajectory A R') E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
+        Measure.compProd_apply (by measurability)
+    _ ≤ ∫⁻ _, ENNReal.ofReal (2 * (n - 1) * δ) ∂(P.map E) := by
+        apply lintegral_mono_ae
+        rw [h.hasLaw_env.map_eq]
+        filter_upwards [h.ae_IsAlgEnvSeq] with e he
+        exact Bandits.prob_abs_sumRewards_sub_pullCount_mul_ge_le (ν := κ.sectR e) hσ2
+          (hs e (bestAction κ id e)) he hδ
+    _ = _ := by simp [Measure.map_apply h.measurable_E]
+
+end HasSubgaussianMGF
 
 end IsBayesAlgEnvSeq
 

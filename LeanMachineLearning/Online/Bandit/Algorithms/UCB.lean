@@ -5,9 +5,9 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.Bandit.SumRewards
-public import LeanMachineLearning.BanditAlgorithms.RoundRobin
-public import LeanMachineLearning.ForMathlib.MeasurableArgMax
+public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
+public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 
 /-!
 # UCB algorithm

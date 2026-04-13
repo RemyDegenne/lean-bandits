@@ -5,14 +5,15 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.BanditAlgorithms.AuxSums
+public import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Round-Robin algorithm
 
-That algorithm pulls each arm in a round-robin fashion.
+That algorithm pulls each action in a round-robin fashion.
+That is, if there are `K` actions, then at time `n`, it pulls the action `n % K`.
 
 -/
 

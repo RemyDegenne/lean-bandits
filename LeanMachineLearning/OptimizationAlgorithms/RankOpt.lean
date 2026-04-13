@@ -14,7 +14,8 @@ open MeasureTheory ProbabilityTheory Finset NNReal Learning
 # RankOpt: A Ranking Approach to Global Optimization
 
 Implementation of the _RankOpt_ algorithm
-[(_A Ranking Approach to Global Optimization_, Malherbe et al. 2017)](https://arxiv.org/pdf/1603.04381)
+[(_A Ranking Approach to Global Optimization_,
+Malherbe et al. 2017)](https://arxiv.org/pdf/1603.04381)
 defined on a measurable space. The algorithm samples from an arbitrary probability measure
 on the set of potential maximizers of the function at each iteration.
 

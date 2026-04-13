@@ -13,7 +13,8 @@ open MeasureTheory ProbabilityTheory Finset NNReal Learning
 # LIPO: Lipschitz Optimization
 
 Implementation of the _LIPO_ algorithm
-[(_Global optimization of Lipschitz functions_, Malherbe et al. 2017)](https://arxiv.org/abs/1703.02628)
+[(_Global optimization of Lipschitz functions_,
+Malherbe et al. 2017)](https://arxiv.org/pdf/1703.02628)
 defined on a measurable space with a metric. The algorithm samples from an arbitrary
 probability measure on the set of potential maximizers of the function at each iteration.
 

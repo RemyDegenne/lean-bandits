@@ -29,8 +29,10 @@ measure at each iteration.
 - `hasLaw_rewards`: Each reward follows the distribution μ.map f.
 - `iIndep_actions`: Actions are mutually independent across time steps.
 - `iIndep_rewards`: Rewards are mutually independent across time steps.
-- `actions_tendsto_any`: The minimum distance from sampled actions to any point in α tends to zero.
-- `rewards_tendsto_any`: The minimum distance from rewards to any value tends to zero.
+- `actions_tendsto_any`: The minimum distance from sampled actions to any point in α tends to zero
+  in measure.
+- `rewards_tendsto_any`: The minimum distance from rewards to any value of `f` tends to zero in
+  measure.
 - `tendsto_min`: The minimum reward converges in measure to the global minimum value.
 - `tendsto_max`: The maximum reward converges in measure to the global maximum value.
 -/

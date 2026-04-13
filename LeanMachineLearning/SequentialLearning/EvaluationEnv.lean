@@ -16,7 +16,7 @@ the chosen action.
 ## Main definitions
 
 * `evalEnv hf`: A stationary environment where the reward is given by a deterministic kernel that
-  evaluates a fixed measurable function `f` at the chosen action.
+  evaluates a fixed measurable function at the chosen action.
 
 ## Main statements
 

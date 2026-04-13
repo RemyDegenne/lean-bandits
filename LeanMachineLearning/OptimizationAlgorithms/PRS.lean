@@ -17,6 +17,19 @@ open scoped Topology
 # PRS: Pure Random Search
 Implementation of the _Pure Random Search_ algorithm, which samples from a fixe probability measure
 at each iteration.
+
+## Main definitions
+
+* `PRS μ`: The Pure Random Search algorithm with sampling measure `μ`. At each iteration, it samples
+  the next action from the fixed probability measure `μ`, independently of the past history.
+
+## Main statements
+
+* `iIndep_actions`: The actions taken by the PRS algorithm are independent random variables.
+* `iIndep_rewards`: The rewards obtained by the PRS algorithm are independent random variables.
+* `tendsto_any`: In a pseudo-metric space such as `μ` is an open positive measure, the actions
+  taken by PRS get arbitrarily close to any point with probability tending to 1.
+* `tendsto_min`: If the reward function is continuous and has a global minimum at `a`, then the
 -/
 
 variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]

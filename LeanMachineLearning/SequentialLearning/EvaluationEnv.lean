@@ -18,6 +18,10 @@ the chosen action.
 * `evalEnv hf`: A stationary environment where the reward is given by a deterministic kernel that
   evaluates a fixed measurable function `f` at the chosen action.
 
+## Main statements
+
+* `reward_ae_eq_evals_actions`: For almost all `ω`, the reward at time `n` is equal to `f`
+  evaluated at the action taken at time `n`.
 -/
 
 open MeasureTheory ProbabilityTheory
@@ -26,6 +30,8 @@ namespace Learning
 
 variable {α R : Type*} [MeasurableSpace α] [MeasurableSpace R]
 
+/-- The evaluation environment where the reward is given by evaluating a fixed measurable function
+`f` at the chosen action. -/
 noncomputable def evalEnv {f : α → R} (hf : Measurable f) :=
   stationaryEnv <| Kernel.deterministic f hf
 
@@ -41,21 +47,21 @@ lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n
   have hAn := h.measurable_A n
   ⟨hRn.aemeasurable, hAn.aemeasurable, h.condDistrib_reward_stationaryEnv n⟩
 
-lemma reward_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
+lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
     R' n =ᵐ[P] f ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic hf (h.measurable_A n).aemeasurable
     (h.measurable_R n).aemeasurable (hascondDistrib_reward_evalEnv hf h n).condDistrib_eq
 
-lemma reward_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
+lemma reward_ae_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
     ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := by
   rw [ae_all_iff]
   intro n
-  exact reward_eq_eval_action hf h n
+  exact reward_ae_eq_eval_action hf h n
 
 open Finset in
-lemma reward_eq_evals_actions_comp (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
-    (g : (Iic n → R) → R) : ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
-  filter_upwards [reward_eq_evals_actions hf h] with ω hω
+lemma reward_ae_eq_evals_actions_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
+    (g : (Iic n → R) → β) : ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
+  filter_upwards [reward_ae_eq_evals_actions hf h] with ω hω
   simp_rw [hω]
 
 end IsAlgEnvSeq

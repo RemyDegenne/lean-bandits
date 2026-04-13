@@ -15,41 +15,42 @@ open scoped Topology
 
 /-!
 # PRS: Pure Random Search
-Implementation of the _Pure Random Search_ algorithm, which samples from a fixe probability measure
-at each iteration.
+
+Implementation of the _Pure Random Search_ algorithm, which samples from a fixed probability
+measure at each iteration.
 
 ## Main definitions
 
-* `PRS μ`: The Pure Random Search algorithm with sampling measure `μ`. At each iteration, it samples
-  the next action from the fixed probability measure `μ`, independently of the past history.
+* `PRS`: The pure random search algorithm that samples from a fixed distribution at each iteration.
 
-## Main statements
+## Main results
 
-* `iIndep_actions`: The actions taken by the PRS algorithm are independent random variables.
-* `iIndep_rewards`: The rewards obtained by the PRS algorithm are independent random variables.
-* `tendsto_any`: In a pseudo-metric space such as `μ` is an open positive measure, the actions
-  taken by PRS get arbitrarily close to any point with probability tending to 1.
-* `tendsto_min`: If the reward function is continuous and has a global minimum at `a`, then the
+- `hasLaw_actions`: Each action follows the distribution μ.
+- `hasLaw_rewards`: Each reward follows the distribution μ.map f.
+- `iIndep_actions`: Actions are mutually independent across time steps.
+- `iIndep_rewards`: Rewards are mutually independent across time steps.
+- `actions_tendsto_any`: The minimum distance from sampled actions to any point in α tends to zero.
+- `rewards_tendsto_any`: The minimum distance from rewards to any value tends to zero.
+- `tendsto_min`: The minimum reward converges in measure to the global minimum value.
+- `tendsto_max`: The maximum reward converges in measure to the global maximum value.
 -/
 
-variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
+variable {α β Ω : Type*} [MeasurableSpace α] [MeasurableSpace β] [StandardBorelSpace α] [Nonempty α]
+  [StandardBorelSpace β] [Nonempty β] {μ : Measure α} [IsProbabilityMeasure μ] [MeasurableSpace Ω]
+  {P : Measure Ω} [IsProbabilityMeasure P]
 
 open Set in
+/-- The Pure Random Search algorithm. -/
 @[simps]
-noncomputable
-def PRS (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
+noncomputable def PRS (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
   policy _ := Kernel.const _ μ
   p0 := μ
 
 namespace PRS
 
-section
+variable {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f)
 
-variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace β] [Nonempty β]
-  {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
-  {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f) {μ : Measure α}
-  [IsProbabilityMeasure μ] (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P)
-
+/-- Each action follows the distribution μ. -/
 lemma hasLaw_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) : HasLaw (A n) μ P := by
   by_cases hn : n = 0
   · rw [hn]
@@ -58,31 +59,41 @@ lemma hasLaw_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) : H
     obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
     exact hasLaw_of_hasCondDistrib_const <| h.hasCondDistrib_action k
 
+/-- Each reward follows the distribution μ.map f. -/
 lemma hasLaw_rewards (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) :
     HasLaw (R n) (μ.map f) P := by
-  refine HasLaw.congr ?_ (IsAlgEnvSeq.reward_eq_eval_action hf h n)
+  refine HasLaw.congr ?_ (IsAlgEnvSeq.reward_ae_eq_eval_action hf h n)
   have hA := h.measurable_A n
   refine ⟨by fun_prop, ?_⟩
   rw [← Measure.map_map hf hA, (hasLaw_actions hf h n).map_eq]
 
+/-- Actions are mutually independent. -/
 lemma iIndep_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
     iIndepFun A P := by
   have hA := h.measurable_A
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
   have condDistrib_eq := (h.hasCondDistrib_action n).condDistrib_eq
-  have law_eq := (hasLaw_actions hf h (n + 1)).map_eq
   simp only [PRS_policy] at condDistrib_eq
+  have law_eq := (hasLaw_actions hf h (n + 1)).map_eq
   rw [← law_eq, ← indepFun_iff_condDistrib_eq_const ?_ (by fun_prop)] at condDistrib_eq
   · have meas_fst : Measurable (fun (f : Iic n → α × β) ↦ (fun i ↦ (f i).1)) := by
       fun_prop
     exact (condDistrib_eq.comp meas_fst measurable_id).symm
   · exact (IsAlgEnvSeq.measurable_hist (h.measurable_A) (h.measurable_R) n).aemeasurable
 
+/-- Rewards are mutually independent. -/
+lemma iIndep_rewards (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
+    iIndepFun R P :=
+  have (n : ℕ) : f ∘ A n =ᵐ[P] R n :=
+    (IsAlgEnvSeq.reward_ae_eq_eval_action hf h n).symm
+  iIndepFun.congr this <| (iIndep_actions hf h).comp _ (fun _ ↦ hf)
+
 variable [PseudoMetricSpace α] [SecondCountableTopology α] [OpensMeasurableSpace α]
   [μ.IsOpenPosMeasure]
 
-theorem tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
+/-- The minimum distance from sampled actions to any point tends to zero. -/
+theorem actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
     ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (A j.1 x) a)}) atTop (𝓝 0) := by
   set PRS_alg := PRS (β := β) μ
@@ -126,40 +137,57 @@ theorem tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
     intro i hi ω (hω : ε ≤ Tuple.min (fun (j : Iic n) ↦ dist (A j.1 ω) a))
     simp_all only [univ_eq_attach, le_inf'_iff, mem_attach, forall_const, Subtype.forall, mem_Iic]
 
-end
+variable [PseudoMetricSpace β] [BorelSpace β] (hfc : Continuous f)
 
-section Real
-
-variable [StandardBorelSpace α] [Nonempty α] [PseudoMetricSpace α] [OpensMeasurableSpace α]
-  [SecondCountableTopology α] {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
-  [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R : ℕ → Ω → ℝ} {f : α → ℝ} (hfc : Continuous f)
-  {μ : Measure α} [IsProbabilityMeasure μ] [μ.IsOpenPosMeasure]
-  (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P) {a : α}
-
-lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
-    (hf_min : ∀ x, f a ≤ f x) :
-    TendstoInMeasure P (fun n ω ↦ Tuple.min (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
-  rw [tendstoInMeasure_iff_dist]
+/-- The minimum distance from image of actions to any value tends to zero. -/
+lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P) (a : α) :
+    ∀ ε, 0 < ε → Tendsto (fun i => P
+      {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (f (A j.1 x)) (f a))}) atTop (𝓝 0) := by
   intro ε hε
   have hf := hfc.measurable
   rw [Metric.continuous_iff] at hfc
   obtain ⟨δ, hδ, hfc⟩ := hfc a ε hε
-  have (n : ℕ) : P {x | ε ≤ dist (Tuple.min fun (i : Iic n) ↦ R i x) (f a)} =
-      P {x | ε ≤ dist (Tuple.min fun (i : Iic n) ↦ f (A i x)) (f a)} := by
-    refine measure_congr ?_
-    filter_upwards [IsAlgEnvSeq.reward_eq_evals_actions_comp hf h Tuple.min] with ω hω
-    simp only [eq_iff_iff]
-    change ε ≤ dist (Tuple.min fun (i : Iic n) ↦ R (↑i) ω) (f a) ↔
-      ε ≤ dist (Tuple.min fun (i : Iic n) ↦ f (A ↑i ω)) (f a)
-    rw [hω]
-  simp_rw [this]
-  refine tendsto_any hf h a δ hδ |> tendsto_zero_le <| ?_
+  refine actions_tendsto_any hf h a δ hδ |> tendsto_zero_le <| ?_
   intro n
   refine measure_mono ?_
   simp only [Set.setOf_subset_setOf]
   intro ω hω
   rw [← Tuple.argmin_spec]
-  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (A i ω) a)
+  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (A i.1 ω) a)
+  by_contra! h_contra
+  specialize hfc (A j.1 ω) h_contra
+  have := Tuple.min_le (fun (j : Iic n) ↦ dist (f (A (j) ω)) (f a)) j
+  linarith
+
+/-- The minimum distance from rewards to any value tends to zero. -/
+lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P) (a : α) :
+    ∀ ε, 0 < ε → Tendsto (fun i => P
+      {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (R j.1 x) (f a))}) atTop (𝓝 0) := by
+  intro ε hε
+  convert image_actions_tendsto_any hfc h a ε hε using 2 with n
+  refine measure_congr ?_
+  let g : ((Iic n) → β) → ℝ := fun r ↦ Tuple.min (fun i ↦ dist (r i) (f a))
+  filter_upwards [IsAlgEnvSeq.reward_ae_eq_evals_actions_comp hfc.measurable h g] with ω hω
+  simp only [eq_iff_iff]
+  change ε ≤ Tuple.min (fun (j : Iic n) ↦ dist (R j ω) (f a)) ↔
+    ε ≤ Tuple.min (fun (j : Iic n) ↦ dist (f (A j ω)) (f a))
+  simp [g, hω]
+
+variable {R : ℕ → Ω → ℝ} {f : α → ℝ} (hfc : Continuous f) {a : α}
+
+/-- The minimum function value converges to the global minimum. -/
+lemma tendsto_min₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+    (hf_min : ∀ x, f a ≤ f x) : TendstoInMeasure P (fun n ω ↦
+      Tuple.min (fun (i : Iic n) ↦ f (A i.1 ω))) atTop (fun _ ↦ f a) := by
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  refine image_actions_tendsto_any hfc h a ε hε |> tendsto_zero_le <| ?_
+  intro n
+  refine measure_mono ?_
+  simp only [Set.setOf_subset_setOf]
+  intro ω hω
+  rw [← Tuple.argmin_spec]
+  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (f (A i ω)) (f a))
   have : dist (Tuple.min fun (i : Iic n) ↦ f (A i ω)) (f a) ≤ dist (f (A j ω)) (f a) := by
     rw [← Tuple.argmin_spec]
     set k := Tuple.argmin (fun (i : Iic n) ↦ f (A i ω))
@@ -170,33 +198,29 @@ lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
     grind
   have := hω.trans this
   by_contra! h_contra
-  specialize hfc (A j ω) h_contra
   linarith
 
-lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
-    (hf_max : ∀ x, f x ≤ f a) :
-    TendstoInMeasure P (fun n ω ↦ Tuple.max (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
+/-- The minimum reward converges to the global minimum value. -/
+lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+    (hf_min : ∀ x, f a ≤ f x) : TendstoInMeasure P (fun n ω ↦
+      Tuple.min (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
+  refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_min₀ hfc h hf_min
+  filter_upwards [IsAlgEnvSeq.reward_ae_eq_evals_actions_comp hfc.measurable h Tuple.min] with ω hω
+  rw [← hω]
+
+/-- The maximum function value converges to the global maximum. -/
+lemma tendsto_max₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+    (hf_max : ∀ x, f x ≤ f a) : TendstoInMeasure P (fun n ω ↦
+      Tuple.max (fun (i : Iic n) ↦ f (A i.1 ω))) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
   intro ε hε
-  have hf := hfc.measurable
-  rw [Metric.continuous_iff] at hfc
-  obtain ⟨δ, hδ, hfc⟩ := hfc a ε hε
-  have (n : ℕ) : P {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R i x) (f a)} =
-      P {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ f (A i x)) (f a)} := by
-    refine measure_congr ?_
-    filter_upwards [IsAlgEnvSeq.reward_eq_evals_actions_comp hf h Tuple.max] with ω hω
-    simp only [eq_iff_iff]
-    change ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R (↑i) ω) (f a) ↔
-      ε ≤ dist (Tuple.max fun (i : Iic n) ↦ f (A ↑i ω)) (f a)
-    rw [hω]
-  simp_rw [this]
-  refine tendsto_any hf h a δ hδ |> tendsto_zero_le <| ?_
+  refine image_actions_tendsto_any hfc h a ε hε |> tendsto_zero_le <| ?_
   intro n
   refine measure_mono ?_
   simp only [Set.setOf_subset_setOf]
   intro ω hω
   rw [← Tuple.argmin_spec]
-  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (A i ω) a)
+  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (f (A i ω)) (f a))
   have : dist (Tuple.max fun (i : Iic n) ↦ f (A i ω)) (f a) ≤ dist (f (A j ω)) (f a) := by
     rw [← Tuple.argmax_spec]
     set k := Tuple.argmax (fun (i : Iic n) ↦ f (A i ω))
@@ -207,9 +231,14 @@ lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
     grind
   have := hω.trans this
   by_contra! h_contra
-  specialize hfc (A j ω) h_contra
   linarith
 
-end Real
+/-- The maximum reward converges to the global maximum value. -/
+lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+    (hf_max : ∀ x, f x ≤ f a) :
+    TendstoInMeasure P (fun n ω ↦ Tuple.max (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
+  refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_max₀ hfc h hf_max
+  filter_upwards [IsAlgEnvSeq.reward_ae_eq_evals_actions_comp hfc.measurable h Tuple.max] with ω hω
+  rw [← hω]
 
 end PRS

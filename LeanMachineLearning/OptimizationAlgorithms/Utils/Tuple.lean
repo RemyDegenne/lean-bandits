@@ -14,8 +14,10 @@ namespace Tuple
 
 variable {ι α : Type*} [LinearOrder α] [Fintype ι] [Nonempty ι] (f : ι → α)
 
+/-- The maximum value of a tuple. -/
 abbrev max : α := univ.sup' (by simp) f
 
+/-- The minimum value of a tuple. -/
 abbrev min : α := univ.inf' (by simp) f
 
 lemma le_max (x : ι) : f x ≤ max f := by
@@ -41,6 +43,7 @@ lemma exists_argmax : ∃ i, u i = max u := by
     intro j hj
     exact hi ⟨j, mem_Iic.mpr hj⟩ (by simp)
 
+/-- The index of the maximum value of a tuple. -/
 noncomputable def argmax := (exists_argmax u).choose
 
 lemma argmax_spec : u (argmax u) = max u :=
@@ -61,6 +64,7 @@ lemma exists_argmin : ∃ i, u i = min u := by
   · simp only [inf'_le_iff, univ_eq_attach, mem_attach, true_and, Subtype.exists, mem_Iic]
     exact ⟨i, by grind, le_rfl⟩
 
+/-- The index of the minimum value of a tuple. -/
 noncomputable def argmin := (exists_argmin u).choose
 
 lemma argmin_spec : u (argmin u) = min u :=

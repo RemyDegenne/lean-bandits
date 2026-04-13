@@ -10,25 +10,31 @@ import LeanMachineLearning.SequentialLearning.Algorithm
 
 open MeasureTheory ProbabilityTheory Finset NNReal Learning
 
-
 /-!
 # RankOpt: A Ranking Approach to Global Optimization
+
 Implementation of the _RankOpt_ algorithm
-[(_A Ranking Approach to Global Optimization_,
-Malherbe et al. 2017)](https://arxiv.org/pdf/1603.04381)
-defined on a measurable subset of a Euclidean space, with finite and non-zero measure.
-The algorithm samples from the uniform distribution on the set of potential maximizers of
-the function at each iteration.
+[(_A Ranking Approach to Global Optimization_, Malherbe et al. 2017)](https://arxiv.org/pdf/1603.04381)
+defined on a measurable space. The algorithm samples from an arbitrary probability measure
+on the set of potential maximizers of the function at each iteration.
+
+## Main definitions
+
+* `RankRule`: A rank rule is a measurable function that compares pairs of points.
+  It returns 1 if the first point is ranked higher, -1 if lower, and 0 if equal.
+* `potential_max`: The set of potential maximizers for the RankOpt algorithm.
+* `potential_max_kernel`: The Markov kernel that samples from the set of potential maximizers
+  according to a given measure `μ`.
+* `RankOpt`: The RankOpt algorithm that samples from the set of potential maximizers using a given
+  probability measure at each iteration.
 -/
 
 section RankRule
 
 /-- A rank rule is a measurable function that compares pairs of points.
 It returns 1 if the first point is ranked higher, -1 if lower, and 0 if equal. -/
--- ANCHOR: RankRule
 def RankRule (α : Type*) [MeasurableSpace α] :=
   {f : α → α → ({-1, 0, 1} : Set ℝ) // Measurable <| Function.uncurry f}
--- ANCHOR_END: RankRule
 
 end RankRule
 
@@ -51,7 +57,7 @@ noncomputable abbrev rindicator (r₁ r₂ : ℝ) := if r₁ = r₂ then (1 : �
 Measures the agreement between a candidate rule `r` and the rankings induced by the observed
 function values on all pairs of data points, normalized by the number of pairs. -/
 noncomputable def ranking_loss (r : RankRule α) :=
-  2 * (n * (n + 1) : ℝ)⁻¹ * ∑ ij ∈ {(i, j) : Finset.Iic n × Finset.Iic n | i ≤ j},
+  2 * (n * (n + 1) : ℝ)⁻¹ * ∑ ij ∈ {(i, j) : Iic n × Iic n | i ≤ j},
     rindicator (r.1 (data ij.1).1 (data ij.2).1) (ranking_data (data ij.1).2 (data ij.2).2)
 
 /-- The point in the observed data with the maximum function value. -/
@@ -112,7 +118,7 @@ lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.
           exact h u rfl
       rw [this]
       refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
-      exact measurableSet_eq_fun (by fun_prop) measurable_const
+      refine measurableSet_eq_fun (by fun_prop) measurable_const
 
 lemma measurable_potential_max_inter {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
     {s : Set α} (hs : MeasurableSet s) :
@@ -122,9 +128,7 @@ lemma measurable_potential_max_inter {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Co
     (measurableSet_potential_max_prod h𝓡).inter (measurableSet_preimage measurable_snd hs)
   exact measurable_measure_prodMk_left hE_meas
 
-/-- Markov kernel that samples uniformly from the set of potential maximizers.
-This kernel forms the core sampling strategy of RankOpt: at each iteration, given the observed
-data, it samples the next query point uniformly from `potential_max`. -/
+/-- Markov kernel sampling from the set of potential maximizers according to μ. -/
 noncomputable def potential_max_kernel {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable) :
     Kernel (Iic n → α × β) α := by
   refine ⟨fun data ↦ cond μ <| potential_max data 𝓡, ?_⟩
@@ -150,9 +154,9 @@ variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
 
 /-- The RankOpt algorithm for global optimization.
 This algorithm uses a ranking approach to optimize an unknown function. It maintains a hypothesis
-class `𝓡` of ranking rules. At each iteration, it samples from the set of points that could be
-optimal according to ranking rules consistent with the observed data
-[(Malherbe et al., 2017)](https://arxiv.org/pdf/1603.04381). -/
+class `𝓡` of ranking rules. It starts with an arbitrary probability measure `μ` as initial
+distribution and samples from the set of points that could be optimal according to ranking rules
+consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/pdf/1603.04381). -/
 noncomputable def RankOpt : Algorithm α β where
   policy _ := potential_max_kernel μ h𝓡
   p0 := μ

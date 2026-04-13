@@ -163,19 +163,39 @@ lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
 lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) :
     TendstoInMeasure P (fun n ω ↦ Tuple.max (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
-  have hmf_min (x : α) : -f a ≤ -f x := by
-    specialize hf_max x
-    linarith
-  have h' := tendsto_min (continuous_neg_iff.mpr hfc) (IsAlgEnvSeq.neg hfc.measurable h) hmf_min
-  rw [tendstoInMeasure_iff_dist] at h' ⊢
+  rw [tendstoInMeasure_iff_dist]
   intro ε hε
-  specialize h' ε hε
-  have dist_neg (n : ℕ) : {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R i x) (f a)} =
-      {x | ε ≤ dist (-(Tuple.max fun (i : Iic n) ↦ R i x)) (-f a)} := by
-    simp [dist_neg_neg]
-  simp_rw [dist_neg]
-  convert h' with n ω
-  exact Tuple.neg_max_eq_min_neg _
+  have hf := hfc.measurable
+  rw [Metric.continuous_iff] at hfc
+  obtain ⟨δ, hδ, hfc⟩ := hfc a ε hε
+  have (n : ℕ) : P {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R i x) (f a)} =
+      P {x | ε ≤ dist (Tuple.max fun (i : Iic n) ↦ f (A i x)) (f a)} := by
+    refine measure_congr ?_
+    filter_upwards [IsAlgEnvSeq.reward_eq_evals_actions_comp hf h Tuple.max] with ω hω
+    simp only [eq_iff_iff]
+    change ε ≤ dist (Tuple.max fun (i : Iic n) ↦ R (↑i) ω) (f a) ↔
+      ε ≤ dist (Tuple.max fun (i : Iic n) ↦ f (A ↑i ω)) (f a)
+    rw [hω]
+  simp_rw [this]
+  refine tendsto_any hf h a δ hδ |> tendsto_zero_le <| ?_
+  intro n
+  refine measure_mono ?_
+  simp only [Set.setOf_subset_setOf]
+  intro ω hω
+  rw [← Tuple.argmin_spec]
+  set j := Tuple.argmin (fun (i : Iic n) ↦ dist (A i ω) a)
+  have : dist (Tuple.max fun (i : Iic n) ↦ f (A i ω)) (f a) ≤ dist (f (A j ω)) (f a) := by
+    rw [← Tuple.argmax_spec]
+    set k := Tuple.argmax (fun (i : Iic n) ↦ f (A i ω))
+    have := hf_max (A k ω)
+    have : f (A j ω) ≤ f (A k ω) :=
+      Tuple.le_argmax (fun (i : Iic n) ↦ f (A i ω)) j
+    simp [Real.dist_eq]
+    grind
+  have := hω.trans this
+  by_contra! h_contra
+  specialize hfc (A j ω) h_contra
+  linarith
 
 end Real
 

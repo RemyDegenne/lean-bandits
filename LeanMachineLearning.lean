@@ -1,27 +1,31 @@
-module
-
-public import LeanMachineLearning.Bandit.Bandit
-public import LeanMachineLearning.Bandit.Regret
-public import LeanMachineLearning.Bandit.RewardByCountMeasure
-public import LeanMachineLearning.Bandit.SumRewards
-public import LeanMachineLearning.BanditAlgorithms.AuxSums
-public import LeanMachineLearning.BanditAlgorithms.ETC
-public import LeanMachineLearning.BanditAlgorithms.RoundRobin
-public import LeanMachineLearning.BanditAlgorithms.UCB
-public import LeanMachineLearning.ForMathlib.CondDistrib
-public import LeanMachineLearning.ForMathlib.CondIndepFun
-public import LeanMachineLearning.ForMathlib.HasCondDistrib
-public import LeanMachineLearning.ForMathlib.IndepFun
-public import LeanMachineLearning.ForMathlib.IndepInfinitePi
-public import LeanMachineLearning.ForMathlib.Integrable
-public import LeanMachineLearning.ForMathlib.KernelSub
-public import LeanMachineLearning.ForMathlib.Measurable
-public import LeanMachineLearning.ForMathlib.MeasurableArgMax
-public import LeanMachineLearning.ForMathlib.StandardBorel
-public import LeanMachineLearning.ForMathlib.SubGaussian
-public import LeanMachineLearning.ForMathlib.Traj
-public import LeanMachineLearning.SequentialLearning.Algorithm
-public import LeanMachineLearning.SequentialLearning.Deterministic
-public import LeanMachineLearning.SequentialLearning.FiniteActions
-public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
-public import LeanMachineLearning.SequentialLearning.StationaryEnv
+import LeanMachineLearning.Bandit.Bandit
+import LeanMachineLearning.Bandit.Regret
+import LeanMachineLearning.Bandit.RewardByCountMeasure
+import LeanMachineLearning.Bandit.SumRewards
+import LeanMachineLearning.BanditAlgorithms.AuxSums
+import LeanMachineLearning.BanditAlgorithms.ETC
+import LeanMachineLearning.BanditAlgorithms.RoundRobin
+import LeanMachineLearning.BanditAlgorithms.UCB
+import LeanMachineLearning.ForMathlib.CondDistrib
+import LeanMachineLearning.ForMathlib.CondIndepFun
+import LeanMachineLearning.ForMathlib.ENNReal
+import LeanMachineLearning.ForMathlib.HasCondDistrib
+import LeanMachineLearning.ForMathlib.IndepFun
+import LeanMachineLearning.ForMathlib.IndepInfinitePi
+import LeanMachineLearning.ForMathlib.Integrable
+import LeanMachineLearning.ForMathlib.KernelSub
+import LeanMachineLearning.ForMathlib.Measurable
+import LeanMachineLearning.ForMathlib.MeasurableArgMax
+import LeanMachineLearning.ForMathlib.StandardBorel
+import LeanMachineLearning.ForMathlib.SubGaussian
+import LeanMachineLearning.ForMathlib.Traj
+import LeanMachineLearning.OptimizationAlgorithms.LIPO
+import LeanMachineLearning.OptimizationAlgorithms.PRS
+import LeanMachineLearning.OptimizationAlgorithms.RankOpt
+import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.SequentialLearning.Algorithm
+import LeanMachineLearning.SequentialLearning.Deterministic
+import LeanMachineLearning.SequentialLearning.EvaluationEnv
+import LeanMachineLearning.SequentialLearning.FiniteActions
+import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+import LeanMachineLearning.SequentialLearning.StationaryEnv

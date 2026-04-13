@@ -58,6 +58,14 @@ lemma measurable_actionMean {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} {a 
     Measurable (actionMean κ E a) :=
   stronglyMeasurable_id.integral_kernel.measurable.comp (by fun_prop)
 
+@[fun_prop]
+lemma measurable_uncurry_actionMean_comp [Countable α] [MeasurableSingletonClass α]
+    {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} (hE : Measurable E) {f : Ω → α} (hf : Measurable f) :
+    Measurable (fun ω ↦ actionMean κ E (f ω) ω) := by
+  change Measurable ((fun aω ↦ actionMean κ E aω.1 aω.2) ∘ fun ω ↦ (f ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  exact measurable_from_prod_countable_right (fun _ ↦ measurable_actionMean hE)
+
 noncomputable
 def bestAction [Nonempty α] [Fintype α] [Encodable α] [MeasurableSingletonClass α]
     (κ : Kernel (𝓔 × α) ℝ) (E : Ω → 𝓔) (ω : Ω) : α :=

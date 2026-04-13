@@ -192,6 +192,18 @@ lemma measurable_uncurry_pullCount [MeasurableEq α]
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_pullCount_comp [Countable α] [MeasurableSingletonClass α]
+    (hA : ∀ n, Measurable (A n)) {f : Ω → α} (hf : Measurable f) {g : Ω → ℕ} (hg : Measurable g) :
+    Measurable (fun ω ↦ pullCount A (f ω) (g ω) ω) := by
+  change Measurable ((fun aω ↦ pullCount A aω.1 (g aω.2) aω.2) ∘ fun ω ↦ (f ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  apply measurable_from_prod_countable_right
+  intro a
+  change Measurable ((fun tω ↦ pullCount A a tω.1 tω.2) ∘ fun ω ↦ (g ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  exact measurable_from_prod_countable_right (fun t ↦ measurable_pullCount hA a t)
+
+@[fun_prop]
 lemma measurable_pullCount' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     Measurable (fun h : Iic n → α × R ↦ pullCount' n h a) := by
   simp_rw [pullCount'_eq_sum]
@@ -865,6 +877,19 @@ lemma measurable_sumRewards [MeasurableSingletonClass α] {R' : ℕ → Ω → �
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
+
+@[fun_prop]
+lemma measurable_uncurry_sumRewards_comp [Countable α] [MeasurableSingletonClass α]
+    {R' : ℕ → Ω → ℝ} (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) {f : Ω → α}
+    (hf : Measurable f) {g : Ω → ℕ} (hg : Measurable g) :
+    Measurable (fun ω ↦ sumRewards A R' (f ω) (g ω) ω) := by
+  change Measurable ((fun aω ↦ sumRewards A R' aω.1 (g aω.2) aω.2) ∘ fun ω ↦ (f ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  apply measurable_from_prod_countable_right
+  intro a
+  change Measurable ((fun tω ↦ sumRewards A R' a tω.1 tω.2) ∘ fun ω ↦ (g ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  exact measurable_from_prod_countable_right (fun t ↦ measurable_sumRewards hA hR' a t)
 
 @[fun_prop]
 lemma measurable_empMean [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ} (hA : ∀ n, Measurable (A n))

@@ -147,8 +147,8 @@ theorem actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf
 variable [PseudoMetricSpace β] [BorelSpace β] (hfc : Continuous f)
 
 /-- The minimum distance from image of actions to any value tends to zero. -/
-lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P) (a : α) :
-    ∀ ε, 0 < ε → Tendsto (fun i => P
+lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
+    (a : α) : ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (f (A j.1 x)) (f a))}) atTop (𝓝 0) := by
   intro ε hε
   have hf := hfc.measurable
@@ -167,8 +167,8 @@ lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEn
   linarith
 
 /-- The minimum distance from rewards to any value tends to zero. -/
-lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P) (a : α) :
-    ∀ ε, 0 < ε → Tendsto (fun i => P
+lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
+    (a : α) : ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (R j.1 x) (f a))}) atTop (𝓝 0) := by
   intro ε hε
   convert image_actions_tendsto_any hfc h a ε hε using 2 with n

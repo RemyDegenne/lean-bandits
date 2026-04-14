@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
 
-import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
 import LeanMachineLearning.SequentialLearning.Algorithm
 
 

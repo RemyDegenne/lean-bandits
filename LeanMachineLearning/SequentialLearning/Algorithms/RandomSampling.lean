@@ -6,7 +6,7 @@ Authors: Gaëtan Serré
 
 import LeanMachineLearning.ForMathlib.ENNReal
 import LeanMachineLearning.ForMathlib.IndepFun
-import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
 import LeanMachineLearning.SequentialLearning.EvaluationEnv
 
 open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
@@ -14,16 +14,20 @@ open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
 open scoped Topology
 
 /-!
-# PRS: Pure Random Search
+# Random Sampling
 
-Implementation of the _Pure Random Search_ algorithm, which samples from a fixed probability
+Implementation of the _Random Sampling_ algorithm, which samples from a fixed probability
 measure at each iteration.
 
 ## Main definitions
 
-* `PRS`: The pure random search algorithm that samples from a fixed distribution at each iteration.
+* `randomSampling`: The random sampling algorithm that samples from a fixed distribution at
+each iteration.
 
-## Main results
+## Main statements
+
+The main results about the random sampling algorithm are stated using the `evalEnv` evaluation
+environment, which rewards actions using a measurable function `f`.
 
 - `hasLaw_actions`: Each action follows the distribution μ.
 - `hasLaw_rewards`: Each reward follows the distribution μ.map f.
@@ -44,16 +48,17 @@ variable {α β Ω : Type*} [MeasurableSpace α] [MeasurableSpace β] [StandardB
 open Set in
 /-- The Pure Random Search algorithm. -/
 @[simps]
-noncomputable def PRS (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
+noncomputable def randomSampling (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
   policy _ := Kernel.const _ μ
   p0 := μ
 
-namespace PRS
+namespace randomSampling
 
 variable {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f)
 
 /-- Each action follows the distribution μ. -/
-lemma hasLaw_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) : HasLaw (A n) μ P := by
+lemma hasLaw_actions (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf) P) (n : ℕ) :
+    HasLaw (A n) μ P := by
   by_cases hn : n = 0
   · rw [hn]
     exact h.hasLaw_action_zero
@@ -62,7 +67,7 @@ lemma hasLaw_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) : H
     exact hasLaw_of_hasCondDistrib_const <| h.hasCondDistrib_action k
 
 /-- Each reward follows the distribution μ.map f. -/
-lemma hasLaw_rewards (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) :
+lemma hasLaw_rewards (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf) P) (n : ℕ) :
     HasLaw (R n) (μ.map f) P := by
   refine HasLaw.congr ?_ (IsAlgEnvSeq.reward_ae_eq_eval_action hf h n)
   have hA := h.measurable_A n
@@ -70,13 +75,13 @@ lemma hasLaw_rewards (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (n : ℕ) :
   rw [← Measure.map_map hf hA, (hasLaw_actions hf h n).map_eq]
 
 /-- Actions are mutually independent. -/
-lemma iIndep_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
+lemma iIndep_actions (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf) P) :
     iIndepFun A P := by
   have hA := h.measurable_A
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
   have condDistrib_eq := (h.hasCondDistrib_action n).condDistrib_eq
-  simp only [PRS_policy] at condDistrib_eq
+  simp only [randomSampling_policy] at condDistrib_eq
   have law_eq := (hasLaw_actions hf h (n + 1)).map_eq
   rw [← law_eq, ← indepFun_iff_condDistrib_eq_const ?_ (by fun_prop)] at condDistrib_eq
   · have meas_fst : Measurable (fun (f : Iic n → α × β) ↦ (fun i ↦ (f i).1)) := by
@@ -85,7 +90,7 @@ lemma iIndep_actions (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
   · exact (IsAlgEnvSeq.measurable_hist (h.measurable_A) (h.measurable_R) n).aemeasurable
 
 /-- Rewards are mutually independent. -/
-lemma iIndep_rewards (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) :
+lemma iIndep_rewards (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf) P) :
     iIndepFun R P :=
   have (n : ℕ) : f ∘ A n =ᵐ[P] R n :=
     (IsAlgEnvSeq.reward_ae_eq_eval_action hf h n).symm
@@ -95,10 +100,10 @@ variable [PseudoMetricSpace α] [SecondCountableTopology α] [OpensMeasurableSpa
   [μ.IsOpenPosMeasure]
 
 /-- The minimum distance from sampled actions to any point tends to zero. -/
-theorem actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : α) :
+theorem actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hf) P) (a : α) :
     ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (A j.1 x) a)}) atTop (𝓝 0) := by
-  set PRS_alg := PRS (β := β) μ
+  set randomSampling_alg := randomSampling (β := β) μ
   intro ε hε
   refine tendsto_zero_le (g := fun n ↦ P (⋂ i ∈ Iic n, {x | ε ≤ dist (A i x) a})) ?_ ?_
   · have inter_prod (n : ℕ) : P (⋂ j ∈ Iic n, {x | ε ≤ dist (A j x) a}) =
@@ -106,7 +111,7 @@ theorem actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : �
       refine iIndepSet.meas_biInter ?_ _
       rw [iIndepSet_iff_meas_biInter fun i ↦ ?_]
       · intro s
-        have iIndep_actions := PRS.iIndep_actions hf h
+        have iIndep_actions := randomSampling.iIndep_actions hf h
         rw [iIndepFun_iff_measure_inter_preimage_eq_mul] at iIndep_actions
         have meas_dist : ∀ i ∈ s, MeasurableSet {x | ε ≤ dist x a} := by
           intro i hs
@@ -119,7 +124,7 @@ theorem actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : �
     have prod_law (n : ℕ) : ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} =
         ∏ j ∈ Iic n, μ {x | ε ≤ dist x a} := by
       refine prod_congr rfl fun j hj ↦ ?_
-      have hlaw (n : ℕ) : HasLaw (A n) μ P := PRS.hasLaw_actions hf h n
+      have hlaw (n : ℕ) : HasLaw (A n) μ P := randomSampling.hasLaw_actions hf h n
       rw [← (hlaw j).map_eq, P.map_apply]
       · simp
       · exact h.measurable_A j
@@ -142,7 +147,7 @@ theorem actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hf) P) (a : �
 variable [PseudoMetricSpace β] [BorelSpace β] (hfc : Continuous f)
 
 /-- The minimum distance from image of actions to any value tends to zero. -/
-lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P) (a : α) :
+lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P) (a : α) :
     ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (f (A j.1 x)) (f a))}) atTop (𝓝 0) := by
   intro ε hε
@@ -162,7 +167,7 @@ lemma image_actions_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measu
   linarith
 
 /-- The minimum distance from rewards to any value tends to zero. -/
-lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P) (a : α) :
+lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P) (a : α) :
     ∀ ε, 0 < ε → Tendsto (fun i => P
       {x | ε ≤ Tuple.min (fun (j : Iic i) ↦ dist (R j.1 x) (f a))}) atTop (𝓝 0) := by
   intro ε hε
@@ -178,7 +183,7 @@ lemma rewards_tendsto_any (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable)
 variable {R : ℕ → Ω → ℝ} {f : α → ℝ} (hfc : Continuous f) {a : α}
 
 /-- The minimum function value converges to the global minimum. -/
-lemma tendsto_min₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+lemma tendsto_min₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
     (hf_min : ∀ x, f a ≤ f x) : TendstoInMeasure P (fun n ω ↦
       Tuple.min (fun (i : Iic n) ↦ f (A i.1 ω))) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
@@ -203,7 +208,7 @@ lemma tendsto_min₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
   linarith
 
 /-- The minimum reward converges to the global minimum value. -/
-lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+lemma tendsto_min (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
     (hf_min : ∀ x, f a ≤ f x) : TendstoInMeasure P (fun n ω ↦
       Tuple.min (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_min₀ hfc h hf_min
@@ -211,7 +216,7 @@ lemma tendsto_min (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
   rw [← hω]
 
 /-- The maximum function value converges to the global maximum. -/
-lemma tendsto_max₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+lemma tendsto_max₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) : TendstoInMeasure P (fun n ω ↦
       Tuple.max (fun (i : Iic n) ↦ f (A i.1 ω))) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
@@ -236,11 +241,11 @@ lemma tendsto_max₀ (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
   linarith
 
 /-- The maximum reward converges to the global maximum value. -/
-lemma tendsto_max (h : IsAlgEnvSeq A R (PRS μ) (evalEnv hfc.measurable) P)
+lemma tendsto_max (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) :
     TendstoInMeasure P (fun n ω ↦ Tuple.max (fun (i : Iic n) ↦ R i.1 ω)) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_max₀ hfc h hf_max
   filter_upwards [IsAlgEnvSeq.reward_ae_eq_evals_actions_comp hfc.measurable h Tuple.max] with ω hω
   rw [← hω]
 
-end PRS
+end randomSampling

@@ -58,27 +58,29 @@ variable {Ω : Type*}
 variable {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
 
-lemma condDistrib_action_ae_eq_condDistrib_bestAction [Nonempty (Fin K)] [MeasurableSpace Ω]
-    {P : Measure Ω} [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (t : ℕ) :
-    condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-      condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P := by
-  have hm : Measurable (IsBayesAlgEnvSeq.bestAction κ id) := by fun_prop
-  calc ↑(condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P)
-    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-        (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
-          (IsBayesAlgEnvSeq.bestAction κ id) :=
-        (h.hasCondDistrib_action' t).condDistrib_eq
-    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-        (condDistrib E (IsAlgEnvSeq.hist A R' t) P).map (IsBayesAlgEnvSeq.bestAction κ id) := by
-        filter_upwards [(h.hasCondDistrib_env_hist
-          (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK))
-          (absolutelyContinuous_uniformAlgorithm hK _) t).condDistrib_eq] with x hx
-        simp [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hx]
-    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-        condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P :=
-        (condDistrib_comp (mβ := MeasurableSpace.pi) (μ := P)
-          (IsAlgEnvSeq.hist A R' t) h.measurable_E.aemeasurable hm).symm
+lemma hasCondDistrib_action [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω}
+    [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (n : ℕ) :
+    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A R' n)
+      (condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' n) P) P where
+  aemeasurable_fst := (h.measurable_A (n + 1)).aemeasurable
+  aemeasurable_snd := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  condDistrib_eq := by
+    have hm : Measurable (IsBayesAlgEnvSeq.bestAction κ id) := by fun_prop
+    calc
+      _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' n)]
+          (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map
+            (IsBayesAlgEnvSeq.bestAction κ id) :=
+          (h.hasCondDistrib_action' n).condDistrib_eq
+      _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' n)]
+          (condDistrib E (IsAlgEnvSeq.hist A R' n) P).map
+            (IsBayesAlgEnvSeq.bestAction κ id) := by
+          filter_upwards [(h.hasCondDistrib_env_hist
+            (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK))
+            (absolutelyContinuous_uniformAlgorithm hK _) n).condDistrib_eq] with _ hc
+          simp_rw [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hc]
+      _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' n)]
+          condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' n) P :=
+          (condDistrib_comp (IsAlgEnvSeq.hist A R' n) h.measurable_E.aemeasurable hm).symm
 
 variable {l u σ2 δ : ℝ}
 
@@ -314,7 +316,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measu
           simp [h_ucb_zero]
         exact (integral_congr_ae (ae_of_all _ this)).trans (integral_zero _ _)
       | succ t =>
-        have hts := condDistrib_action_ae_eq_condDistrib_bestAction hK h t
+        have hts := (hasCondDistrib_action hK h t).condDistrib_eq
         have h_map_eq : P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, A (t + 1) ω)) =
             P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, IsBayesAlgEnvSeq.bestAction κ E ω)) := by
           rw [← compProd_map_condDistrib (hY := (h.measurable_A (t + 1)).aemeasurable),

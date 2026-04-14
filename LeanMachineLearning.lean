@@ -19,11 +19,11 @@ import LeanMachineLearning.ForMathlib.MeasurableArgMax
 import LeanMachineLearning.ForMathlib.StandardBorel
 import LeanMachineLearning.ForMathlib.SubGaussian
 import LeanMachineLearning.ForMathlib.Traj
-import LeanMachineLearning.OptimizationAlgorithms.LIPO
-import LeanMachineLearning.OptimizationAlgorithms.PRS
-import LeanMachineLearning.OptimizationAlgorithms.RankOpt
-import LeanMachineLearning.OptimizationAlgorithms.Utils.Tuple
+import LeanMachineLearning.Optimization.Algorithms.LIPO
+import LeanMachineLearning.Optimization.Algorithms.RankOpt
+import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
 import LeanMachineLearning.SequentialLearning.Algorithm
+import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 import LeanMachineLearning.SequentialLearning.Deterministic
 import LeanMachineLearning.SequentialLearning.EvaluationEnv
 import LeanMachineLearning.SequentialLearning.FiniteActions

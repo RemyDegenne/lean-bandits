@@ -53,11 +53,36 @@ def tsAlgorithm (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 �
 
 namespace TS
 
-section UCB
-
+variable (hK : 0 < K)
 variable {Ω : Type*}
-variable {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
+variable {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R' : ℕ → Ω → ℝ}
+variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
+
+lemma condDistrib_action_ae_eq_condDistrib_bestAction [Nonempty (Fin K)] [MeasurableSpace Ω]
+    {P : Measure Ω} [IsProbabilityMeasure P]
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (t : ℕ) :
+    condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
+      condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P := by
+  have hm : Measurable (IsBayesAlgEnvSeq.bestAction κ id) := by fun_prop
+  calc ↑(condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P)
+    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
+        (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
+          (IsBayesAlgEnvSeq.bestAction κ id) :=
+        (h.hasCondDistrib_action' t).condDistrib_eq
+    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
+        (condDistrib E (IsAlgEnvSeq.hist A R' t) P).map (IsBayesAlgEnvSeq.bestAction κ id) := by
+        filter_upwards [(h.hasCondDistrib_env_hist
+          (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK))
+          (absolutelyContinuous_uniformAlgorithm hK _) t).condDistrib_eq] with x hx
+        simp [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hx]
+    _ =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
+        condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P :=
+        (condDistrib_comp (mβ := MeasurableSpace.pi) (μ := P)
+          (IsAlgEnvSeq.hist A R' t) h.measurable_E.aemeasurable hm).symm
+
 variable {l u σ2 δ : ℝ}
+
+section UCB
 
 noncomputable
 def ucb (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (l u σ2 δ : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
@@ -194,42 +219,12 @@ lemma sum_ucb_sub_mean_le {n : ℕ} {ω : Ω} (μ : Fin K → ℝ) (hμ : ∀ a,
 
 end UCB
 
-variable {K : ℕ}
-variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable (hK : 0 < K)
-variable {Ω : Type*} [MeasurableSpace Ω]
-variable (E : Ω → 𝓔) (A : ℕ → Ω → (Fin K)) (R' : ℕ → Ω → ℝ)
-variable (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ) [IsMarkovKernel κ]
-variable (P : Measure Ω) [IsProbabilityMeasure P]
+section BayesRegret
 
-lemma ts_identity [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (t : ℕ) :
-    condDistrib (A (t + 1)) (IsAlgEnvSeq.hist A R' t) P
-      =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-    condDistrib (IsBayesAlgEnvSeq.bestAction κ E) (IsAlgEnvSeq.hist A R' t) P := by
-  have h_ba_comp : IsBayesAlgEnvSeq.bestAction κ E
-      = IsBayesAlgEnvSeq.bestAction κ id ∘ E := rfl
-  rw [h_ba_comp]
-  have hm := IsBayesAlgEnvSeq.measurable_bestAction (κ := κ) measurable_id
-  have h_comp := condDistrib_comp (mβ := MeasurableSpace.pi) (μ := P)
-    (IsAlgEnvSeq.hist A R' t) h.measurable_E.aemeasurable hm
-  have h_map : (condDistrib E (IsAlgEnvSeq.hist A R' t) P).map
-      (IsBayesAlgEnvSeq.bestAction κ id) =ᵐ[P.map (IsAlgEnvSeq.hist A R' t)]
-      (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) t).map
-        (IsBayesAlgEnvSeq.bestAction κ id) := by
-    filter_upwards [(h.hasCondDistrib_env_hist
-      (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK))
-      (absolutelyContinuous_uniformAlgorithm hK _) t).condDistrib_eq]
-      with x hx
-    simp only [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hx]
-  exact (h.hasCondDistrib_action' t).condDistrib_eq.trans (h_comp.trans h_map).symm
-
-lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
-    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    {l u : ℝ} (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u))
-    (n : ℕ) (δ : ℝ) (hδ : 0 < δ) :
+lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω}
+    [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
+    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
+    (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hδ : 0 < δ) (n : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E A n]
       ≤ (u - l) * ↑K + 2 * (↑K + 1) * (u - l) * n ^ 2 * δ +
         4 * √(2 * ↑σ2 * Real.log (1 / δ) * ↑K * ↑n) := by
@@ -319,7 +314,7 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
           simp [h_ucb_zero]
         exact (integral_congr_ae (ae_of_all _ this)).trans (integral_zero _ _)
       | succ t =>
-        have hts := ts_identity hK E A R' Q κ P h t
+        have hts := condDistrib_action_ae_eq_condDistrib_bestAction hK h t
         have h_map_eq : P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, A (t + 1) ω)) =
             P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, IsBayesAlgEnvSeq.bestAction κ E ω)) := by
           rw [← compProd_map_condDistrib (hY := (h.measurable_A (t + 1)).aemeasurable),
@@ -474,15 +469,14 @@ lemma bayesRegret_le_of_delta [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonemp
     measureReal_nonneg (μ := P) (s := Fδᶜ),
     measureReal_nonneg (μ := P) (s := Eδᶜ)]
 
-lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
-    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    {lo hi : ℝ} (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc lo hi)) (t : ℕ) :
+lemma bayesRegret_le [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
+    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
+    (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (t : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E A t]
-      ≤ (3 * K + 2) * (hi - lo) + 8 * √(σ2 * K * t * Real.log t) := by
+      ≤ (3 * K + 2) * (u - l) + 8 * √(σ2 * K * t * Real.log t) := by
   have ⟨h1, h2⟩ := hm (Classical.arbitrary _) (Classical.arbitrary _)
-  have hlo : lo ≤ hi := h1.trans h2
+  have hlo : l ≤ u := h1.trans h2
   by_cases ht : t = 0
   · simp [ht, IsBayesAlgEnvSeq.regret, Bandits.regret]
     nlinarith [sub_nonneg.mpr hlo, Nat.cast_pos (α := ℝ).mpr hK,
@@ -491,14 +485,14 @@ lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
   · subst ht1_eq
     simp only [Nat.cast_one, Real.log_one, mul_zero, Real.sqrt_zero, mul_zero, add_zero]
     calc P[IsBayesAlgEnvSeq.regret κ E A 1]
-        ≤ hi - lo := by
+        ≤ u - l := by
           rw [IsBayesAlgEnvSeq.regret_eq_sum_gap']
           simp only [Finset.range_one, Finset.sum_singleton]
           exact (integral_mono_of_nonneg
             (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_nonneg_of_le (fun e a ↦ (hm e a).2))
             (integrable_const _)
             (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_le_of_mem_Icc hm)).trans (by simp)
-      _ ≤ (3 * ↑K + 2) * (hi - lo) := by
+      _ ≤ (3 * ↑K + 2) * (u - l) := by
           nlinarith [Nat.one_le_cast (α := ℝ).mpr (Nat.one_le_of_lt hK),
             sub_nonneg.mpr hlo]
   -- For t ≥ 2, we have δ = 1/t² < 1
@@ -507,24 +501,25 @@ lemma bayesRegret_le [Nonempty (Fin K)] [StandardBorelSpace Ω] [Nonempty Ω]
     have _ht1 : (1 : ℝ) ≤ t := by exact_mod_cast Nat.pos_of_ne_zero ht
     have hδ : (0 : ℝ) < 1 / (t : ℝ) ^ 2 := by positivity
     -- First term: (hi-lo)*K + 2*(K+1)*(hi-lo)*t²*(1/t²) = (3K+2)*(hi-lo)
-    have h_first : (hi - lo) * ↑K + 2 * (↑K + 1) * (hi - lo) * ↑t ^ 2 * (1 / (↑t) ^ 2)
-        = (3 * ↑K + 2) * (hi - lo) := by
+    have h_first : (u - l) * ↑K + 2 * (↑K + 1) * (u - l) * ↑t ^ 2 * (1 / (↑t) ^ 2)
+        = (3 * ↑K + 2) * (u - l) := by
       field_simp; ring
     -- Second term simplification: log(1/(1/t²)) = log(t²) = 2 log(t)
     have h_log : Real.log (1 / (1 / (↑t : ℝ) ^ 2)) = 2 * Real.log ↑t := by
       rw [one_div_one_div, Real.log_pow]; norm_cast
     calc P[IsBayesAlgEnvSeq.regret κ E A t]
-        ≤ (hi - lo) * ↑K + 2 * (↑K + 1) * (hi - lo) * ↑t ^ 2 * (1 / (↑t) ^ 2)
+        ≤ (u - l) * ↑K + 2 * (↑K + 1) * (u - l) * ↑t ^ 2 * (1 / (↑t) ^ 2)
           + 4 * √(2 * ↑σ2 * Real.log (1 / (1 / (↑t) ^ 2)) * ↑K * ↑t) :=
-          bayesRegret_le_of_delta (hK := hK) (E := E) (A := A) (R' := R') (Q := Q)
-            (κ := κ) (P := P) h hσ2 hs hm t (1 / (↑t) ^ 2) hδ
-      _ = (3 * ↑K + 2) * (hi - lo) + 8 * √(↑σ2 * ↑K * ↑t * Real.log ↑t) := by
+          bayesRegret_le_of_delta (δ := 1 / (↑t) ^ 2) hK h hσ2 hs hm hδ t
+      _ = (3 * ↑K + 2) * (u - l) + 8 * √(↑σ2 * ↑K * ↑t * Real.log ↑t) := by
           rw [h_first, h_log]; congr 1
           rw [show (2 : ℝ) * ↑σ2 * (2 * Real.log ↑t) * ↑K * ↑t =
             (2 : ℝ) ^ 2 * (↑σ2 * ↑K * ↑t * Real.log ↑t) from by ring,
             Real.sqrt_mul (by positivity : (0 : ℝ) ≤ 2 ^ 2),
             Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 2)]
           ring
+
+end BayesRegret
 
 end TS
 

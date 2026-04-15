@@ -15,7 +15,7 @@ open MeasureTheory ProbabilityTheory Finset NNReal Learning
 
 Implementation of the _RankOpt_ algorithm
 [(_A Ranking Approach to Global Optimization_,
-Malherbe et al. 2017)](https://arxiv.org/pdf/1603.04381)
+Malherbe et al. 2017)](https://arxiv.org/abs/1603.04381)
 defined on a measurable space. The algorithm samples from an arbitrary probability measure
 on the set of potential maximizers of the function at each iteration.
 
@@ -157,7 +157,7 @@ variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
 This algorithm uses a ranking approach to optimize an unknown function. It maintains a hypothesis
 class `𝓡` of ranking rules. It starts with an arbitrary probability measure `μ` as initial
 distribution and samples from the set of points that could be optimal according to ranking rules
-consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/pdf/1603.04381). -/
+consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/abs/1603.04381). -/
 noncomputable def RankOpt : Algorithm α β where
   policy _ := potential_max_kernel μ h𝓡
   p0 := μ

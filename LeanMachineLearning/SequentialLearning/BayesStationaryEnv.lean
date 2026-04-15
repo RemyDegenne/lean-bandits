@@ -66,6 +66,14 @@ lemma measurable_uncurry_actionMean_comp [Countable α] [MeasurableSingletonClas
   apply Measurable.comp _ (by fun_prop)
   exact measurable_from_prod_countable_right (fun _ ↦ measurable_actionMean hE)
 
+lemma integrable_uncurry_actionMean_comp [Countable α] [MeasurableSingletonClass α]
+    {κ : Kernel (𝓔 × α) ℝ} {E : Ω → 𝓔} (hE : Measurable E) {f : Ω → α} (hf : Measurable f)
+    {P : Measure Ω} [IsFiniteMeasure P] {l u : ℝ} (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) :
+    Integrable (fun ω ↦ actionMean κ E (f ω) ω) P := by
+  refine ⟨(measurable_uncurry_actionMean_comp hE hf).aestronglyMeasurable, ?_⟩
+  apply HasFiniteIntegral.of_bounded
+  filter_upwards with ω using abs_le_max_abs_abs (hm (E ω) (f ω)).1 (hm (E ω) (f ω)).2
+
 noncomputable
 def bestAction [Nonempty α] [Fintype α] [Encodable α] [MeasurableSingletonClass α]
     (κ : Kernel (𝓔 × α) ℝ) (E : Ω → 𝓔) (ω : Ω) : α :=

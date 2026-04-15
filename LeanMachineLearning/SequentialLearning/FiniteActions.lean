@@ -899,6 +899,13 @@ lemma measurable_empMean [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_empMean_comp [Countable α] [MeasurableSingletonClass α] {R' : ℕ → Ω → ℝ}
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) {f : Ω → α} (hf : Measurable f)
+    {g : Ω → ℕ} (hg : Measurable g) : Measurable (fun ω ↦ empMean A R' (f ω) (g ω) ω) := by
+  unfold empMean
+  fun_prop
+
+@[fun_prop]
 lemma measurable_sumRewards' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
     Measurable (fun h ↦ sumRewards' n h a) := by
   simp_rw [sumRewards']

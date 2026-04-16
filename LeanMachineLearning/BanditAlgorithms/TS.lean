@@ -91,6 +91,10 @@ def ucb (A : ℕ → Ω → Fin K) (R' : ℕ → Ω → ℝ) (l u σ2 δ : ℝ) 
   if pullCount A a n ω = 0 then u
   else max l (min u (empMean A R' a n ω + √(2 * σ2 * Real.log (1 / δ) / (pullCount A a n ω))))
 
+@[simp]
+lemma ucb_zero {a : Fin K} {ω : Ω} : ucb A R' l u σ2 δ a 0 ω = u := by
+  simp [ucb]
+
 lemma ucb_mem_Icc (h : l ≤ u) {a : Fin K} {n : ℕ} {ω : Ω} :
     ucb A R' l u σ2 δ a n ω ∈ Set.Icc l u := by
   unfold ucb
@@ -241,25 +245,22 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction
   have := h.measurable_A
   have := h.measurable_E
   have := h.measurable_R
-  by_cases hs : n = 0
-  · simp [hs, ucb, pullCount_zero]
-  obtain ⟨t, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hs
-  let ucb'' : (Iic t → Fin K × ℝ) × Fin K → ℝ := fun p ↦ ucb' t p.1 l u σ2 δ p.2
-  calc P[fun ω ↦ ucb A R' l u σ2 δ (A (t + 1) ω) (t + 1) ω]
-      = P[fun ω ↦ ucb'' (IsAlgEnvSeq.hist A R' t ω, A (t + 1) ω)] := by
-        simp_rw [ucb'', ucb_succ_eq_ucb']
-    _ = ∫ p, ucb'' p ∂P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, A (t + 1) ω)) := by
+  by_cases hn : n = 0
+  · simp [hn]
+  obtain ⟨n, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
+  let u' (ha : (Iic n → Fin K × ℝ) × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
+  calc
+    _  = P[fun ω ↦ u' (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω)] := by
+        simp_rw [u', ucb_succ_eq_ucb']
+    _ = ∫ ha, u' ha ∂P.map (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω)) := by
         rw [← integral_map (by fun_prop) (by fun_prop)]
-    _ = ∫ p, ucb'' p ∂P.map
-          (fun ω ↦ (IsAlgEnvSeq.hist A R' t ω, IsBayesAlgEnvSeq.bestAction κ E ω)) := by
-        rw [← compProd_map_condDistrib (hY := (h.measurable_A (t + 1)).aemeasurable),
-            ← compProd_map_condDistrib
-              (hY := (by fun_prop : AEMeasurable (IsBayesAlgEnvSeq.bestAction κ E) _)),
-            Measure.compProd_congr (hasCondDistrib_action hK h t).condDistrib_eq]
-    _ = P[fun ω ↦ ucb'' (IsAlgEnvSeq.hist A R' t ω, IsBayesAlgEnvSeq.bestAction κ E ω)] := by
+    _ = ∫ ha, u' ha ∂P.map
+          (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, IsBayesAlgEnvSeq.bestAction κ E ω)) := by
+        rw [← compProd_map_condDistrib (by fun_prop), ← compProd_map_condDistrib (by fun_prop),
+            Measure.compProd_congr (hasCondDistrib_action hK h n).condDistrib_eq]
+    _ = P[fun ω ↦ ucb A R' l u σ2 δ (IsBayesAlgEnvSeq.bestAction κ E ω) (n + 1) ω] := by
         rw [integral_map (by fun_prop) (by fun_prop)]
-    _ = P[fun ω ↦ ucb A R' l u σ2 δ (IsBayesAlgEnvSeq.bestAction κ E ω) (t + 1) ω] := by
-        simp_rw [ucb'', ucb_succ_eq_ucb']
+        simp_rw [u', ucb_succ_eq_ucb']
 
 lemma integral_regret_eq_add (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (n : ℕ) :

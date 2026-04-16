@@ -231,8 +231,10 @@ end UCB
 
 section IntegralRegret
 
-lemma integral_ucb_action_eq_integral_ucb_bestAction [Nonempty (Fin K)]
-    [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+variable [Nonempty (Fin K)]
+variable [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+lemma integral_ucb_action_eq_integral_ucb_bestAction
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (n : ℕ) :
     P[fun ω ↦ ucb A R' l u σ2 δ (A n ω) n ω] =
       P[fun ω ↦ ucb A R' l u σ2 δ (IsBayesAlgEnvSeq.bestAction κ E ω) n ω] := by
@@ -259,8 +261,7 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction [Nonempty (Fin K)]
     _ = P[fun ω ↦ ucb A R' l u σ2 δ (IsBayesAlgEnvSeq.bestAction κ E ω) (t + 1) ω] := by
         simp_rw [ucb'', ucb_succ_eq_ucb']
 
-lemma integral_regret_eq_add [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω}
-    [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
+lemma integral_regret_eq_add (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (n : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E A n] =
       P[fun ω ↦ ∑ s ∈ range n,
@@ -356,11 +357,11 @@ lemma integral_regret_eq_add [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measur
             (IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp h.measurable_E
               (h.measurable_A s) hm)
 
-lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le [Nonempty (Fin K)]
-    [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
+lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
+    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
-    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hδ : 0 < δ) (n : ℕ) :
+    (hδ : 0 < δ) (n : ℕ) :
     P[fun ω ↦ ∑ s ∈ range n,
       (IsBayesAlgEnvSeq.actionMean κ E (IsBayesAlgEnvSeq.bestAction κ E ω) ω -
         ucb A R' l u σ2 δ (IsBayesAlgEnvSeq.bestAction κ E ω) s ω)] ≤
@@ -435,11 +436,11 @@ lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le [Nonempty (
             (ENNReal.ofReal_le_ofReal (by nlinarith [hδ.le]))
     _ = 2 * (u - l) * n ^ 2 * δ := by ring
 
-lemma integral_sum_range_ucb_action_sub_actionMean_action_le [Nonempty (Fin K)]
-    [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
+lemma integral_sum_range_ucb_action_sub_actionMean_action_le
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
+    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
-    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hδ : 0 < δ) (n : ℕ) :
+    (hδ : 0 < δ) (n : ℕ) :
     P[fun ω ↦ ∑ s ∈ range n,
       (ucb A R' l u σ2 δ (A s ω) s ω - IsBayesAlgEnvSeq.actionMean κ E (A s ω) ω)] ≤
       (u - l) * K + 4 * √(2 * σ2 * Real.log (1 / δ) * K * n) + 2 * K * (u - l) * n ^ 2 * δ := by
@@ -515,8 +516,8 @@ lemma integral_sum_range_ucb_action_sub_actionMean_action_le [Nonempty (Fin K)]
     _ = (u - l) * K + 4 * √(2 * σ2 * Real.log (1 / δ) * K * n) +
           2 * K * (u - l) * n ^ 2 * δ := by ring
 
-lemma integral_regret_le_of_delta_pos [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω}
-    [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
+lemma integral_regret_le_of_delta_pos
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hδ : 0 < δ) (n : ℕ) :
     P[IsBayesAlgEnvSeq.regret κ E A n] ≤
@@ -534,24 +535,23 @@ lemma integral_regret_le_of_delta_pos [Nonempty (Fin K)] [MeasurableSpace Ω] {P
             2 * K * (u - l) * n ^ 2 * δ) :=
         add_le_add
           (integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le
-            (hK := hK) (σ2 := σ2) (δ := δ) h hσ2 hs hlu hm hδ n)
+            (hK := hK) (σ2 := σ2) (δ := δ) h hlu hm hσ2 hs hδ n)
           (integral_sum_range_ucb_action_sub_actionMean_action_le
-            (hK := hK) (σ2 := σ2) (δ := δ) h hσ2 hs hlu hm hδ n)
+            (hK := hK) (σ2 := σ2) (δ := δ) h hlu hm hσ2 hs hδ n)
     _ = (u - l) * K + 2 * (K + 1) * (u - l) * n ^ 2 * δ +
           4 * √(2 * σ2 * Real.log (1 / δ) * K * n) := by ring
 
-lemma integral_regret_le [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω}
-    [IsProbabilityMeasure P]
-    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P) (hσ2 : 0 < σ2)
-    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
-    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (t : ℕ) :
-    P[IsBayesAlgEnvSeq.regret κ E A t]
-      ≤ (3 * K + 2) * (u - l) + 8 * √(σ2 * K * t * Real.log t) := by
-  by_cases ht : t = 0
+lemma integral_regret_le
+    (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ hK) E A R' P)
+    (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
+    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a))) (n : ℕ) :
+    P[IsBayesAlgEnvSeq.regret κ E A n]
+      ≤ (3 * K + 2) * (u - l) + 8 * √(σ2 * K * n * Real.log n) := by
+  by_cases ht : n = 0
   · simp [ht, IsBayesAlgEnvSeq.regret, Bandits.regret]
     nlinarith
-  by_cases ht1_eq : t = 1
-  · calc P[IsBayesAlgEnvSeq.regret κ E A t]
+  by_cases ht1_eq : n = 1
+  · calc P[IsBayesAlgEnvSeq.regret κ E A n]
         = P[IsBayesAlgEnvSeq.regret κ E A 1] := by rw [ht1_eq]
       _ ≤ u - l := by
           rw [IsBayesAlgEnvSeq.regret_eq_sum_gap']
@@ -560,28 +560,28 @@ lemma integral_regret_le [Nonempty (Fin K)] [MeasurableSpace Ω] {P : Measure Ω
             (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_nonneg_of_le (fun e a ↦ (hm e a).2))
             (integrable_const _)
             (ae_of_all _ fun ω ↦ IsBayesAlgEnvSeq.gap_le_of_mem_Icc hm)).trans (by simp)
-      _ ≤ (3 * K + 2) * (u - l) + 8 * √(σ2 * K * t * Real.log t) := by
+      _ ≤ (3 * K + 2) * (u - l) + 8 * √(σ2 * K * n * Real.log n) := by
           rw [ht1_eq]
           simp only [Nat.cast_one, Real.log_one, mul_zero, Real.sqrt_zero, mul_zero, add_zero]
           nlinarith
-  · calc P[IsBayesAlgEnvSeq.regret κ E A t]
-        ≤ (u - l) * K + 2 * (K + 1) * (u - l) * t ^ 2 * (1 / (t : ℝ) ^ 2)
-            + 4 * √(2 * σ2 * Real.log (1 / (1 / (t : ℝ) ^ 2)) * K * t) :=
-          integral_regret_le_of_delta_pos (δ := 1 / t ^ 2) hK h hσ2 hs hlu hm (by positivity) t
+  · calc P[IsBayesAlgEnvSeq.regret κ E A n]
+        ≤ (u - l) * K + 2 * (K + 1) * (u - l) * n ^ 2 * (1 / (n : ℝ) ^ 2)
+            + 4 * √(2 * σ2 * Real.log (1 / (1 / (n : ℝ) ^ 2)) * K * n) :=
+          integral_regret_le_of_delta_pos (δ := 1 / n ^ 2) hK h hσ2 hs hlu hm (by positivity) n
       _ = (3 * K + 2) * (u - l)
-            + 4 * √(2 * σ2 * Real.log (1 / (1 / (t : ℝ) ^ 2)) * K * t) := by
+            + 4 * √(2 * σ2 * Real.log (1 / (1 / (n : ℝ) ^ 2)) * K * n) := by
           congr 1
           field_simp
           ring
-      _ = (3 * K + 2) * (u - l) + 4 * √(2 * σ2 * (2 * Real.log t) * K * t) := by
+      _ = (3 * K + 2) * (u - l) + 4 * √(2 * σ2 * (2 * Real.log n) * K * n) := by
           rw [one_div_one_div, Real.log_pow]
           norm_cast
-      _ = (3 * K + 2) * (u - l) + 4 * √((2 : ℝ) ^ 2 * (σ2 * K * t * Real.log t)) := by
+      _ = (3 * K + 2) * (u - l) + 4 * √((2 : ℝ) ^ 2 * (σ2 * K * n * Real.log n)) := by
           congr 2
           ring_nf
-      _ = (3 * K + 2) * (u - l) + 4 * (2 * √(σ2 * K * t * Real.log t)) := by
+      _ = (3 * K + 2) * (u - l) + 4 * (2 * √(σ2 * K * n * Real.log n)) := by
           rw [Real.sqrt_mul (by positivity), Real.sqrt_sq (by norm_num)]
-      _ = (3 * K + 2) * (u - l) + 8 * √(σ2 * K * t * Real.log t) := by
+      _ = (3 * K + 2) * (u - l) + 8 * √(σ2 * K * n * Real.log n) := by
           ring
 
 end IntegralRegret

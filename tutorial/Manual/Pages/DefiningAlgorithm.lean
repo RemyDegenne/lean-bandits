@@ -146,7 +146,7 @@ open Classical in
 noncomputable
 def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  if n < K - 1 then ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ else
+  if n < K - 1 then RoundRobin.nextAction hK n else
   measurableArgmax (fun h a ↦ empMean' n h a + ucbWidth' c n h a) h
 
 @[fun_prop]

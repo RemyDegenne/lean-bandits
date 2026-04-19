@@ -60,18 +60,4 @@ lemma measurable_sum_Icc_of_le {f : ℕ → α → ℝ} {g : α → ℕ} {n : �
   refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
   exact (measurableSet_singleton _).preimage (by fun_prop)
 
-lemma measurable_apply_fin {α' : Type*} [MeasurableSpace α'] [Finite α']
-    [MeasurableSingletonClass α']
-    {f : α' → α → ℝ} {g : α → α'}
-    (hf : ∀ a, Measurable (f a)) (hg : Measurable g) :
-    Measurable (fun ω ↦ f (g ω) ω) := by
-  classical
-  have := Fintype.ofFinite α'
-  have : (fun ω ↦ f (g ω) ω) = fun ω ↦ ∑ a : α', if g ω = a then f a ω else 0 := by
-    ext ω; simp [Finset.sum_ite_eq]
-  rw [this]
-  apply Finset.measurable_fun_sum
-  intro a _
-  exact Measurable.ite (hg (measurableSet_singleton a)) (hf a) measurable_const
-
 end MeasureTheory

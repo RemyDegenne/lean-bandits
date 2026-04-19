@@ -9,6 +9,23 @@ public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
 # Deterministic algorithms
+
+A deterministic algorithm chooses its action in a deterministic way. That is, that action is given
+by a measurable function of the history instead of a general Markov kernel.
+
+We introduce a definition for those algorithms and prove results about the conditional distribution
+of the actions they generate when interacting with an environment.
+
+## Main definitions
+
+* `detAlgorithm nextAction h_next action0`: a deterministic algorithm that chooses its action
+  according to the measurable function `nextAction` (with proof of measurability `h_next`),
+  with initial action `action0`.
+
+## Notes
+
+The `ANCHOR` comments are used to mark code that appears in the tutorials.
+
 -/
 
 @[expose] public section

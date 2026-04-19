@@ -8,7 +8,7 @@ Fork the repository and create a new branch for your contribution. Make your cha
 
 ## What to contribute
 
-See the [Roadmap](ROADMAP.md).
+See the [Roadmap](https://remydegenne.github.io/lean-bandits/roadmap).
 
 #### Finding tasks
 

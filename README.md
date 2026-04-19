@@ -8,7 +8,7 @@
 </div>
 
 
-Website: [https://remydegenne.github.io/lean-bandits/](https://remydegenne.github.io/lean-bandits/)
+Website: [https://leanmachinelearning.github.io/](https://leanmachinelearning.github.io/)
 
 ## Goals
 
@@ -23,6 +23,8 @@ Website: [https://remydegenne.github.io/lean-bandits/](https://remydegenne.githu
 Please see our [contribution guide](CONTRIBUTING.md) and [code of conduct](CODE_OF_CONDUCT.md).
 
 For discussions, you can reach out to us on the [Lean prover Zulip chat](https://leanprover.zulipchat.com/).
+
+You can also see the [roadmap](https://leanmachinelearning.github.io/roadmap) for ideas on what to work on.
 
 ## Current state of the library
 

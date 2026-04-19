@@ -5,8 +5,8 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Bandit.Regret
-public import LeanMachineLearning.ForMathlib.MeasurableArgMax
+public import LeanMachineLearning.Online.Bandit.Regret
+public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Bayesian stationary environments -/

@@ -5,8 +5,8 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.FullSupport
-public import LeanMachineLearning.ForMathlib.WithDensity
+public import LeanMachineLearning.MeasureTheory.FullSupport
+public import LeanMachineLearning.Probability.WithDensity
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 
 @[expose] public section

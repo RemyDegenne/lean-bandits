@@ -5,11 +5,11 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.CondIndepFun
-public import LeanMachineLearning.ForMathlib.IndepFun
-public import LeanMachineLearning.ForMathlib.IndepInfinitePi
-public import LeanMachineLearning.ForMathlib.Integrable
-public import LeanMachineLearning.ForMathlib.StandardBorel
+public import LeanMachineLearning.Probability.Independence.CondIndepFun
+public import LeanMachineLearning.Probability.Independence.IndepFun
+public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
+public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Probability.Independence.Integration

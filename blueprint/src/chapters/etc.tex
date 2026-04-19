@@ -8,7 +8,7 @@ This algorithm simply cycles through the arms in order.
 \begin{definition}\label{def:roundRobinAlgorithm}
   \uses{def:detAlgorithm,def:algorithm}
   \leanok
-  \lean{Bandits.RoundRobin.nextArm, Bandits.roundRobinAlgorithm}
+  \lean{Learning.RoundRobin.nextAction, Learning.roundRobinAlgorithm}
 The Round-Robin algorithm is defined as follows: at time $t \in \mathbb{N}$, $A_t = t \mod K$.
 \end{definition}
 
@@ -16,7 +16,7 @@ The Round-Robin algorithm is defined as follows: at time $t \in \mathbb{N}$, $A_
 \begin{lemma}\label{lem:pullCount_roundRobinAlgorithm}
   \uses{def:stationaryEnv,def:IsAlgEnvSeq,def:pullCount,def:roundRobinAlgorithm}
   \leanok
-  \lean{Bandits.RoundRobin.pullCount_mul}
+  \lean{Learning.RoundRobin.pullCount_mul}
 For the Round-Robin algorithm, for any arm $a \in [K]$, at time $Km$ we have
 \begin{align*}
   N_{Km,a}

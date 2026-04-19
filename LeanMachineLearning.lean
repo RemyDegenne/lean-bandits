@@ -6,6 +6,7 @@ public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
+public import LeanMachineLearning.Online.Bandit.Algorithms.TS
 public import LeanMachineLearning.Probability.Independence.CondDistrib
 public import LeanMachineLearning.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.Probability.HasCondDistrib
@@ -13,14 +14,18 @@ public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
 public import LeanMachineLearning.Probability.Kernel.KernelSub
+public import LeanMachineLearning.Probability.WithDensity
+public import LeanMachineLearning.MeasureTheory.FullSupport
 public import LeanMachineLearning.MeasureTheory.Measurable
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.SequentialLearning.Algorithm
+public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
+public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace

@@ -3,15 +3,12 @@ Copyright (c) 2026 Gaëtan Serré. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
+module
 
-import LeanMachineLearning.ForMathlib.ENNReal
-import LeanMachineLearning.ForMathlib.IndepFun
-import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-import LeanMachineLearning.SequentialLearning.EvaluationEnv
-
-open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
-
-open scoped Topology
+public import LeanMachineLearning.Optimization.ENNReal
+public import LeanMachineLearning.Probability.Independence.IndepFun
+public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 
 /-!
 # Random Sampling
@@ -40,6 +37,12 @@ environment, which rewards actions using a measurable function `f`.
 - `tendsto_min`: The minimum reward converges in measure to the global minimum value.
 - `tendsto_max`: The maximum reward converges in measure to the global maximum value.
 -/
+
+@[expose] public section
+
+open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
+
+open scoped Topology
 
 variable {α β Ω : Type*} [MeasurableSpace α] [MeasurableSpace β] [StandardBorelSpace α] [Nonempty α]
   [StandardBorelSpace β] [Nonempty β] {μ : Measure α} [IsProbabilityMeasure μ] [MeasurableSpace Ω]

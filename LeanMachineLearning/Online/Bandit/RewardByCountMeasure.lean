@@ -5,7 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.Bandit.Bandit
+public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/

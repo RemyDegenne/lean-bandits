@@ -1,31 +1,33 @@
-import LeanMachineLearning.Bandit.Bandit
-import LeanMachineLearning.Bandit.Regret
-import LeanMachineLearning.Bandit.RewardByCountMeasure
-import LeanMachineLearning.Bandit.SumRewards
-import LeanMachineLearning.BanditAlgorithms.AuxSums
-import LeanMachineLearning.BanditAlgorithms.ETC
-import LeanMachineLearning.BanditAlgorithms.RoundRobin
-import LeanMachineLearning.BanditAlgorithms.UCB
-import LeanMachineLearning.ForMathlib.CondDistrib
-import LeanMachineLearning.ForMathlib.CondIndepFun
-import LeanMachineLearning.ForMathlib.ENNReal
-import LeanMachineLearning.ForMathlib.HasCondDistrib
-import LeanMachineLearning.ForMathlib.IndepFun
-import LeanMachineLearning.ForMathlib.IndepInfinitePi
-import LeanMachineLearning.ForMathlib.Integrable
-import LeanMachineLearning.ForMathlib.KernelSub
-import LeanMachineLearning.ForMathlib.Measurable
-import LeanMachineLearning.ForMathlib.MeasurableArgMax
-import LeanMachineLearning.ForMathlib.StandardBorel
-import LeanMachineLearning.ForMathlib.SubGaussian
-import LeanMachineLearning.ForMathlib.Traj
-import LeanMachineLearning.Optimization.Algorithms.LIPO
-import LeanMachineLearning.Optimization.Algorithms.RankOpt
-import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-import LeanMachineLearning.SequentialLearning.Algorithm
-import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
-import LeanMachineLearning.SequentialLearning.Deterministic
-import LeanMachineLearning.SequentialLearning.EvaluationEnv
-import LeanMachineLearning.SequentialLearning.FiniteActions
-import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
-import LeanMachineLearning.SequentialLearning.StationaryEnv
+module
+
+public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
+public import LeanMachineLearning.Online.Bandit.Regret
+public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
+public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
+public import LeanMachineLearning.Probability.Independence.CondDistrib
+public import LeanMachineLearning.Probability.Independence.CondIndepFun
+public import LeanMachineLearning.Probability.HasCondDistrib
+public import LeanMachineLearning.Probability.Independence.IndepFun
+public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
+public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.Probability.Kernel.KernelSub
+public import LeanMachineLearning.MeasureTheory.Measurable
+public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
+public import LeanMachineLearning.Probability.Moments.SubGaussian
+public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.Optimization.Algorithms.LIPO
+public import LeanMachineLearning.Optimization.Algorithms.RankOpt
+public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+public import LeanMachineLearning.Optimization.ENNReal
+public import LeanMachineLearning.SequentialLearning.Algorithm
+public import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
+public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
+public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
+public import LeanMachineLearning.SequentialLearning.FiniteActions
+public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+public import LeanMachineLearning.SequentialLearning.StationaryEnv

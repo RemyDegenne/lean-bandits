@@ -3,9 +3,10 @@ Copyright (c) 2026 Gaëtan Serré. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
+module
 
-import LeanMachineLearning.SequentialLearning.StationaryEnv
-import LeanMachineLearning.ForMathlib.CondDistrib
+public import LeanMachineLearning.SequentialLearning.StationaryEnv
+public import LeanMachineLearning.Probability.Independence.CondDistrib
 
 /-!
 # Function evaluation environments
@@ -23,6 +24,8 @@ the chosen action.
 * `reward_ae_eq_evals_actions`: For almost all `ω`, the reward at time `n` is equal to `f`
   evaluated at the action taken at time `n`.
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory
 

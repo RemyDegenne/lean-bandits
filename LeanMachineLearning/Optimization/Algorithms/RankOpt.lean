@@ -3,12 +3,10 @@ Copyright (c) 2026 Gaëtan Serré. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
+module
 
-import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-import LeanMachineLearning.SequentialLearning.Algorithm
-
-
-open MeasureTheory ProbabilityTheory Finset NNReal Learning
+public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
 # RankOpt: A Ranking Approach to Global Optimization
@@ -29,6 +27,10 @@ on the set of potential maximizers of the function at each iteration.
 * `RankOpt`: The RankOpt algorithm that samples from the set of potential maximizers using a given
   probability measure at each iteration.
 -/
+
+@[expose] public section
+
+open MeasureTheory ProbabilityTheory Finset NNReal Learning
 
 section RankRule
 

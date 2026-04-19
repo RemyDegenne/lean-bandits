@@ -3,11 +3,10 @@ Copyright (c) 2026 Gaëtan Serré. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gaëtan Serré
 -/
+module
 
-import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-import LeanMachineLearning.SequentialLearning.Algorithm
-
-open MeasureTheory ProbabilityTheory Finset NNReal Learning
+public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
 # LIPO: Lipschitz Optimization
@@ -26,6 +25,10 @@ probability measure on the set of potential maximizers of the function at each i
 * `LIPO`: The LIPO algorithm that samples from the set of potential maximizers using a given
   probability measure at each iteration.
 -/
+
+@[expose] public section
+
+open MeasureTheory ProbabilityTheory Finset NNReal Learning
 
 variable {α : Type*} [PseudoMetricSpace α] [MeasurableSpace α] [BorelSpace α]
   [SecondCountableTopology α] (μ : Measure α) [IsProbabilityMeasure μ] {n : ℕ} (κ : ℝ≥0)

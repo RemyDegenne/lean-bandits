@@ -37,7 +37,7 @@ open Classical in
 noncomputable
 def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  if n < K - 1 then ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ else
+  if n < K - 1 then RoundRobin.nextAction hK n else
   measurableArgmax (fun h a ↦ empMean' n h a + ucbWidth' c n h a) h
 
 @[fun_prop]
@@ -75,8 +75,7 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
     congr 1 with h
-    unfold UCB.nextArm RoundRobin.nextArm
-    simp [hn]
+    simp [UCB.nextArm, hn]
   hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
 
 section AlgorithmBehavior
@@ -103,7 +102,7 @@ lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n �
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
-  RoundRobin.arm_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
+  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
 
 lemma arm_ae_eq_ucbNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
@@ -141,7 +140,8 @@ lemma forall_arm_eq_mod_of_lt [Nonempty (Fin K)]
   | succ n _ =>
     filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_eq
     rw [h_eq, nextArm, if_pos]
-    grind
+    · rfl
+    · grind
 
 lemma forall_ucbIndex_le_ucbIndex_arm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :

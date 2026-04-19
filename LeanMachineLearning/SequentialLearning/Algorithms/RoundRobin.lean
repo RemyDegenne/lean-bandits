@@ -12,8 +12,13 @@ public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-! # Round-Robin algorithm
 
-That algorithm pulls each action in a round-robin fashion.
-That is, if there are `K` actions, then at time `n`, it pulls the action `n % K`.
+That algorithm chooses each of finitely many actions in a round-robin fashion.
+That is, if there are `K` actions numbered from 0 to `K - 1`, then at time `n` it chooses
+he action `n % K`.
+
+## Main definitions
+
+* `roundRobinAlgorithm`: the Round-Robin algorithm.
 
 -/
 
@@ -28,15 +33,14 @@ variable {K : ℕ}
 
 section AlgorithmDefinition
 
-/-- Arm pulled by the Round-Robin algorithm at time `n + 1`. This is arm `n % K`. -/
+/-- Action chosen by the Round-Robin algorithm at time `n + 1`. This is action `(n + 1) % K`. -/
 noncomputable
-def RoundRobin.nextArm (hK : 0 < K) (n : ℕ) : Fin K := ⟨(n + 1) % K, Nat.mod_lt _ hK⟩
+def RoundRobin.nextAction (hK : 0 < K) (n : ℕ) : Fin K := ⟨(n + 1) % K, Nat.mod_lt _ hK⟩
 
-/-- The Round-Robin algorithm: deterministic algorithm that chooses the next arm according
-to `RoundRobin.nextArm`. -/
+/-- The Round-Robin algorithm: deterministic algorithm that chooses action `n % K` at time `n`. -/
 noncomputable
 def roundRobinAlgorithm (hK : 0 < K) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (fun n _ ↦ RoundRobin.nextArm hK n) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (fun n _ ↦ RoundRobin.nextAction hK n) (by fun_prop) ⟨0, hK⟩
 
 end AlgorithmDefinition
 
@@ -47,28 +51,28 @@ variable {hK : 0 < K} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
 
-lemma arm_zero [Nonempty (Fin K)]
+lemma action_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P 0) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_zero_detAlgorithm
 
-lemma arm_ae_eq_roundRobinNextArm [Nonempty (Fin K)] (n : ℕ)
+lemma action_ae_eq_roundRobinNextAction [Nonempty (Fin K)] (n : ℕ)
     (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (n + 1)) :
-    A (n + 1) =ᵐ[P] fun _ ↦ nextArm hK n :=
+    A (n + 1) =ᵐ[P] fun _ ↦ nextAction hK n :=
   h.action_detAlgorithm_ae_eq (by grind)
 
-/-- The arm pulled at time `n` is the arm `n % K`. -/
-lemma arm_ae_eq [Nonempty (Fin K)] (n : ℕ)
+/-- The action chosen at time `n` is the action `n % K`. -/
+lemma action_ae_eq [Nonempty (Fin K)] (n : ℕ)
     (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P n) :
     A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
   cases n with
-  | zero => exact arm_zero h
+  | zero => exact action_zero h
   | succ n =>
-    filter_upwards [arm_ae_eq_roundRobinNextArm n h] with h hn_eq
-    rw [hn_eq, nextArm]
+    filter_upwards [action_ae_eq_roundRobinNextAction n h] with h hn_eq
+    rw [hn_eq, nextAction]
 
-/-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
+/-- At time `K * m`, the number of times each action is chosen is equal to `m`. -/
 lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
     (h : IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1))
     (a : Fin K) :
@@ -76,7 +80,7 @@ lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
   have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
-    arm_ae_eq n (h.mono (by have := n.2; simp only [mem_range] at this; grind))
+    action_ae_eq n (h.mono (by have := n.2; simp only [mem_range] at this; grind))
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
   filter_upwards [h_arm] with ω h_arm
   have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : A i ω = ⟨i % K, Nat.mod_lt _ hK⟩ := h_arm ⟨i, hi⟩

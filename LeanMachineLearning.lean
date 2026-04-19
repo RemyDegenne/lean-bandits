@@ -18,10 +18,16 @@ public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.Measura
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.Optimization.Algorithms.LIPO
+public import LeanMachineLearning.Optimization.Algorithms.RankOpt
+public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+public import LeanMachineLearning.Optimization.ENNReal
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv

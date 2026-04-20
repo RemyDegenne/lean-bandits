@@ -22,28 +22,17 @@ abbrev max : α := univ.sup' (by simp) f
 /-- The minimum value of a tuple. -/
 abbrev min : α := univ.inf' (by simp) f
 
-lemma le_max (x : ι) : f x ≤ max f := by
-  simp only [le_sup'_iff, mem_univ, true_and]
-  exact ⟨x, le_rfl⟩
+lemma le_max (x : ι) : f x ≤ max f := le_sup' _ (by simp)
 
-lemma min_le (x : ι) : min f ≤ f x := by
-  simp only [inf'_le_iff, mem_univ, true_and]
-  exact ⟨x, le_rfl⟩
+lemma min_le (x : ι) : min f ≤ f x := inf'_le _ (by simp)
 
-instance {n : ℕ} : Nonempty (Iic n) := Nonempty.intro ⟨0, insert_eq_self.mp rfl⟩
+instance {n : ℕ} : Nonempty (Iic n) := ⟨0, insert_eq_self.mp rfl⟩
 
 variable {n : ℕ} (u : Iic n → α)
 
 lemma exists_argmax : ∃ i, u i = max u := by
-  have : Nonempty (Iic n) := inferInstance
-  obtain ⟨i, -, hi⟩ := Finset.exists_max_image Finset.univ u (by simp)
-  refine ⟨i, ?_⟩
-  refine le_antisymm ?_ ?_
-  · simp only [le_sup'_iff, univ_eq_attach, mem_attach, true_and, Subtype.exists, mem_Iic]
-    exact ⟨i, by grind, le_rfl⟩
-  · simp only [sup'_le_iff, univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Iic]
-    intro j hj
-    exact hi ⟨j, mem_Iic.mpr hj⟩ (by simp)
+  obtain ⟨i, _, hi⟩ := Finset.exists_mem_eq_sup' (by simp : Finset.univ.Nonempty) u
+  exact ⟨i, hi.symm⟩
 
 /-- The index of the maximum value of a tuple. -/
 noncomputable def argmax := (exists_argmax u).choose
@@ -56,15 +45,8 @@ lemma le_argmax (x : Iic n) : u x ≤ u (argmax u) := by
   exact le_max u x
 
 lemma exists_argmin : ∃ i, u i = min u := by
-  have : Nonempty (Iic n) := inferInstance
-  obtain ⟨i, -, hi⟩ := Finset.exists_min_image Finset.univ u (by simp)
-  refine ⟨i, ?_⟩
-  refine le_antisymm ?_ ?_
-  · simp only [le_inf'_iff, univ_eq_attach, mem_attach, forall_const, Subtype.forall, mem_Iic]
-    intro j hj
-    exact hi ⟨j, mem_Iic.mpr hj⟩ (by simp)
-  · simp only [inf'_le_iff, univ_eq_attach, mem_attach, true_and, Subtype.exists, mem_Iic]
-    exact ⟨i, by grind, le_rfl⟩
+  obtain ⟨i, _, hi⟩ := Finset.exists_mem_eq_inf' (by simp : Finset.univ.Nonempty) u
+  exact ⟨i, hi.symm⟩
 
 /-- The index of the minimum value of a tuple. -/
 noncomputable def argmin := (exists_argmin u).choose

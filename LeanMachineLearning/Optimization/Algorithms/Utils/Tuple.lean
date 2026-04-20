@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Analysis.Normed.Order.Lattice
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Basic
+public import Mathlib.MeasureTheory.Order.Lattice
+public import LeanMachineLearning.MeasureTheory.Order.Lattice
 
 @[expose] public section
 
@@ -66,18 +68,17 @@ lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] (u : �
       true_and]
     exact ⟨argmax u, le_argmax u⟩
 
-variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [SecondCountableTopology α]
+variable [MeasurableSpace α]
 
 @[fun_prop]
-lemma measurable_max [ContinuousSup α] : Measurable (fun (t : ι → α) => max t) := by
-  fun_prop
+lemma measurable_max [MeasurableSup₂ α] : Measurable (fun (t : ι → α) => max t) := by
+  suffices (fun (t : ι → α) => max t) = (univ.sup' univ_nonempty fun i t => t i) by
+    rw [this]
+    exact measurable_sup' univ_nonempty (fun i _ => measurable_pi_apply i)
+  ext t; simp [max]
 
 @[fun_prop]
-lemma measurable_min [ContinuousInf α] : Measurable (fun (t : ι → α) => min t) := by
-  fun_prop
-
-@[fun_prop]
-lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [ContinuousSup α] :
+lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [MeasurableSup₂ α] :
     Measurable fun (u : ι → α) ↦ argmax u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]
@@ -94,10 +95,17 @@ lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [ContinuousSup α
       exact h u rfl
   rw [this]
   refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
-  exact measurableSet_eq_fun (by fun_prop) measurable_const
+  refine measurableSet_eq_fun (by fun_prop) measurable_const
 
 @[fun_prop]
-lemma measurable_argmin [MeasurableSpace ι] [MeasurableEq α] [ContinuousInf α] :
+lemma measurable_min [MeasurableInf₂ α] : Measurable (fun (t : ι → α) => min t) := by
+  suffices (fun (t : ι → α) => min t) = (univ.inf' univ_nonempty fun i t => t i) by
+    rw [this]
+    exact measurable_inf' univ_nonempty (fun i _ => measurable_pi_apply i)
+  ext t; simp [min]
+
+@[fun_prop]
+lemma measurable_argmin [MeasurableSpace ι] [MeasurableEq α] [MeasurableInf₂ α] :
     Measurable fun (u : ι → α) ↦ argmin u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]

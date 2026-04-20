@@ -54,7 +54,7 @@ end LIPO
 
 open LIPO
 
-/- We suppose that the set of potential maximizers has non-zero measure at each iteration,
+/- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
 variable (h : ∀ n (data : Iic n → α × ℝ), μ (potential_max κ data) ≠ 0)
 

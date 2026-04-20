@@ -125,7 +125,7 @@ end RankOpt
 
 open RankOpt
 
-/- We suppose that the set of potential maximizers has non-zero measure at each iteration,
+/- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
 variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
   (h : ∀ n (data : Iic n → α × β), μ (potential_max data 𝓡) ≠ 0)

@@ -42,6 +42,8 @@ lemma measurable_potential_max_inter {s : Set α} (hs : MeasurableSet s) :
       <| measurableSet_preimage measurable_snd hs
   exact measurable_measure_prodMk_left hE_meas
 
+/-- The Markov kernel that samples from the set of potential maximizers according to a given
+measure `μ`. -/
 noncomputable def potential_max_kernel : Kernel (Iic n → α × β) α := by
   refine ⟨fun data ↦ cond μ <| potential_max n data, ?_⟩
   rw [Measure.measurable_measure]
@@ -55,8 +57,11 @@ noncomputable def potential_max_kernel : Kernel (Iic n → α × β) α := by
     convert measurable_potential_max_inter μ measurableSet_potential_max_prod hs using 1
     simp [Set.inter_comm]
 
+/- We need that the set of potential maximizers has non-zero measure at each iteration,
+ensuring that the algorithm can sample from it. -/
 variable (h : ∀ n (data : Iic n → α × β), μ (potential_max n data) ≠ 0)
 
+/-- The interface for decision-based optimization algorithms. -/
 noncomputable def Decision : Algorithm α β where
   policy _ := potential_max_kernel μ measurableSet_potential_max_prod
   p0 := μ

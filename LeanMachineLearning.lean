@@ -1,6 +1,7 @@
 import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 import LeanMachineLearning.MeasureTheory.Measurable
+import LeanMachineLearning.MeasureTheory.Order.Lattice
 import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 import LeanMachineLearning.Online.Bandit.ArrayProbSpace

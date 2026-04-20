@@ -70,16 +70,56 @@ lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] {n : �
     mem_Iic, true_and, Subtype.exists]
     exact ⟨argmax u, by grind, fun i hi ↦ le_argmax u ⟨i, mem_Iic.mpr hi⟩⟩
 
-variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [OpensMeasurableSpace α]
-  [SecondCountableTopology α]
+variable [MeasurableSpace α]
+
+variable [TopologicalSpace α] [BorelSpace α] [OpensMeasurableSpace α] [SecondCountableTopology α]
 
 @[fun_prop]
-lemma measurable_max [ContinuousSup α] : Measurable (fun (t : Iic n → α) => Tuple.max t) := by
+lemma measurable_max [ContinuousSup α] : Measurable (fun (t : Iic n → α) => max t) := by
   fun_prop
 
 @[fun_prop]
-lemma measurable_min [ContinuousInf α] : Measurable (fun (t : Iic n → α) => Tuple.min t) := by
+lemma measurable_min [ContinuousInf α] : Measurable (fun (t : Iic n → α) => min t) := by
   fun_prop
 
+@[fun_prop]
+lemma measurable_argmax [MeasurableEq α] [ContinuousSup α] :
+    Measurable fun (u : Iic n → α) ↦ argmax u := by
+  refine measurable_to_countable' fun i ↦ ?_
+  simp only [Set.preimage, Set.mem_singleton_iff]
+  let Maximizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = max u}
+  have : {u : Iic n → α | argmax u = i} = ⋃ (S)
+      (hS : ∀ x, Maximizers x = S → argmax x = i), {u | Maximizers u = S} := by
+    ext u
+    simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
+    constructor
+    · intro hu x hx
+      rw [← hu]
+      exact Classical.choose.congr_simp hx (exists_argmax x)
+    · intro h
+      exact h u rfl
+  rw [this]
+  refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
+  exact measurableSet_eq_fun (by fun_prop) measurable_const
+
+@[fun_prop]
+lemma measurable_argmin [MeasurableEq α] [ContinuousInf α] :
+    Measurable fun (u : Iic n → α) ↦ argmin u := by
+  refine measurable_to_countable' fun i ↦ ?_
+  simp only [Set.preimage, Set.mem_singleton_iff]
+  let Minimizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = Tuple.min u}
+  have : {u : Iic n → α | argmin u = i} = ⋃ (S)
+      (hS : ∀ x, Minimizers x = S → argmin x = i), {u | Minimizers u = S} := by
+    ext u
+    simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
+    constructor
+    · intro hu x hx
+      rw [← hu]
+      exact Classical.choose.congr_simp hx (exists_argmin x)
+    · intro h
+      exact h u rfl
+  rw [this]
+  refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
+  exact measurableSet_eq_fun (by fun_prop) measurable_const
 
 end Tuple

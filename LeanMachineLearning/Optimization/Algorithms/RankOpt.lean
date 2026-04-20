@@ -98,28 +98,9 @@ lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.
       suffices Measurable (fun p : (Iic n → α × β) × Iic n ↦ p.1 p.2) by
         fun_prop
       exact measurable_from_prod_countable_left fun i ↦ measurable_pi_apply i
-    refine h_eval.comp (Measurable.prodMk ?_ ?_)
-    · fun_prop
-    · change Measurable (fun p : Iic n → α × β ↦ Tuple.argmax (fun i ↦ (p i).2))
-      suffices Measurable (fun u : Iic n → β ↦ Tuple.argmax u) by
-        fun_prop
-      refine measurable_to_countable' fun i ↦ ?_
-      simp only [Set.preimage, Set.mem_singleton_iff]
-      let Maximizers {n : ℕ} (u : Iic n → β) : Set (Iic n) := {i | u i = Tuple.max u}
-      have : {u : Iic n → β | Tuple.argmax u = i} = ⋃ (S)
-          (hS : ∀ x, Maximizers x = S → Tuple.argmax x = i), {u | Maximizers u = S} := by
-        ext u
-        simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
-        constructor
-        · intro hu x hx
-          rw [← hu]
-          unfold Tuple.argmax
-          exact Classical.choose.congr_simp hx (Tuple.exists_argmax x)
-        · intro h
-          exact h u rfl
-      rw [this]
-      refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
-      refine measurableSet_eq_fun (by fun_prop) measurable_const
+    refine h_eval.comp (Measurable.prodMk (by fun_prop) ?_)
+    change Measurable (fun p : Iic n → α × β ↦ Tuple.argmax (fun i ↦ (p i).2))
+    fun_prop
 
 end RankOpt
 

@@ -87,7 +87,7 @@ lemma measurable_argmax [MeasurableEq α] [ContinuousSup α] :
     Measurable fun (u : Iic n → α) ↦ argmax u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]
-  let Maximizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = max u}
+  let Maximizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {j | u j = max u}
   have : {u : Iic n → α | argmax u = i} = ⋃ (S)
       (hS : ∀ x, Maximizers x = S → argmax x = i), {u | Maximizers u = S} := by
     ext u
@@ -107,7 +107,7 @@ lemma measurable_argmin [MeasurableEq α] [ContinuousInf α] :
     Measurable fun (u : Iic n → α) ↦ argmin u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]
-  let Minimizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = Tuple.min u}
+  let Minimizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {j | u j = Tuple.min u}
   have : {u : Iic n → α | argmin u = i} = ⋃ (S)
       (hS : ∀ x, Minimizers x = S → argmin x = i), {u | Minimizers u = S} := by
     ext u

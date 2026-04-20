@@ -198,17 +198,14 @@ lemma tendsto_min₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measu
   intro ω hω
   rw [← Tuple.argmin_spec]
   set j := Tuple.argmin (fun (i : Iic n) ↦ dist (f (A i ω)) (f a))
-  have : dist (Tuple.min fun (i : Iic n) ↦ f (A i ω)) (f a) ≤ dist (f (A j ω)) (f a) := by
-    rw [← Tuple.argmin_spec]
-    set k := Tuple.argmin (fun (i : Iic n) ↦ f (A i ω))
-    have := hf_min (A k ω)
-    have : f (A k ω) ≤ f (A j ω) :=
-      Tuple.argmin_le (fun (i : Iic n) ↦ f (A i ω)) j
-    simp [Real.dist_eq]
-    grind
-  have := hω.trans this
-  by_contra! h_contra
-  linarith
+  refine hω.trans ?_
+  rw [← Tuple.argmin_spec]
+  set k := Tuple.argmin (fun (i : Iic n) ↦ f (A i ω))
+  have := hf_min (A k ω)
+  have : f (A k ω) ≤ f (A j ω) :=
+    Tuple.argmin_le (fun (i : Iic n) ↦ f (A i ω)) j
+  simp [Real.dist_eq]
+  grind
 
 /-- The minimum reward converges to the global minimum value. -/
 lemma tendsto_min (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)
@@ -231,17 +228,14 @@ lemma tendsto_max₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measu
   intro ω hω
   rw [← Tuple.argmin_spec]
   set j := Tuple.argmin (fun (i : Iic n) ↦ dist (f (A i ω)) (f a))
-  have : dist (Tuple.max fun (i : Iic n) ↦ f (A i ω)) (f a) ≤ dist (f (A j ω)) (f a) := by
-    rw [← Tuple.argmax_spec]
-    set k := Tuple.argmax (fun (i : Iic n) ↦ f (A i ω))
-    have := hf_max (A k ω)
-    have : f (A j ω) ≤ f (A k ω) :=
-      Tuple.le_argmax (fun (i : Iic n) ↦ f (A i ω)) j
-    simp [Real.dist_eq]
-    grind
-  have := hω.trans this
-  by_contra! h_contra
-  linarith
+  refine hω.trans ?_
+  rw [← Tuple.argmax_spec]
+  set k := Tuple.argmax (fun (i : Iic n) ↦ f (A i ω))
+  have := hf_max (A k ω)
+  have : f (A j ω) ≤ f (A k ω) :=
+    Tuple.le_argmax (fun (i : Iic n) ↦ f (A i ω)) j
+  simp [Real.dist_eq]
+  grind
 
 /-- The maximum reward converges to the global maximum value. -/
 lemma tendsto_max (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv hfc.measurable) P)

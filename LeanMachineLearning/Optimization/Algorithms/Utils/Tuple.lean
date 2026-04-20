@@ -28,7 +28,7 @@ lemma min_le (x : ι) : min f ≤ f x := inf'_le _ (by simp)
 
 instance {n : ℕ} : Nonempty (Iic n) := ⟨0, insert_eq_self.mp rfl⟩
 
-variable {n : ℕ} (u : Iic n → α)
+variable {n : ℕ} (u : ι → α)
 
 lemma exists_argmax : ∃ i, u i = max u := by
   obtain ⟨i, _, hi⟩ := Finset.exists_mem_eq_sup' (by simp : Finset.univ.Nonempty) u
@@ -40,7 +40,7 @@ noncomputable def argmax := (exists_argmax u).choose
 lemma argmax_spec : u (argmax u) = max u :=
   (exists_argmax u).choose_spec
 
-lemma le_argmax (x : Iic n) : u x ≤ u (argmax u) := by
+lemma le_argmax (x : ι) : u x ≤ u (argmax u) := by
   rw [argmax_spec u]
   exact le_max u x
 
@@ -54,41 +54,37 @@ noncomputable def argmin := (exists_argmin u).choose
 lemma argmin_spec : u (argmin u) = min u :=
   (exists_argmin u).choose_spec
 
-lemma argmin_le (x : Iic n) : u (argmin u) ≤ u x := by
+lemma argmin_le (x : ι) : u (argmin u) ≤ u x := by
   rw [argmin_spec u]
   exact min_le u x
 
-lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] {n : ℕ} (u : Iic n → α) :
+lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] (u : ι → α) :
     -(max u) = min (-u) := by
-  simp only [max, univ_eq_attach, min, Pi.neg_apply]
+  simp only [max, min, Pi.neg_apply]
   refine le_antisymm ?_ ?_
-  · simp only [le_inf'_iff, mem_attach, neg_le_neg_iff, le_sup'_iff, true_and, Subtype.exists,
-    mem_Iic, forall_const, Subtype.forall]
-    intro i hi
-    exact ⟨i, hi, le_rfl⟩
-  · simp only [inf'_le_iff, mem_attach, neg_le_neg_iff, sup'_le_iff, forall_const, Subtype.forall,
-    mem_Iic, true_and, Subtype.exists]
-    exact ⟨argmax u, by grind, fun i hi ↦ le_argmax u ⟨i, mem_Iic.mpr hi⟩⟩
+  · simp only [le_inf'_iff, mem_univ, neg_le_neg_iff, le_sup'_iff, true_and, forall_const]
+    intro i
+    exact ⟨i, le_rfl⟩
+  · simp only [inf'_le_iff, mem_univ, neg_le_neg_iff, sup'_le_iff, forall_const, true_and]
+    exact ⟨argmax u, le_argmax u⟩
 
-variable [MeasurableSpace α]
-
-variable [TopologicalSpace α] [BorelSpace α] [OpensMeasurableSpace α] [SecondCountableTopology α]
+variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [SecondCountableTopology α]
 
 @[fun_prop]
-lemma measurable_max [ContinuousSup α] : Measurable (fun (t : Iic n → α) => max t) := by
+lemma measurable_max [ContinuousSup α] : Measurable (fun (t : ι → α) => max t) := by
   fun_prop
 
 @[fun_prop]
-lemma measurable_min [ContinuousInf α] : Measurable (fun (t : Iic n → α) => min t) := by
+lemma measurable_min [ContinuousInf α] : Measurable (fun (t : ι → α) => min t) := by
   fun_prop
 
 @[fun_prop]
-lemma measurable_argmax [MeasurableEq α] [ContinuousSup α] :
-    Measurable fun (u : Iic n → α) ↦ argmax u := by
+lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [ContinuousSup α] :
+    Measurable fun (u : ι → α) ↦ argmax u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]
-  let Maximizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = max u}
-  have : {u : Iic n → α | argmax u = i} = ⋃ (S)
+  let Maximizers (u : ι → α) : Set ι := {i | u i = max u}
+  have : {u : ι → α | argmax u = i} = ⋃ (S)
       (hS : ∀ x, Maximizers x = S → argmax x = i), {u | Maximizers u = S} := by
     ext u
     simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
@@ -103,12 +99,12 @@ lemma measurable_argmax [MeasurableEq α] [ContinuousSup α] :
   exact measurableSet_eq_fun (by fun_prop) measurable_const
 
 @[fun_prop]
-lemma measurable_argmin [MeasurableEq α] [ContinuousInf α] :
-    Measurable fun (u : Iic n → α) ↦ argmin u := by
+lemma measurable_argmin [MeasurableSpace ι] [MeasurableEq α] [ContinuousInf α] :
+    Measurable fun (u : ι → α) ↦ argmin u := by
   refine measurable_to_countable' fun i ↦ ?_
   simp only [Set.preimage, Set.mem_singleton_iff]
-  let Minimizers {n : ℕ} (u : Iic n → α) : Set (Iic n) := {i | u i = Tuple.min u}
-  have : {u : Iic n → α | argmin u = i} = ⋃ (S)
+  let Minimizers (u : ι → α) : Set ι := {i | u i = Tuple.min u}
+  have : {u : ι → α | argmin u = i} = ⋃ (S)
       (hS : ∀ x, Minimizers x = S → argmin x = i), {u | Minimizers u = S} := by
     ext u
     simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']

@@ -1,33 +1,32 @@
-module
-
-public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
-public import LeanMachineLearning.Online.Bandit.Regret
-public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
-public import LeanMachineLearning.Online.Bandit.SumRewards
-public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
-public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
-public import LeanMachineLearning.Probability.Independence.CondDistrib
-public import LeanMachineLearning.Probability.Independence.CondIndepFun
-public import LeanMachineLearning.Probability.HasCondDistrib
-public import LeanMachineLearning.Probability.Independence.IndepFun
-public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
-public import LeanMachineLearning.Probability.Integrable
-public import LeanMachineLearning.Probability.Kernel.KernelSub
-public import LeanMachineLearning.MeasureTheory.Measurable
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
-public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
-public import LeanMachineLearning.Probability.Moments.SubGaussian
-public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
-public import LeanMachineLearning.Optimization.Algorithms.LIPO
-public import LeanMachineLearning.Optimization.Algorithms.RankOpt
-public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-public import LeanMachineLearning.Optimization.ENNReal
-public import LeanMachineLearning.SequentialLearning.Algorithm
-public import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
-public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
-public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.SequentialLearning.Deterministic
-public import LeanMachineLearning.SequentialLearning.EvaluationEnv
-public import LeanMachineLearning.SequentialLearning.FiniteActions
-public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
-public import LeanMachineLearning.SequentialLearning.StationaryEnv
+import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
+import LeanMachineLearning.MeasureTheory.Measurable
+import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+import LeanMachineLearning.Online.Bandit.Algorithms.UCB
+import LeanMachineLearning.Online.Bandit.ArrayProbSpace
+import LeanMachineLearning.Online.Bandit.Regret
+import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
+import LeanMachineLearning.Online.Bandit.SumRewards
+import LeanMachineLearning.Optimization.Algorithms.Decision
+import LeanMachineLearning.Optimization.Algorithms.LIPO
+import LeanMachineLearning.Optimization.Algorithms.RankOpt
+import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
+import LeanMachineLearning.Optimization.ENNReal
+import LeanMachineLearning.Probability.HasCondDistrib
+import LeanMachineLearning.Probability.Independence.CondDistrib
+import LeanMachineLearning.Probability.Independence.CondIndepFun
+import LeanMachineLearning.Probability.Independence.IndepFun
+import LeanMachineLearning.Probability.Independence.IndepInfinitePi
+import LeanMachineLearning.Probability.Integrable
+import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+import LeanMachineLearning.Probability.Kernel.KernelSub
+import LeanMachineLearning.Probability.Moments.SubGaussian
+import LeanMachineLearning.SequentialLearning.Algorithm
+import LeanMachineLearning.SequentialLearning.Algorithms.AuxSums
+import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
+import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
+import LeanMachineLearning.SequentialLearning.Deterministic
+import LeanMachineLearning.SequentialLearning.EvaluationEnv
+import LeanMachineLearning.SequentialLearning.FiniteActions
+import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+import LeanMachineLearning.SequentialLearning.StationaryEnv

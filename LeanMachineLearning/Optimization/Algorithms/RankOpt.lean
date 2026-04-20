@@ -5,8 +5,7 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import LeanMachineLearning.Optimization.Algorithms.Utils.Tuple
-public import LeanMachineLearning.SequentialLearning.Algorithm
+public import LeanMachineLearning.Optimization.Algorithms.Decision
 
 /-!
 # RankOpt: A Ranking Approach to Global Optimization
@@ -15,15 +14,14 @@ Implementation of the _RankOpt_ algorithm
 [(_A Ranking Approach to Global Optimization_,
 Malherbe et al. 2017)](https://arxiv.org/abs/1603.04381)
 defined on a measurable space. The algorithm samples from an arbitrary probability measure
-on the set of potential maximizers of the function at each iteration.
+on the set of potential maximizers of the function at each iteration. It is defined as a special
+case of the `Decision` algorithm.
 
 ## Main definitions
 
 * `RankRule`: A rank rule is a measurable function that compares pairs of points.
   It returns 1 if the first point is ranked higher, -1 if lower, and 0 if equal.
 * `potential_max`: The set of potential maximizers for the RankOpt algorithm.
-* `potential_max_kernel`: The Markov kernel that samples from the set of potential maximizers
-  according to a given measure `μ`.
 * `RankOpt`: The RankOpt algorithm that samples from the set of potential maximizers using a given
   probability measure at each iteration.
 -/
@@ -123,34 +121,11 @@ lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.
       refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
       refine measurableSet_eq_fun (by fun_prop) measurable_const
 
-lemma measurable_potential_max_inter {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
-    {s : Set α} (hs : MeasurableSet s) :
-    Measurable (fun data : Iic n → α × β ↦ μ (potential_max data 𝓡 ∩ s)) := by
-  set E := {p : (Iic n → α × β) × α | p.2 ∈ potential_max p.1 𝓡 ∩ s}
-  have hE_meas : MeasurableSet E :=
-    (measurableSet_potential_max_prod h𝓡).inter (measurableSet_preimage measurable_snd hs)
-  exact measurable_measure_prodMk_left hE_meas
-
-/-- Markov kernel sampling from the set of potential maximizers according to μ. -/
-noncomputable def potential_max_kernel {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable) :
-    Kernel (Iic n → α × β) α := by
-  refine ⟨fun data ↦ cond μ <| potential_max data 𝓡, ?_⟩
-  rw [Measure.measurable_measure]
-  intro s hs
-  simp only [ProbabilityTheory.cond, Measure.smul_apply, smul_eq_mul]
-  refine Measurable.mul ?_ ?_
-  · refine Measurable.inv ?_
-    convert measurable_potential_max_inter (β := β) μ h𝓡 (MeasurableSet.univ)
-    simp [Set.inter_univ]
-  · simp_rw [μ.restrict_apply hs]
-    convert measurable_potential_max_inter (β := β) μ h𝓡 hs using 1
-    simp [Set.inter_comm]
-
 end RankOpt
 
 open RankOpt
 
-/- We suppose that the set of potential maximizers has non-zero measure at each iteration,
+/- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
 variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
   (h : ∀ n (data : Iic n → α × β), μ (potential_max data 𝓡) ≠ 0)
@@ -160,7 +135,5 @@ This algorithm uses a ranking approach to optimize an unknown function. It maint
 class `𝓡` of ranking rules. It starts with an arbitrary probability measure `μ` as initial
 distribution and samples from the set of points that could be optimal according to ranking rules
 consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/abs/1603.04381). -/
-noncomputable def RankOpt : Algorithm α β where
-  policy _ := potential_max_kernel μ h𝓡
-  p0 := μ
-  h_policy n := ⟨fun data => cond_isProbabilityMeasure (h n data)⟩
+noncomputable def RankOpt : Algorithm α β :=
+  Decision μ (fun n ↦ measurableSet_potential_max_prod (n := n) h𝓡) h

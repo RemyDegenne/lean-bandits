@@ -75,14 +75,10 @@ variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [OpensMeasur
 
 @[fun_prop]
 lemma measurable_max [ContinuousSup α] : Measurable (fun (t : Iic n → α) => Tuple.max t) := by
-  have : Nonempty (Iic n) := inferInstance
-  simp_all only [mem_Iic, nonempty_subtype]
   fun_prop
 
 @[fun_prop]
 lemma measurable_min [ContinuousInf α] : Measurable (fun (t : Iic n → α) => Tuple.min t) := by
-  have : Nonempty (Iic n) := inferInstance
-  simp_all only [mem_Iic, nonempty_subtype]
   fun_prop
 
 

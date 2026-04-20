@@ -86,20 +86,19 @@ lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] {n : �
     exact ⟨i, hi, le_rfl⟩
   · simp only [inf'_le_iff, mem_attach, neg_le_neg_iff, sup'_le_iff, forall_const, Subtype.forall,
     mem_Iic, true_and, Subtype.exists]
-    refine ⟨argmax u, by grind, ?_⟩
-    intro i hi
-    exact le_argmax u ⟨i, mem_Iic.mpr hi⟩
+    exact ⟨argmax u, by grind, fun i hi ↦ le_argmax u ⟨i, mem_Iic.mpr hi⟩⟩
 
-variable [MeasurableSpace α]
+variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [OpensMeasurableSpace α]
+  [SecondCountableTopology α]
 
 @[fun_prop]
-lemma measurable_max : Measurable (fun (t : Iic n → ℝ) => Tuple.max t) := by
+lemma measurable_max [ContinuousSup α] : Measurable (fun (t : Iic n → α) => Tuple.max t) := by
   have : Nonempty (Iic n) := inferInstance
   simp_all only [mem_Iic, nonempty_subtype]
   fun_prop
 
 @[fun_prop]
-lemma measurable_min : Measurable (fun (t : Iic n → ℝ) => Tuple.min t) := by
+lemma measurable_min [ContinuousInf α] : Measurable (fun (t : Iic n → α) => Tuple.min t) := by
   have : Nonempty (Iic n) := inferInstance
   simp_all only [mem_Iic, nonempty_subtype]
   fun_prop

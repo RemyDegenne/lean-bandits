@@ -60,12 +60,10 @@ lemma argmin_le (x : ι) : u (argmin u) ≤ u x := by
 
 lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] (u : ι → α) :
     -(max u) = min (-u) := by
-  simp only [max, min, Pi.neg_apply]
   refine le_antisymm ?_ ?_
-  · simp only [le_inf'_iff, mem_univ, neg_le_neg_iff, le_sup'_iff, true_and, forall_const]
-    intro i
-    exact ⟨i, le_rfl⟩
-  · simp only [inf'_le_iff, mem_univ, neg_le_neg_iff, sup'_le_iff, forall_const, true_and]
+  · simp; grind
+  · simp only [inf'_le_iff, mem_univ, Pi.neg_apply, neg_le_neg_iff, sup'_le_iff, forall_const,
+      true_and]
     exact ⟨argmax u, le_argmax u⟩
 
 variable [MeasurableSpace α] [TopologicalSpace α] [BorelSpace α] [SecondCountableTopology α]

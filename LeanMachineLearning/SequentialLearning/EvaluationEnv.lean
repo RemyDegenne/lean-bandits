@@ -41,7 +41,7 @@ noncomputable def evalEnv {f : α → R} (hf : Measurable f) :=
 namespace IsAlgEnvSeq
 
 variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-  {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R} {f : α → R} (hf : Measurable f)
+  {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R} {f : α → R} {hf : Measurable f}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
 lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
@@ -53,18 +53,18 @@ lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n
 lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
     R' n =ᵐ[P] f ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic hf (h.measurable_A n).aemeasurable
-    (h.measurable_R n).aemeasurable (hascondDistrib_reward_evalEnv hf h n).condDistrib_eq
+    (h.measurable_R n).aemeasurable (hascondDistrib_reward_evalEnv h n).condDistrib_eq
 
 lemma reward_ae_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
     ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := by
   rw [ae_all_iff]
   intro n
-  exact reward_ae_eq_eval_action hf h n
+  exact reward_ae_eq_eval_action h n
 
 open Finset in
 lemma reward_ae_eq_evals_actions_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
     (g : (Iic n → R) → β) : ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
-  filter_upwards [reward_ae_eq_evals_actions hf h] with ω hω
+  filter_upwards [reward_ae_eq_evals_actions h] with ω hω
   simp_rw [hω]
 
 end IsAlgEnvSeq

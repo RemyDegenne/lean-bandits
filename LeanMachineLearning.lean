@@ -1,24 +1,25 @@
-module
+module  -- shake: keep-all
 
+public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
+public import LeanMachineLearning.MeasureTheory.Measurable
+public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
-public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
-public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
+public import LeanMachineLearning.Probability.HasCondDistrib
 public import LeanMachineLearning.Probability.Independence.CondDistrib
 public import LeanMachineLearning.Probability.Independence.CondIndepFun
-public import LeanMachineLearning.Probability.HasCondDistrib
 public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
-public import LeanMachineLearning.Probability.Kernel.KernelSub
-public import LeanMachineLearning.MeasureTheory.Measurable
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
-public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
-public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.Probability.Kernel.KernelSub
+public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.SequentialLearning.Algorithm
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.FiniteActions

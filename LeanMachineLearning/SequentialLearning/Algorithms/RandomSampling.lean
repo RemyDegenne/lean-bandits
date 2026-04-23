@@ -44,7 +44,7 @@ noncomputable def randomSampling (μ : Measure α) [IsProbabilityMeasure μ] : A
 
 namespace randomSampling
 
-variable {A : ℕ → Ω → α} {R : ℕ → Ω → β} {f : α → β} (hf : Measurable f)
+variable {A : ℕ → Ω → α} {R : ℕ → Ω → β}
 
 /-- Each action follows the distribution μ. -/
 lemma hasLaw_actions {env : Environment α β}

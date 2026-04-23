@@ -167,10 +167,10 @@ lemma hasLaw_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     have hR₀ := h₀.measurable_R
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
-    rw [← map_bind_condDistrib hE (by fun_prop), h.hasLaw_env.map_eq,
+    rw [← condDistrib_comp_map hE.aemeasurable (by fun_prop), h.hasLaw_env.map_eq,
           Measure.bind_congr_right (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
           Kernel.comp_withDensity_const (by fun_prop),
-          ← h₀.hasLaw_env.map_eq, map_bind_condDistrib hE₀ (by fun_prop)]
+          ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
 
 variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 variable [IsProbabilityMeasure Q]

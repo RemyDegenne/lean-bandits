@@ -396,11 +396,6 @@ lemma ae_eq_of_condDistrib_eq_deterministic {f : β → Ω} (hf : Measurable f) 
   rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h hfX
   exact ae_eq_of_map_prodMk_eq hf hX hY (hfX ▸ h)
 
-/-- The marginal law of `Y` is obtained by integrating `condDistrib Y X μ` against `μ.map X`. -/
-lemma map_bind_condDistrib (hX : Measurable X) (hY : AEMeasurable Y μ) :
-    (μ.map X).bind (condDistrib Y X μ) = μ.map Y := by
-  rw [← Measure.snd_compProd, compProd_map_condDistrib hY, Measure.snd_map_prodMk hX]
-
 /-- The joint law of `(Y, X)` equals the compProd of `μ.map X` and `condDistrib Y X μ`, swapped. -/
 lemma compProd_map_condDistrib_swap (hX : Measurable X) (hY : Measurable Y) :
     (μ.map X ⊗ₘ condDistrib Y X μ).map Prod.swap = μ.map (fun ω ↦ (Y ω, X ω)) := by

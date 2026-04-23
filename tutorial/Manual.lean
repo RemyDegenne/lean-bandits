@@ -12,8 +12,8 @@ def extraHead : Array Verso.Output.Html := #[
 
 def config : RenderConfig := {
   extraHead := extraHead,
-  sourceLink := some "https://github.com/RemyDegenne/lean-bandits",
-  issueLink := some "https://github.com/RemyDegenne/lean-bandits/issues",
+  sourceLink := some "https://github.com/LeanMachineLearning/LML",
+  issueLink := some "https://github.com/LeanMachineLearning/LML/issues",
 }
 
 def main := manualMain (%doc Manual.Front) (config := config)

@@ -21,8 +21,8 @@ each iteration.
 
 ## Main statements
 
-* `hasLaw_actions`: Each action follows the distribution μ.
-* `iIndep_actions`: Actions are mutually independent across time steps.
+* `hasLaw_action`: Each action follows the distribution μ.
+* `iIndep_action`: Actions are mutually independent across time steps.
 -/
 
 @[expose] public section
@@ -30,6 +30,8 @@ each iteration.
 open MeasureTheory ProbabilityTheory Learning Finset ENNReal Filter
 
 open scoped Topology
+
+namespace Learning
 
 variable {α β Ω : Type*} [MeasurableSpace α] [MeasurableSpace β] [StandardBorelSpace α] [Nonempty α]
   [StandardBorelSpace β] [Nonempty β] {μ : Measure α} [IsProbabilityMeasure μ] [MeasurableSpace Ω]
@@ -44,11 +46,11 @@ noncomputable def randomSampling (μ : Measure α) [IsProbabilityMeasure μ] : A
 
 namespace randomSampling
 
-variable {A : ℕ → Ω → α} {R : ℕ → Ω → β}
+variable {A : ℕ → Ω → α} {R : ℕ → Ω → β} {env : Environment α β}
 
 /-- Each action follows the distribution μ. -/
-lemma hasLaw_actions {env : Environment α β}
-    (h : IsAlgEnvSeq A R (randomSampling μ) env P) (n : ℕ) : HasLaw (A n) μ P := by
+lemma hasLaw_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) (n : ℕ) :
+    HasLaw (A n) μ P := by
   by_cases hn : n = 0
   · rw [hn]
     exact h.hasLaw_action_zero
@@ -57,14 +59,14 @@ lemma hasLaw_actions {env : Environment α β}
     exact hasLaw_of_hasCondDistrib_const <| h.hasCondDistrib_action k
 
 /-- Actions are mutually independent. -/
-lemma iIndep_actions {env : Environment α β}
-    (h : IsAlgEnvSeq A R (randomSampling μ) env P) : iIndepFun A P := by
+lemma iIndep_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) :
+    iIndepFun A P := by
   have hA := h.measurable_A
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
   have condDistrib_eq := (h.hasCondDistrib_action n).condDistrib_eq
   simp only [randomSampling_policy] at condDistrib_eq
-  have law_eq := (hasLaw_actions h (n + 1)).map_eq
+  have law_eq := (hasLaw_action h (n + 1)).map_eq
   rw [← law_eq, ← indepFun_iff_condDistrib_eq_const ?_ (by fun_prop)] at condDistrib_eq
   · have meas_fst : Measurable (fun (f : Iic n → α × β) ↦ (fun i ↦ (f i).1)) := by
       fun_prop
@@ -72,3 +74,5 @@ lemma iIndep_actions {env : Environment α β}
   · exact (IsAlgEnvSeq.measurable_hist (h.measurable_A) (h.measurable_R) n).aemeasurable
 
 end randomSampling
+
+end Learning

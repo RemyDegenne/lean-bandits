@@ -25,14 +25,13 @@ variable {K : ℕ}
 section AlgorithmDefinition
 
 /-- Arm pulled by the ETC algorithm at time `n + 1`.
-For `n < K * m - 1`, this is arm `n % K`.
+For `n < K * m - 1`, this is arm `(n + 1) % K`.
 For `n = K * m - 1`, this is the arm with the highest empirical mean after the exploration phase.
 For `n ≥ K * m`, this is the same arm as at time `n`. -/
 noncomputable
 def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  if hn : n < K * m - 1 then
-    ⟨(n + 1) % K, Nat.mod_lt _ hK⟩ -- for `n = 0` we have pulled arm 0 already, and we pull arm 1
+  if hn : n < K * m - 1 then RoundRobin.nextAction hK n
   else
     if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
     else (h ⟨n, by simp⟩).1
@@ -75,8 +74,7 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
     congr 1 with h
-    unfold ETC.nextArm RoundRobin.nextArm
-    simp [hn]
+    simp [ETC.nextArm, hn]
   hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
 
 section AlgorithmBehavior
@@ -84,7 +82,7 @@ section AlgorithmBehavior
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
-  RoundRobin.arm_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
+  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
 
 lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
@@ -96,7 +94,7 @@ lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
 lemma arm_of_lt [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) {n : ℕ} (hn : n < K * m) :
     A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
-  RoundRobin.arm_ae_eq n ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono (by grind))
+  RoundRobin.action_ae_eq n ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono (by grind))
 
 /-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
 phase. -/

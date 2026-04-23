@@ -186,18 +186,24 @@ lemma hasCondDistrib_prod_right_iff [IsFiniteMeasure μ] [IsFiniteKernel κ] (X 
     rw [← Measure.map_prod_map _ _ (by fun_prop) (by fun_prop), Measure.map_id,
       Measure.map_dirac' (by fun_prop)]
 
--- Claude
+lemma hasLaw_of_hasCondDistrib_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const _ Q) μ) : HasLaw Y Q μ := by
+  obtain ⟨hY, hX, h⟩ := h
+  refine ⟨hY, ?_⟩
+  have h_snd : (μ.map (fun ω => (X ω, Y ω))).snd = Q := by
+    have h_map : μ.map (fun ω => (X ω, Y ω)) = (μ.map X) ⊗ₘ (Kernel.const _ Q) :=
+      have h_map : μ.map (fun ω => (X ω, Y ω)) = (μ.map X) ⊗ₘ (condDistrib Y X μ) :=
+      (compProd_map_condDistrib hY).symm
+      h_map.trans (Measure.compProd_congr h)
+    rw [h_map, MeasureTheory.Measure.snd_compProd]
+    simp [MeasureTheory.Measure.map_apply_of_aemeasurable hX]
+  rwa [Measure.snd_map_prodMk₀ hX] at h_snd
+
+-- Replace `hasLaw_of_hasCondDistrib_const`?
 lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
-    [IsProbabilityMeasure μ] [IsFiniteMeasure Q]
-    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ where
-  aemeasurable := h.aemeasurable_fst
-  map_eq := by
-    have : IsProbabilityMeasure (μ.map X) := Measure.isProbabilityMeasure_map h.aemeasurable_snd
-    rw [← Measure.snd_prod (μ := μ.map X) (ν := Q), ← Measure.compProd_const,
-      ← (condDistrib_ae_eq_iff_measure_eq_compProd X h.aemeasurable_fst _).1 h.condDistrib_eq,
-      Measure.snd, AEMeasurable.map_map_of_aemeasurable (by fun_prop)
-      (h.aemeasurable_snd.prodMk h.aemeasurable_fst)]
-    rfl
+    [IsProbabilityMeasure μ] [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ :=
+  hasLaw_of_hasCondDistrib_const h
 
 lemma HasCondDistrib.swap_const {Q : Measure Ω}
     [StandardBorelSpace β] [Nonempty β]
@@ -341,5 +347,7 @@ lemma HasCondDistrib.ae_hasCondDistrib_sectL [IsFiniteMeasure μ]
     (hcd : HasCondDistrib (g ∘ W) (fun ω ↦ ((f ∘ W) ω, Z ω)) η μ) :
     ∀ᵐ z ∂(μ.map Z), HasCondDistrib g f (η.sectL z) (condDistrib W Z μ z) :=
   (hcd.comp_right .prodComm).ae_hasCondDistrib_sectR hf hg hW hZ
+
+
 
 end ProbabilityTheory

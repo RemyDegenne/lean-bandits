@@ -114,9 +114,9 @@ Bandits.probReal_sumRewards_le_sumRewards_le
 Bandits.probReal_sum_le_sum_streamMeasure
 Bandits.prob_sum_le_sqrt_log
 Bandits.prob_sum_ge_sqrt_log
-Bandits.RoundRobin.nextArm
-Bandits.roundRobinAlgorithm
-Bandits.RoundRobin.pullCount_mul
+Learning.RoundRobin.nextAction
+Learning.roundRobinAlgorithm
+Learning.RoundRobin.pullCount_mul
 Bandits.ETC.nextArm
 Bandits.etcAlgorithm
 Bandits.ETC.isAlgEnvSeqUntil_roundRobinAlgorithm

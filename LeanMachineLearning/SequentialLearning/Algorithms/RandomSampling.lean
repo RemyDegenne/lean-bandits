@@ -38,7 +38,8 @@ variable {α β Ω : Type*} [MeasurableSpace α] [MeasurableSpace β] [StandardB
   {P : Measure Ω} [IsProbabilityMeasure P]
 
 open Set in
-/-- The Pure Random Search algorithm. -/
+/-- The _Random Sampling_ algorithm, which samples from a fixed probability
+measure at each iteration. -/
 @[simps]
 noncomputable def randomSampling (μ : Measure α) [IsProbabilityMeasure μ] : Algorithm α β where
   policy _ := Kernel.const _ μ

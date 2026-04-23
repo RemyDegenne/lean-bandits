@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 Rémy Degenne. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémy Degenne
+-/
 module
 
 public import Mathlib.Probability.Martingale.Convergence
@@ -24,7 +29,7 @@ We then state that `P` is a probability measure. That is, `P univ = 1`, where `u
 universal set in `Ω` (the set that contains all `x : Ω`). -/
 
 -- ANCHOR: Variables
-variable {Ω : Type} {mΩ : MeasurableSpace Ω}
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
 -- ANCHOR_END: Variables
 

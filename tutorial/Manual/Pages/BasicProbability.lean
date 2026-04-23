@@ -12,7 +12,7 @@ set_option verso.exampleProject "../"
 
 set_option verso.exampleModule "LeanMachineLearning.Tutorial.BasicProbability"
 
-#doc (Manual) "Probability spaces and probability measures" =>
+#doc (Manual) "Probability Spaces and Measures" =>
 %%%
 htmlSplit := .never
 %%%

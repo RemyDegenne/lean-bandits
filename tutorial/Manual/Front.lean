@@ -1,6 +1,7 @@
 import Manual.Pages.BasicProbability
 import Manual.Pages.DefiningAlgorithm
 import Manual.Pages.Installation
+import Manual.Pages.MarkovKernels
 import Manual.Pages.Martingales
 import VersoManual
 
@@ -24,6 +25,8 @@ These tutorial pages will guide you through using the [Lean Machine Learning](ht
 
 {include 0 Manual.Pages.BasicProbability}
 
-{include 0 Manual.Pages.Martingales}
+{include 0 Manual.Pages.MarkovKernels}
 
 {include 0 Manual.Pages.DefiningAlgorithm}
+
+{include 0 Manual.Pages.Martingales}

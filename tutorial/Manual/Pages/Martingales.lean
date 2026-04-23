@@ -12,7 +12,7 @@ set_option verso.exampleProject "../"
 
 set_option verso.exampleModule "LeanMachineLearning.Tutorial.Martingales"
 
-#doc (Manual) "Martingales" =>
+#doc (Manual) "Stochastic Processes and Martingales" =>
 %%%
 htmlSplit := .never
 %%%
@@ -22,7 +22,7 @@ htmlSplit := .never
 We define a measure space {anchorTerm Variables}`Ω`, with a probability mesure {anchorTerm Variables}`P : Measure Ω`.
 
 ```anchor Variables
-variable {Ω : Type} {mΩ : MeasurableSpace Ω}
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
 ```
 

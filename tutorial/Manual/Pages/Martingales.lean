@@ -36,8 +36,6 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E
 ```
 
 A filtration is a monotone family of sub-σ-algebras indexed by `ℕ`.
-Remember that you can learn about a definition by hovering over it, or by using ctrl-click to go to
-its declaration.
 ```anchor Filtration
 variable {𝓕 : Filtration ℕ mΩ}
 

@@ -15,7 +15,7 @@ set_option verso.exampleModule "LeanMachineLearning"
 
 #doc (Manual) "Lean Machine Learning" =>
 %%%
-authors := ["Rémy Degenne, Paulo Rauber"]
+authors := []
 shortTitle := "Lean Machine Learning"
 %%%
 

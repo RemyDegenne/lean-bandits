@@ -28,11 +28,11 @@ There are two ways to get the library depending on your needs:
 Move to a directory where you want to store the library, then run:
 
 ```
-git clone https://github.com/remydegenne/lean-bandits.git
-cd lean-bandits
+git clone https://github.com/LeanMachineLearning/LML.git
+cd LML
 ```
 This will create a local copy of the repository on your machine and move to the project directory.
-We then need to buid the project.
+We then need to build the project.
 ```
 lake exe cache get
 lake build
@@ -48,7 +48,7 @@ To use the library in your own Lean project (see the Lean installation instructi
 ```
 [[require]]
 name = "LeanMachineLearning"
-git = "https://github.com/leanprover/lean-bandits"
+git = "https://github.com/LeanMachineLearning/LML"
 ```
 
 # Testing the installation

@@ -55,7 +55,7 @@ lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : �
   ae_eq_of_condDistrib_eq_deterministic hf (h.measurable_A n).aemeasurable
     (h.measurable_R n).aemeasurable (hascondDistrib_reward h n).condDistrib_eq
 
-lemma reward_ae_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
+lemma forall_reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
     ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := by
   rw [ae_all_iff]
   intro n
@@ -64,7 +64,7 @@ lemma reward_ae_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
 open Finset in
 lemma reward_ae_eq_evals_actions_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
     (g : (Iic n → R) → β) : ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
-  filter_upwards [reward_ae_eq_evals_actions h] with ω hω
+  filter_upwards [forall_reward_ae_eq_eval_action h] with ω hω
   simp_rw [hω]
 
 end EvalEnv

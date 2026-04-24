@@ -38,7 +38,7 @@ variable {α R : Type*} [MeasurableSpace α] [MeasurableSpace R]
 noncomputable def evalEnv {f : α → R} (hf : Measurable f) :=
   stationaryEnv <| Kernel.deterministic f hf
 
-namespace IsAlgEnvSeq
+namespace EvalEnv
 
 variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
   {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R} {f : α → R} {hf : Measurable f}
@@ -67,6 +67,6 @@ lemma reward_ae_eq_evals_actions_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (ev
   filter_upwards [reward_ae_eq_evals_actions h] with ω hω
   simp_rw [hω]
 
-end IsAlgEnvSeq
+end EvalEnv
 
 end Learning

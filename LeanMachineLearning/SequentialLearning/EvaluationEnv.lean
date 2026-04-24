@@ -62,7 +62,7 @@ lemma forall_reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) 
   exact reward_ae_eq_eval_action h n
 
 open Finset in
-lemma reward_ae_eq_evals_actions_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
+lemma reward_ae_eq_eval_action_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) {n : ℕ}
     (g : (Iic n → R) → β) : ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
   filter_upwards [forall_reward_ae_eq_eval_action h] with ω hω
   simp_rw [hω]

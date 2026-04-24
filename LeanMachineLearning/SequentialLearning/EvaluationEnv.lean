@@ -44,7 +44,7 @@ variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty 
   {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R} {f : α → R} {hf : Measurable f}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
-lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
+lemma hascondDistrib_reward (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
     HasCondDistrib (R' n) (A n) (Kernel.deterministic f hf) P :=
   have hRn := h.measurable_R n
   have hAn := h.measurable_A n
@@ -53,7 +53,7 @@ lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n
 lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) (n : ℕ) :
     R' n =ᵐ[P] f ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic hf (h.measurable_A n).aemeasurable
-    (h.measurable_R n).aemeasurable (hascondDistrib_reward_evalEnv h n).condDistrib_eq
+    (h.measurable_R n).aemeasurable (hascondDistrib_reward h n).condDistrib_eq
 
 lemma reward_ae_eq_evals_actions (h : IsAlgEnvSeq A R' alg (evalEnv hf) P) :
     ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := by

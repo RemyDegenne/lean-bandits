@@ -31,3 +31,6 @@ public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
+public import LeanMachineLearning.Tutorial.BasicProbability
+public import LeanMachineLearning.Tutorial.MarkovKernel
+public import LeanMachineLearning.Tutorial.Martingales

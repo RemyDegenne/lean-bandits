@@ -9,6 +9,7 @@ cp static_files/* _out/site/html-multi/static
 cd ..
 
 cd verso_blueprint
+lake exe cache get
 lake build
 lake exe blueprint-gen --output _out/site
 mkdir -p _out/site/html-multi/static

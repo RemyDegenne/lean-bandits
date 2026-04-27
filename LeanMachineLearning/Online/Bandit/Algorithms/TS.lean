@@ -176,7 +176,6 @@ private lemma sum_inv_sqrt_le {n : ℕ} (h : 0 < n) : ∑ k ∈ range (n + 1), 1
       have : √n * √n = n := Real.mul_self_sqrt (by positivity)
       nlinarith
 
-/-- This bound could be slightly improved. -/
 lemma sum_ucb_sub_mean_le {n : ℕ} {ω : Ω} (μ : Fin K → ℝ) (hμ : ∀ a, μ a ∈ Set.Icc l u) (hi : l ≤ u)
     (hc : ∀ s < n, pullCount A (A s ω) s ω ≠ 0 → empMean A R' (A s ω) s ω - μ (A s ω)
       < √(2 * σ2 * Real.log (1 / δ) / (pullCount A (A s ω) s ω))) :
@@ -436,7 +435,6 @@ lemma integral_regret_eq_add (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorith
     _ = _ := by
         rw [← integral_finset_sum _ (by fun_prop), ← integral_finset_sum _ (by fun_prop)]
 
-/-- This bound could be improved. -/
 lemma integral_regret_le (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P)
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a))) (n : ℕ) :

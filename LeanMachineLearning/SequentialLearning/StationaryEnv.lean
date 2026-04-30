@@ -157,7 +157,7 @@ lemma feedbackCondAction_obliviousEnv (ν : ℕ → Kernel α R) [hν : ∀ n, I
 /-- A stationary environment, in which the distribution of the next reward depends only on the last
 action. -/
 -- ANCHOR: stationaryEnv
-def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv (fun _ ↦ ν)
+def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv fun _ ↦ ν
 -- ANCHOR_END: stationaryEnv
 
 @[simp]

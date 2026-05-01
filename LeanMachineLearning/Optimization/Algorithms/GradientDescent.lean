@@ -28,7 +28,7 @@ variable {E Ω : Type*} {mE : MeasurableSpace E} {mΩ : MeasurableSpace Ω}
   {f : ℕ → E → ℝ} {hf : ∀ n, Measurable (∇ (f n))} {x x₀ : E}
   {g : ℕ → E → E} {hg : ∀ n, Measurable (g n)}
   {env : Environment E E}
-  {X G : ℕ → Ω → E} {γ : ℕ → ℝ}
+  {X G : ℕ → Ω → E} {γ : ℕ → ℝ} {η : ℝ}
 
 -- todo: write a process version? with `X : ℕ → Ω → E`, as a `ℕ → Ω → F`
 def onlineRegret {E F : Type*} [AddCommGroup F] (ℓ : ℕ → E → F) (y : E) (x : ℕ → E) (n : ℕ) : F :=
@@ -62,33 +62,44 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientDescent γ x₀) en
 
 section Convex
 
-lemma todo' {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x y : E) :
+lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x y : E) :
     f x - f y ≤ ⟪x - y, ∇ f x⟫ := by
+  simp only [tsub_le_iff_right]
+  rw [add_comm]
   sorry
 
-lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x : ℕ → E) (y : E) (n : ℕ) :
+lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
   calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
-  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := sorry
-  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by gcongr; exact todo' hf (x _) y
+  _ ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, f (x i) - f y := by
+    simp_rw [smul_sum]
+    grw [hf.map_sum_le (fun _ _ ↦ by positivity) (by simp; field) (by simp)]
+  _ = (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := by
+    simp_rw [smul_eq_mul, mul_sum, mul_sub, sum_sub_distrib]
+    rw [← sum_mul]
+    simp
+    field
+  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
+    gcongr
+    exact hf.sub_le_inner_gradient (x _) y
 
-lemma todo'' (x y g : E) (η : ℝ) :
+lemma todo'' (x y g : E) (hη : 0 < η) :
     ⟪x - y, g⟫ = (2 * η)⁻¹ * (‖x - y‖ ^ 2 - ‖(x - η • g) - y‖ ^ 2) + (η / 2) * ‖g‖ ^ 2 := by
   sorry
 
-lemma todo (x y g : ℕ → E) (η : ℕ → ℝ) (n : ℕ) :
+lemma todo (x y g : ℕ → E) (hη : ∀ n, 0 < γ n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y i, g i⟫ ≤
       ∑ i ∈ Finset.range n,
-        ((2 * η i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖(x i - η i • g i) - y i‖ ^ 2) +
-          (η i / 2) * ‖g i‖ ^ 2) := by
+        ((2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖(x i - γ i • g i) - y i‖ ^ 2) +
+          (γ i / 2) * ‖g i‖ ^ 2) := by
   gcongr with i hi
-  rw [todo'' (x i) (y i) (g i) (η i)]
+  rw [todo'' (x i) (y i) (g i) (hη i)]
 
 lemma todo''' (x g : ℕ → E) (y : E)
-    (η : ℝ) (hη : 0 ≤ η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
       (2 * η)⁻¹ * (‖x 0 - y‖ ^ 2 - ‖x n - y‖ ^ 2) + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
-  grw [todo x (fun _ ↦ y) g (fun _ ↦ η) n]
+  grw [todo x (fun _ ↦ y) g (fun _ ↦ hη) n]
   rw [sum_add_distrib, ← mul_sum, ← mul_sum]
   gcongr
   refine le_of_eq ?_
@@ -96,10 +107,10 @@ lemma todo''' (x g : ℕ → E) (y : E)
   sorry
 
 lemma lem14dot1 (x g : ℕ → E) (y : E) (η : ℝ)
-    (hη : 0 ≤ η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
       (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
-  grw [todo''' x g y η hη hx n]
+  grw [todo''' x g y hη hx n]
   gcongr
   exact sub_le_self _ (sq_nonneg _)
 
@@ -114,7 +125,7 @@ example (gradKernel : ℕ → Kernel E E) [∀ n, IsMarkovKernel (gradKernel n)]
     Environment E E := obliviousEnv gradKernel
 
 -- use the deterministic equality wrt any sequence
-lemma todo1 {η : ℝ} (hη : 0 ≤ η)
+lemma todo1 (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
     ∀ᵐ ω ∂P, ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫ ≤
@@ -124,15 +135,24 @@ lemma todo1 {η : ℝ} (hη : 0 ≤ η)
   congr
   exact hω.1
 
-lemma sfdsf {η : ℝ} (hη : 0 ≤ η)
+lemma sfdsf (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (y : E) (n : ℕ) :
     P[fun ω ↦ ⟪X n ω - y, G n ω⟫] = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by
-  sorry
+  let M n := MeasurableSpace.comap (IsAlgEnvSeq.hist X G n) inferInstance
+  calc P[fun ω ↦ ⟪X n ω - y, G n ω⟫]
+  _ = P[fun ω ↦ P[fun ω' ↦ ⟪X n ω' - y, G n ω'⟫ | M n] ω] := by
+    sorry
+  _ = P[fun ω ↦ ⟪X n ω - y, P[G n | M n] ω⟫] := by
+    sorry
+  _ = P[fun ω ↦ ⟪X n ω - y, P[G n | MeasurableSpace.comap (X n) inferInstance] ω⟫] := by
+    sorry
+  _ = P[fun ω ↦ ⟪X n ω - y, (gradKernel n (X n ω))[id]⟫] := by
+    sorry
+  _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 
-lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
-    {η : ℝ} (hη : 0 ≤ η)
+lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (y : E) (n : ℕ) :
@@ -145,10 +165,9 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
     refine Integrable.sub ?_ ?_
     · sorry
     · sorry
-  · exact fun ω ↦ todo' (hf n) (X n ω) y
+  · exact fun ω ↦ (hf n).sub_le_inner_gradient (X n ω) y
 
-lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
-    {η : ℝ} (hη : 0 ≤ η)
+lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (y : E) (n : ℕ) :
@@ -156,8 +175,7 @@ lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
       (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
   sorry
 
-lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
-    {η : ℝ} (hη : 0 ≤ η)
+lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
     (y : E) (n : ℕ) :

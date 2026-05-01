@@ -38,15 +38,6 @@ They both satisfy the typeclasses `IsObliviousEnv` and `IsDeterministicEnv`.
 
 open MeasureTheory ProbabilityTheory
 
-@[simp]
-lemma ProbabilityTheory.Kernel.prodMkLeft_deterministic {α β γ : Type*}
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    {f : α → β} (hf : Measurable f) :
-    (Kernel.deterministic f hf).prodMkLeft γ =
-      Kernel.deterministic (fun p ↦ f p.2) (by fun_prop) := by
-  ext
-  simp [Kernel.deterministic_apply]
-
 namespace Learning
 
 variable {α R : Type*} {mα : MeasurableSpace α} {mR : MeasurableSpace R}

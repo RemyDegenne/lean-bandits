@@ -131,9 +131,11 @@ end IsObliviousEnv
 /-- An oblivious environment, in which the distribution of the next reward depends only on the last
 action, but in a possibly time-dependent manner. -/
 @[simps]
+-- ANCHOR: obliviousEnv
 def obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] : Environment α R where
   feedback n := (ν (n + 1)).prodMkLeft _
   ν0 := ν 0
+-- ANCHOR_END: obliviousEnv
 
 @[simp]
 lemma feedback_obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :

@@ -9,13 +9,27 @@ public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
-# Stationary environments
+# Oblivious and stationary environments
 
-A stationary environment is an environment in which the distribution of the next reward depends only
+An oblivious environment is an environment in which the distribution of the next reward depends only
 on the last action (and not on the past history).
+If the kernel that gives the distribution of the next reward given the last action is the same at
+every time step, then we say that the environment is stationary.
 
 ## Main definitions
 
+We define a `Prop`-valued typeclass `IsObliviousEnv` to express that an environment is oblivious,
+and we define two constructors for oblivious environments.
+
+Typeclass and related definitions:
+* `IsObliviousEnv env`: the environment `env` is oblivious.
+* `feedbackCondAction env n`: the kernel representing the conditional distribution of the feedback
+  given the action at time `n` in an oblivious environment `env`.
+
+Constructors for oblivious environments:
+* `obliviousEnv ν`: an oblivious environment, in which the distribution of the next reward depends
+  only on the last action, but in a possibly time-dependent manner, and is given by a sequence of
+  Markov kernels `ν : ℕ → Kernel α R`.
 * `stationaryEnv ν`: a stationary environment, in which the distribution of the next reward depends
   only on the last action (and not on the past history), and is given by a Markov kernel
   `ν : Kernel α R`.

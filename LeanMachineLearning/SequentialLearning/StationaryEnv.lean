@@ -5,16 +5,31 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
-# Stationary environments
+# Oblivious and stationary environments
 
-A stationary environment is an environment in which the distribution of the next reward depends only
+An oblivious environment is an environment in which the distribution of the next reward depends only
 on the last action (and not on the past history).
+If the kernel that gives the distribution of the next reward given the last action is the same at
+every time step, then we say that the environment is stationary.
 
 ## Main definitions
 
+We define a `Prop`-valued typeclass `IsObliviousEnv` to express that an environment is oblivious,
+and we define two constructors for oblivious environments.
+
+Typeclass and related definitions:
+* `IsObliviousEnv env`: the environment `env` is oblivious.
+* `feedbackCondAction env n`: the kernel representing the conditional distribution of the feedback
+  given the action at time `n` in an oblivious environment `env`.
+
+Constructors for oblivious environments:
+* `obliviousEnv ν`: an oblivious environment, in which the distribution of the next reward depends
+  only on the last action, but in a possibly time-dependent manner, and is given by a sequence of
+  Markov kernels `ν : ℕ → Kernel α R`.
 * `stationaryEnv ν`: a stationary environment, in which the distribution of the next reward depends
   only on the last action (and not on the past history), and is given by a Markov kernel
   `ν : Kernel α R`.
@@ -26,14 +41,6 @@ on the last action (and not on the past history).
 open MeasureTheory ProbabilityTheory Filter Real Finset
 
 open scoped ENNReal NNReal
-
-@[simp]
-lemma ProbabilityTheory.Kernel.prodMkLeft_eq_prodMkLeft {α β γ : Type*} [h_nonempty : Nonempty γ]
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    (κ ν : Kernel α β) :
-    κ.prodMkLeft γ = ν.prodMkLeft γ ↔ κ = ν := by
-  simp only [Kernel.ext_iff, Kernel.prodMkLeft_apply, Prod.forall]
-  exact ⟨fun h b ↦ h h_nonempty.some b, fun h _ b ↦ h b⟩
 
 namespace Learning
 
@@ -92,7 +99,7 @@ lemma hasCondDistrib_reward [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P
 /-- The reward at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
 lemma condIndepFun_reward_hist_action [StandardBorelSpace Ω]
-    [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
+        [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
     R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A _ ; P] IsAlgEnvSeq.hist A R' n := by
   have hA := h.measurable_A
   have hR' := h.measurable_R
@@ -124,9 +131,11 @@ end IsObliviousEnv
 /-- An oblivious environment, in which the distribution of the next reward depends only on the last
 action, but in a possibly time-dependent manner. -/
 @[simps]
+-- ANCHOR: obliviousEnv
 def obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] : Environment α R where
   feedback n := (ν (n + 1)).prodMkLeft _
   ν0 := ν 0
+-- ANCHOR_END: obliviousEnv
 
 @[simp]
 lemma feedback_obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :
@@ -164,7 +173,7 @@ lemma feedbackCondAction_obliviousEnv (ν : ℕ → Kernel α R) [hν : ∀ n, I
 /-- A stationary environment, in which the distribution of the next reward depends only on the last
 action. -/
 -- ANCHOR: stationaryEnv
-def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv (fun _ ↦ ν)
+def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv fun _ ↦ ν
 -- ANCHOR_END: stationaryEnv
 
 @[simp]

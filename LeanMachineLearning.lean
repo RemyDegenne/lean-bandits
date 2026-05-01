@@ -16,6 +16,8 @@ public import LeanMachineLearning.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.Probability.Kernel.Basic
+public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.Probability.Kernel.KernelSub
 public import LeanMachineLearning.Probability.Moments.SubGaussian

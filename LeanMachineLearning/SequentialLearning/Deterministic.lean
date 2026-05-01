@@ -5,21 +5,36 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.Probability.Kernel.Basic
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
-# Deterministic algorithms
+# Deterministic algorithms and environments
 
 A deterministic algorithm chooses its action in a deterministic way. That is, that action is given
 by a measurable function of the history instead of a general Markov kernel.
-
-We introduce a definition for those algorithms and prove results about the conditional distribution
-of the actions they generate when interacting with an environment.
+Similarly, a deterministic environment gives feedback in a deterministic way.
 
 ## Main definitions
 
-* `detAlgorithm nextAction h_next action0`: a deterministic algorithm that chooses its action
-  according to the measurable function `nextAction` (with proof of measurability `h_next`),
+We introduce two typeclasses `IsDeterministicAlg` and `IsDeterministicEnv` to express that
+an algorithm or an environment is deterministic. We also give definitions for the initial action
+and the next action of a deterministic algorithm, and for the feedback functions of a deterministic
+environment. Finally, we give a construction of a deterministic algorithm and environment from
+measurable functions.
+
+* `IsDeterministicAlg alg`: a typeclass expressing that the algorithm `alg` is deterministic.
+* `IsDeterministicEnv env`: a typeclass expressing that the environment `env` is deterministic.
+* `actionZero alg`: the initial action of a deterministic algorithm `alg`.
+* `nextAction alg n`: the function that gives the next action of a deterministic algorithm `alg`
+  at step `n`, as a function of the history.
+* `feedbackFunZero env`: the function that gives the initial feedback of a deterministic
+  environment `env`.
+* `feedbackFun env n`: the function that gives the feedback of a deterministic environment `env`
+  at step `n`, as a function of the history and the current action.
+
+* `detAlgorithm nextA h_next action0`: a deterministic algorithm that chooses its action
+  according to the measurable function `nextA` (with proof of measurability `h_next`),
   with initial action `action0`.
 
 ## Notes
@@ -33,15 +48,6 @@ The `ANCHOR` comments are used to mark code that appears in the tutorials.
 open MeasureTheory ProbabilityTheory Filter Real Finset
 
 open scoped ENNReal NNReal
-
-/-- Two deterministic kernels are equal if and only if their underlying functions are equal. -/
-@[simp]
-lemma ProbabilityTheory.Kernel.deterministic_eq_deterministic_iff
-    {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-    [MeasurableSpace.SeparatesPoints β]
-    {f g : α → β} {hf : Measurable f} {hg : Measurable g} :
-    Kernel.deterministic f hf = Kernel.deterministic g hg ↔ f = g := by
-  simp [Kernel.ext_iff, Kernel.deterministic_apply, dirac_eq_dirac_iff, funext_iff]
 
 namespace Learning
 

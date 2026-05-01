@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Gaëtan Serré. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Gaëtan Serré
+Authors: Gaëtan Serré, Rémy Degenne
 -/
 module
 
@@ -12,32 +12,31 @@ public import LeanMachineLearning.Probability.Independence.CondDistrib
 /-!
 # Function evaluation environments
 
-A stationary environment where the reward is given by evaluating a fixed measurable function `f` at
-the chosen action.
+We define two environments, `onlineEvalEnv` and `evalEnv`, where the reward is given by evaluating
+a measurable function at the chosen action. The first one allows the function to change at every
+time step, while the second one uses a fixed function at every time step.
 
 ## Main definitions
 
-* `evalEnv hf`: A stationary environment where the reward is given by a deterministic kernel that
-  evaluates a fixed measurable function at the chosen action.
+* `onlineEvalEnv g hg`: A stationary environment where the reward at time `n` is given by a
+  deterministic kernel that evaluates the measurable function `g n` at the chosen action.
+* `evalEnv f hf`: A stationary environment where the reward is given by a deterministic kernel that
+  evaluates a fixed measurable function `f` at the chosen action.
+
+They both satisfy the typeclasses `IsObliviousEnv` and `IsDeterministicEnv`.
 
 ## Main statements
 
-* `reward_ae_eq_evals_actions`: For almost all `ω`, the reward at time `n` is equal to `f`
-  evaluated at the action taken at time `n`.
+* `forall_reward_onlineEvalEnv_ae_eq_eval_action`: For almost all `ω`, the reward at time `n` is
+  equal to `g n` evaluated at the action taken at time `n`.
+* `forall_reward_evalEnv_ae_eq_eval_action`: For almost all `ω`, the reward at time `n` is equal to
+  `f` evaluated at the action taken at time `n`.
+
 -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory
-
-@[simp]
-lemma ProbabilityTheory.Kernel.prodMkLeft_deterministic {α β γ : Type*}
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
-    {f : α → β} (hf : Measurable f) :
-    (Kernel.deterministic f hf).prodMkLeft γ =
-      Kernel.deterministic (fun p ↦ f p.2) (by fun_prop) := by
-  ext
-  simp [Kernel.deterministic_apply]
 
 namespace Learning
 
@@ -76,27 +75,30 @@ lemma feedbackFun_onlineEvalEnv [MeasurableSpace.SeparatesPoints R] (n : ℕ) :
   simpa only [onlineEvalEnv, feedback_obliviousEnv, Kernel.prodMkLeft_deterministic,
     Kernel.deterministic_eq_deterministic_iff] using h_eq.symm
 
-namespace OnlineEvalEnv
+section OnlineEvalEnv
 
 variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
   {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R}
   {g : ℕ → α → R} {hg : ∀ n, Measurable (g n)}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
-lemma hascondDistrib_reward (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) (n : ℕ) :
+lemma hascondDistrib_reward_onlineEvalEnv
+    (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) (n : ℕ) :
     HasCondDistrib (R' n) (A n) (Kernel.deterministic (g n) (hg n)) P := by
   simpa using IsObliviousEnv.hasCondDistrib_reward h n
 
-lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) (n : ℕ) :
+lemma reward_onlineEvalEnv_ae_eq_eval_action
+    (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) (n : ℕ) :
     R' n =ᵐ[P] g n ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic (hg n) (h.measurable_A n).aemeasurable
-    (h.measurable_R n).aemeasurable (hascondDistrib_reward h n).condDistrib_eq
+    (h.measurable_R n).aemeasurable (hascondDistrib_reward_onlineEvalEnv h n).condDistrib_eq
 
-lemma forall_reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) :
+lemma forall_reward_onlineEvalEnv_ae_eq_eval_action
+    (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) :
     ∀ᵐ ω ∂P, ∀ n, R' n ω = g n (A n ω) := by
   rw [ae_all_iff]
   intro n
-  exact reward_ae_eq_eval_action h n
+  exact reward_onlineEvalEnv_ae_eq_eval_action h n
 
 end OnlineEvalEnv
 
@@ -120,27 +122,27 @@ lemma feedbackFunZero_evalEnv [MeasurableSpace.SeparatesPoints R] :
 lemma feedbackFun_evalEnv [MeasurableSpace.SeparatesPoints R] (n : ℕ) :
     feedbackFun (evalEnv f hf) n = fun p ↦ f p.2 := by simp [evalEnv]
 
-namespace EvalEnv
+section EvalEnv
 
 variable [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
   {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm α R} {f : α → R} {hf : Measurable f}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
-lemma hascondDistrib_reward (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) (n : ℕ) :
+lemma hascondDistrib_reward_evalEnv (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) (n : ℕ) :
     HasCondDistrib (R' n) (A n) (Kernel.deterministic f hf) P := by
   simpa using IsObliviousEnv.hasCondDistrib_reward h n
 
-lemma reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) (n : ℕ) :
-    R' n =ᵐ[P] f ∘ A n := OnlineEvalEnv.reward_ae_eq_eval_action h n
+lemma reward_evalEnv_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) (n : ℕ) :
+    R' n =ᵐ[P] f ∘ A n := reward_onlineEvalEnv_ae_eq_eval_action h n
 
-lemma forall_reward_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) :
-    ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := OnlineEvalEnv.forall_reward_ae_eq_eval_action h
+lemma forall_reward_evalEnv_ae_eq_eval_action (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) :
+    ∀ᵐ ω ∂P, ∀ n, R' n ω = f (A n ω) := forall_reward_onlineEvalEnv_ae_eq_eval_action h
 
 open Finset in
-lemma reward_ae_eq_eval_action_comp {β : Type*} (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) {n : ℕ}
-    (g : (Iic n → R) → β) :
+lemma reward_evalEnv_ae_eq_eval_action_comp {β : Type*}
+    (h : IsAlgEnvSeq A R' alg (evalEnv f hf) P) {n : ℕ} (g : (Iic n → R) → β) :
     ∀ᵐ ω ∂P, g (fun i ↦ R' i ω) = g (fun i ↦ f (A i ω)) := by
-  filter_upwards [forall_reward_ae_eq_eval_action h] with ω hω
+  filter_upwards [forall_reward_evalEnv_ae_eq_eval_action h] with ω hω
   simp_rw [hω]
 
 end EvalEnv

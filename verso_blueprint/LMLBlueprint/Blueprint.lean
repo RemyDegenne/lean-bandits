@@ -18,7 +18,7 @@ set_option verso.blueprint.summary.debugDiagnostics false
 
 #doc (Manual) "Lean Machine Learning" =>
 
-A Lean package for machine learning algorithms
+Blueprint for the bandit parts of the [Lean Machine Learning](https://leanmachinelearning.org) library.
 
 {include 0 LMLBlueprint.Chapters.Intro}
 {include 0 LMLBlueprint.Chapters.Algorithm}

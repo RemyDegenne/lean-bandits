@@ -62,40 +62,61 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientDescent γ x₀) en
 
 section Convex
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
+lemma _root_.ConvexOn.fderiv_sub_le_sub {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (hfx : DifferentiableAt ℝ f x) (y : E) :
+    fderiv ℝ f x (y - x) ≤ f y - f x := by
+  have h_convex t (ht : t ∈ Set.Ioo (0 : ℝ) 1) :
+      f (x + t • (y - x)) ≤ t * f y + (1 - t) * f x := by
+    have h1 : x + t • (y - x) = (1 - t) • x + t • y := by module
+    have h2 : f ((1 - t) • x + t • y) ≤ (1 - t) • f x + t • f y :=
+      hf.2 (Set.mem_univ x) (Set.mem_univ y) (by grind) (by grind) (by simp)
+    simp only [smul_eq_mul] at h2
+    grind
+  have h_path_deriv : HasDerivAt (fun t : ℝ ↦ f (x + t • (y - x)))
+      (fderiv ℝ f x (y - x)) 0 := by
+    have h1 : HasDerivAt (fun t : ℝ ↦ x + t • (y - x)) (y - x) 0 := by
+      simpa using (hasDerivAt_id (0 : ℝ)).smul_const (y - x)
+    have h2 : HasFDerivAt f (fderiv ℝ f x) (x + (0 : ℝ) • (y - x)) := by
+      simpa using hfx.hasFDerivAt
+    exact h2.comp_hasDerivAt _ h1
+  refine le_of_tendsto h_path_deriv.tendsto_slope_zero_right (Filter.eventually_of_mem
+    (Ioo_mem_nhdsGT_of_mem ⟨le_rfl, zero_lt_one⟩) fun t ht ↦ ?_)
+  simp [inv_mul_le_iff₀ ht.1]
+  grind
+
+omit [CompleteSpace E] [SecondCountableTopology E] in
+lemma _root_.ConvexOn.add_fderiv_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (hfx : DifferentiableAt ℝ f x) (y : E) :
+    f x + fderiv ℝ f x (y - x) ≤ f y := by
+  suffices fderiv ℝ f x (y - x) ≤ f y - f x by grind
+  exact hf.fderiv_sub_le_sub hfx y
+
+omit [SecondCountableTopology E] in
+lemma _root_.ConvexOn.add_inner_gradient_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (hfx : DifferentiableAt ℝ f x) (y : E) :
+    f x + ⟪y - x, ∇ f x⟫ ≤ f y := by
+  have hfderiv : (fderiv ℝ f x) (y - x) = ⟪y - x, ∇ f x⟫ := by
+    simp [gradient, ← InnerProductSpace.toDual_symm_apply, real_inner_comm]
+  rw [← hfderiv]
+  exact hf.add_fderiv_le hfx y
+
+omit [SecondCountableTopology E] in
+lemma _root_.ConvexOn.le_add_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (hfx : DifferentiableAt ℝ f x) (y : E) :
+    f x ≤ f y + ⟪x - y, ∇ f x⟫ := by
+  have h_add_le := hf.add_inner_gradient_le hfx y
+  have h_neg : ⟪x - y, ∇ f x⟫ = -⟪y - x, ∇ f x⟫ := by
+    rw [show x - y = -(y - x) from by abel, inner_neg_left]
+  grind
+
 omit [SecondCountableTopology E] in
 lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
     (hfx : DifferentiableAt ℝ f x) (y : E) :
     f x - f y ≤ ⟪x - y, ∇ f x⟫ := by
-  -- TODO: clean this proof (it's from Aristotle)
   simp only [tsub_le_iff_right]
   rw [add_comm]
-  have h_convex : ∀ t ∈ Set.Ioo (0 : ℝ) 1,
-      f (x + t • (y - x)) ≤ t * f y + (1 - t) * f x := by
-    intro t ht
-    have h1 : x + t • (y - x) = (1 - t) • x + t • y := by
-      rw [smul_sub, sub_smul, one_smul]; abel
-    rw [h1]
-    have h2 := hf.2 (Set.mem_univ x) (Set.mem_univ y)
-      (show 0 ≤ 1 - t by linarith [ht.2]) (show 0 ≤ t by linarith [ht.1])
-      (by linarith [ht.1, ht.2])
-    simp only [smul_eq_mul] at h2; linarith
-  have hfderiv : (fderiv ℝ f x) (y - x) = ⟪y - x, ∇ f x⟫ := by
-    simp [gradient, ← InnerProductSpace.toDual_symm_apply, real_inner_comm]
-  have h_path_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x)))
-      ((fderiv ℝ f x) (y - x)) 0 := by
-    have h1 : HasDerivAt (fun t : ℝ => x + t • (y - x)) (y - x) 0 := by
-      simpa using (hasDerivAt_id (0 : ℝ)).smul_const (y - x)
-    have h2 : HasFDerivAt f (fderiv ℝ f x) (x + (0 : ℝ) • (y - x)) := by
-      simp only [zero_smul, add_zero]; exact hfx.hasFDerivAt
-    exact h2.comp_hasDerivAt _ h1
-  have h_tendsto := h_path_deriv.tendsto_slope_zero_right
-  have h_combined : (fderiv ℝ f x) (y - x) ≤ f y - f x := by
-    refine le_of_tendsto h_tendsto (Filter.eventually_of_mem
-      (Ioo_mem_nhdsGT_of_mem ⟨le_rfl, zero_lt_one⟩) fun t ht => ?_)
-    simp only [zero_add, zero_smul, add_zero, smul_eq_mul, inv_mul_le_iff₀ ht.1]
-    linarith [h_convex t ht]
-  linarith [show ⟪x - y, ∇ f x⟫ = -⟪y - x, ∇ f x⟫ from by
-    rw [show x - y = -(y - x) from by abel, inner_neg_left]]
+  exact hf.le_add_inner_gradient hfx y
 
 omit [SecondCountableTopology E] in
 lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
@@ -187,6 +208,7 @@ lemma sfdsf (hη : 0 < η)
   _ = P[fun ω ↦ ⟪X n ω - y, P[G n | MeasurableSpace.comap (X n) inferInstance] ω⟫] := by
     sorry
   _ = P[fun ω ↦ ⟪X n ω - y, (gradKernel n (X n ω))[id]⟫] := by
+    refine integral_congr_ae ?_
     sorry
   _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 

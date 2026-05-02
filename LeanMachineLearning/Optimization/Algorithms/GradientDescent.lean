@@ -118,6 +118,20 @@ lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .
   rw [add_comm]
   exact hf.le_add_inner_gradient hfx y
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
+lemma todo'3 {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
+    f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, (f (x i) - f y) := by
+  calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
+  _ ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, f (x i) - f y := by
+    simp_rw [smul_sum]
+    grw [hf.map_sum_le (fun _ _ ↦ by positivity) (by simp; field) (by simp)]
+  _ = (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := by
+    simp_rw [smul_eq_mul, mul_sum, mul_sub, sum_sub_distrib]
+    rw [← sum_mul]
+    simp
+    field
+
 omit [SecondCountableTopology E] in
 lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
     (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
@@ -278,16 +292,17 @@ lemma memLp_gradient
   simp_rw [← h_unbiased]
   rfl
 
-lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
+lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n))
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+    (h_int : ∀ n, Integrable (fun ω ↦ f n (X n ω)) P) -- todo: discuss this assumption
     (y : E) (n : ℕ) :
     P[fun ω ↦ f n (X n ω) - f n y] ≤ P[fun ω ↦ ⟪X n ω - y, G n ω⟫] := by
   rw [sfdsf h h_unbiased h_memLp y n]
   gcongr
   · refine Integrable.sub ?_ (integrable_const _)
-    sorry
+    exact h_int n
   · refine MemLp.integrable_inner ?_ ?_
     · exact (memLp_X h h_memLp n).sub (memLp_const _)
     · exact memLp_gradient h h_unbiased h_memLp n
@@ -308,6 +323,7 @@ lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentia
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+    (h_int : ∀ n, Integrable (fun ω ↦ f n (X n ω)) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)] ≤
       (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
@@ -318,9 +334,9 @@ lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentia
     · intro i hi
       refine MemLp.integrable_inner ?_ (h_memLp i)
       exact (memLp_X h h_memLp i).sub (memLp_const _)
-    · sorry
+    · exact fun i hi ↦ (h_int i).sub (integrable_const _)
     refine Finset.sum_le_sum fun i hi ↦ ?_
-    exact qfqgs hf hdf hη h_unbiased h_memLp h y i
+    exact qfqgs hf hdf h_unbiased h_memLp h h_int y i
   _ ≤ ∫ ω, (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 ∂P := by
     refine integral_mono_ae ?_ ?_ (todo1 hη h y n)
     · refine integrable_finset_sum _ fun i hi ↦ ?_
@@ -338,15 +354,29 @@ lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentia
       refine integrable_finset_sum _ fun i hi ↦ ?_
       exact (h_memLp i).integrable_norm_pow (by simp)
 
-lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hη : 0 < η)
+lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f) (hη : 0 < η)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
     (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
-    (y : E) (n : ℕ) :
-    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X n ω) - f y] ≤
+    (h_int : ∀ n, Integrable (fun ω ↦ f (X n ω)) P)
+    (y : E) (n : ℕ) (hn : n ≠ 0)
+    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω)) P) :
+    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y] ≤
       (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
       (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-  sorry
+  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y]
+  _ ≤ (n : ℝ)⁻¹ * P[fun ω ↦ ∑ i ∈ Finset.range n, (f (X i ω) - f y)] := by
+    rw [← integral_const_mul]
+    gcongr
+    · exact h_int_avg.sub (integrable_const _)
+    · refine Integrable.const_mul (integrable_finset_sum _ fun i hi ↦ ?_) _
+      exact (h_int i).sub (integrable_const _)
+    exact fun ω ↦ todo'3 hf _ y n hn
+  _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
+      (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+    grw [qsfqqfqgs (fun _ ↦ hf) (fun _ ↦ hdf) hη h_unbiased h_memLp h h_int y n]
+    refine le_of_eq ?_
+    field
 
 end Stochastic
 

@@ -118,6 +118,15 @@ lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .
   rw [add_comm]
   exact hf.le_add_inner_gradient hfx y
 
+omit [SecondCountableTopology E] in
+lemma onlineRegret_le_onlineRegret_linearizedLoss
+    (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n))
+    (x : ℕ → E) (y : E) (n : ℕ) :
+    onlineRegret f y x n ≤ onlineRegret (linearizedLoss f x) y x n := by
+  simp only [onlineRegret, linearizedLoss, ← inner_sub_left]
+  gcongr with i hi
+  exact (hf i).sub_le_inner_gradient (hdf i).differentiableAt _
+
 omit [CompleteSpace E] [SecondCountableTopology E] in
 lemma todo'3 {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
     (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
@@ -137,14 +146,7 @@ lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable �
     (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
   calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
-  _ ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, f (x i) - f y := by
-    simp_rw [smul_sum]
-    grw [hf.map_sum_le (fun _ _ ↦ by positivity) (by simp; field) (by simp)]
-  _ = (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := by
-    simp_rw [smul_eq_mul, mul_sum, mul_sub, sum_sub_distrib]
-    rw [← sum_mul]
-    simp
-    field
+  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := todo'3 hf x y n hn
   _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
     gcongr
     exact hf.sub_le_inner_gradient hdf.differentiableAt y
@@ -353,6 +355,17 @@ lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentia
     · refine Integrable.const_mul ?_ _
       refine integrable_finset_sum _ fun i hi ↦ ?_
       exact (h_memLp i).integrable_norm_pow (by simp)
+
+lemma integral_onlineRegret_le
+    (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
+    (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
+    (h_memLp : ∀ n, MemLp (G n) 2 P)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+    (h_int : ∀ n, Integrable (fun ω ↦ f n (X n ω)) P)
+    (y : E) (n : ℕ) :
+    P[fun ω ↦ onlineRegret f y (X · ω) n] ≤
+      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] :=
+  qsfqqfqgs hf hdf hη h_unbiased h_memLp h h_int y n
 
 lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f) (hη : 0 < η)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)

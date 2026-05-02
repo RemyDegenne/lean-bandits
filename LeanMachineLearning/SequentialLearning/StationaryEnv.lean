@@ -78,6 +78,17 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {A : ℕ → Ω → α} {R' : ℕ → Ω → R} {n N : ℕ}
   {ν : ℕ → Kernel α R} [∀ n, IsMarkovKernel (ν n)]
 
+lemma hasCOndDistrib_reward_hist_action [IsObliviousEnv env]
+    (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
+    HasCondDistrib (R' (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
+      ((feedbackCondAction env (n + 1)).prodMkLeft _) P := by
+  have hA := h.measurable_A
+  have hR' := h.measurable_R
+  refine ⟨by fun_prop, by fun_prop, ?_⟩
+  have h_eq := (h.hasCondDistrib_reward n).condDistrib_eq
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
+  simpa only [feedback_eq_feedbackCondAction] using h_eq
+
 lemma hasCondDistrib_reward [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
     HasCondDistrib (R' n) (A n) (feedbackCondAction env n) P := by
   have hA := h.measurable_A
@@ -197,6 +208,12 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → α} {R' : ℕ → Ω → R}
 
 namespace IsAlgEnvSeq
+
+/-- The conditional distribution of the reward at time `n` given the action at time `n` is `ν`. -/
+lemma hasCondDistrib_reward_obliviousEnv {ν : ℕ → Kernel α R} [∀ n, IsMarkovKernel (ν n)]
+    (h : IsAlgEnvSeq A R' alg (obliviousEnv ν) P) (n : ℕ) :
+    HasCondDistrib (R' n) (A n) (ν n) P := by
+  simpa using IsObliviousEnv.hasCondDistrib_reward h n
 
 /-- The conditional distribution of the reward at time `n` given the action at time `n` is `ν`. -/
 lemma hasCondDistrib_reward_stationaryEnv

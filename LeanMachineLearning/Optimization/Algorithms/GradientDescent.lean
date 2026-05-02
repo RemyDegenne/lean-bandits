@@ -179,17 +179,6 @@ section Stochastic
 
 variable {gradKernel : ℕ → Kernel E E} [∀ n, IsMarkovKernel (gradKernel n)]
 
--- use the deterministic equality wrt any sequence
-lemma todo1 (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
-    (y : E) (n : ℕ) :
-    ∀ᵐ ω ∂P, ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫ ≤
-      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 := by
-  filter_upwards [action_gradientDescent_ae_all_eq h] with ω hω
-  refine (lem14dot1 _ _ y η hη hω.2 n).trans_eq ?_
-  congr
-  exact hω.1
-
 omit [IsProbabilityMeasure P] [InnerProductSpace ℝ E] [CompleteSpace E]
   [SecondCountableTopology E] in
 theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_norm_lt_top {f : Ω → E} {p : ℝ≥0∞}
@@ -304,14 +293,50 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable 
     · exact memLp_gradient h h_unbiased h_memLp n
   · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y
 
-lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
+-- use the deterministic equality wrt any sequence
+lemma todo1 (hη : 0 < η)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+    (y : E) (n : ℕ) :
+    ∀ᵐ ω ∂P, ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫ ≤
+      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 := by
+  filter_upwards [action_gradientDescent_ae_all_eq h] with ω hω
+  refine (lem14dot1 _ _ y η hη hω.2 n).trans_eq ?_
+  congr
+  exact hω.1
+
+lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
-    P[fun ω ↦ ∑ i ∈ Finset.range n, f n (X n ω) - f n y] ≤
+    P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)] ≤
       (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-  sorry
+  calc P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)]
+  _ ≤ P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫] := by
+    rw [integral_finset_sum, integral_finset_sum]
+    rotate_left
+    · intro i hi
+      refine MemLp.integrable_inner ?_ (h_memLp i)
+      exact (memLp_X h h_memLp i).sub (memLp_const _)
+    · sorry
+    refine Finset.sum_le_sum fun i hi ↦ ?_
+    exact qfqgs hf hdf hη h_unbiased h_memLp h y i
+  _ ≤ ∫ ω, (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 ∂P := by
+    refine integral_mono_ae ?_ ?_ (todo1 hη h y n)
+    · refine integrable_finset_sum _ fun i hi ↦ ?_
+      refine MemLp.integrable_inner ?_ (h_memLp i)
+      exact (memLp_X h h_memLp i).sub (memLp_const _)
+    · refine Integrable.add (integrable_const _) (Integrable.const_mul ?_ _)
+      refine integrable_finset_sum _ fun i hi ↦ ?_
+      exact (h_memLp i).integrable_norm_pow (by simp)
+  _ = (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+    rw [integral_add, integral_const_mul, integral_const_mul, integral_finset_sum]
+    · simp
+    · exact fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
+    · exact integrable_const _
+    · refine Integrable.const_mul ?_ _
+      refine integrable_finset_sum _ fun i hi ↦ ?_
+      exact (h_memLp i).integrable_norm_pow (by simp)
 
 lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hη : 0 < η)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)

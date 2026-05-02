@@ -226,14 +226,31 @@ theorem condExp_inner_of_stronglyMeasurable_left {Ω H : Type*} {m mΩ : Measura
   filter_upwards [condExp_bilin_of_stronglyMeasurable_left (innerSL ℝ) hX hXg hg] with ω hω
   simpa [innerSL_apply_apply] using hω
 
-lemma memLp_X_sub (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+lemma memLp_X (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_memLp : ∀ n, MemLp (G n) 2 P) (n : ℕ) :
     MemLp (X n) 2 P := by
-  sorry
+  induction n with
+  | zero =>
+    have h0 : MemLp (fun _ ↦ x₀) 2 P := memLp_const _
+    refine h0.ae_eq ?_
+    filter_upwards [action_gradientDescent_ae_all_eq h] with ω hω using hω.1.symm
+  | succ n hn =>
+    have h_sub : MemLp (fun ω ↦ X n ω - η • G n ω) 2 P := hn.sub (MemLp.const_smul (h_memLp n) _)
+    refine h_sub.ae_eq ?_
+    filter_upwards [action_gradientDescent_ae_all_eq h] with ω hω using (hω.2 n).symm
 
-lemma sfdsf (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+lemma condExp_reward_obliviousEnv_ae_eq_integral_id {ν : ℕ → Kernel E E} [∀ n, IsMarkovKernel (ν n)]
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv ν) P)
+    (n : ℕ) (h_int : Integrable (G n) P) :
+    P[G n | MeasurableSpace.comap (X n) inferInstance] =ᵐ[P] fun ω ↦ (ν n (X n ω))[id] := by
+  have h_obl : HasCondDistrib (G n) (X n) (ν n) P := h.hasCondDistrib_reward_obliviousEnv n
+  have h_ae := ae_of_ae_map (h.measurable_A n).aemeasurable h_obl.condDistrib_eq
+  have h_ae' := condExp_ae_eq_integral_condDistrib' (h.measurable_A n) h_int
+  filter_upwards [h_ae, h_ae'] with ω hω hω'
+  rw [hω', hω]
+  congr
+
+lemma sfdsf (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x) (h_memLp : ∀ n, MemLp (G n) 2 P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ ⟪X n ω - y, G n ω⟫] = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by
@@ -250,22 +267,27 @@ lemma sfdsf (hη : 0 < η)
       refine Measurable.stronglyMeasurable ?_
       rw [measurable_iff_comap_le]
     · refine MemLp.integrable_inner (MemLp.sub ?_ (memLp_const _)) (h_memLp n)
-      exact memLp_X_sub hη h h_memLp n
+      exact memLp_X h h_memLp n
     · exact (h_memLp n).integrable (by simp)
   _ = P[fun ω ↦ ⟪X n ω - y, (gradKernel n (X n ω))[id]⟫] := by
-    have h_ae := h_obl.condDistrib_eq
+    have h_ae := condExp_reward_obliviousEnv_ae_eq_integral_id h n
+      ((h_memLp n).integrable (by simp))
     refine integral_congr_ae ?_
-    sorry
+    filter_upwards [h_ae] with ω hω using by rw [hω]
   _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 
-lemma sfdsf' (hη : 0 < η)
+lemma memLp_gradient
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
-    (h_memLp : ∀ n, MemLp (G n) 2 P)
-    (y : E) (n : ℕ) :
-    ∫⁻ ω, ‖∇ (f n) (X n ω)‖ₑ ^ 2 ∂P ≤ ∫⁻ ω, ‖G n ω‖ₑ ^ 2 ∂P := by
+    (h_memLp : ∀ n, MemLp (G n) 2 P) (n : ℕ) :
+    MemLp (fun ω ↦ ∇ (f n) (X n ω)) 2 P := by
+  let M n := MeasurableSpace.comap (X n) inferInstance
+  have h_lp : MemLp P[G n | M n] 2 P := (h_memLp n).condExp (m := M n)
+  have h_ae := condExp_reward_obliviousEnv_ae_eq_integral_id h n
+      ((h_memLp n).integrable (by simp))
+  refine h_lp.ae_eq <| h_ae.trans ?_
   simp_rw [← h_unbiased]
-  sorry
+  rfl
 
 lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
@@ -273,13 +295,13 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, Differentiable 
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ f n (X n ω) - f n y] ≤ P[fun ω ↦ ⟪X n ω - y, G n ω⟫] := by
-  rw [sfdsf hη h h_unbiased h_memLp y n]
+  rw [sfdsf h h_unbiased h_memLp y n]
   gcongr
   · refine Integrable.sub ?_ (integrable_const _)
     sorry
   · refine MemLp.integrable_inner ?_ ?_
-    · sorry
-    · sorry
+    · exact (memLp_X h h_memLp n).sub (memLp_const _)
+    · exact memLp_gradient h h_unbiased h_memLp n
   · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y
 
 lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)

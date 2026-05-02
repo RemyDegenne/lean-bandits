@@ -218,11 +218,11 @@ lemma sfdsf' (hη : 0 < η)
 
 omit [IsProbabilityMeasure P] [InnerProductSpace ℝ E] [CompleteSpace E]
   [SecondCountableTopology E] in
-theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_two_norm_lt_top {f : Ω → E}
-    (hf : MemLp f 2 P) :
-    eLpNorm (fun x ↦ ‖f x‖ ^ (2 : ℝ)) 1 P < ∞ := by
-  simpa [eLpNorm_one_eq_lintegral_enorm] using
-    (hf.integrable_enorm_rpow (by simp) (by simp)).hasFiniteIntegral
+theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_norm_lt_top {f : Ω → E} {p : ℝ≥0∞}
+    (hf : MemLp f p P) (hp_zero : p ≠ 0) (hp_top : p ≠ ∞) :
+    eLpNorm (fun x ↦ ‖f x‖ ^ p.toReal) 1 P < ∞ := by
+  simpa [eLpNorm_one_eq_lintegral_enorm, enorm_rpow_of_nonneg] using
+    (hf.integrable_enorm_rpow hp_zero hp_top).hasFiniteIntegral
 
 omit [IsProbabilityMeasure P] [CompleteSpace E] [SecondCountableTopology E] in
 lemma _root_.MeasureTheory.MemLp.integrable_inner {f g : Ω → E}
@@ -242,7 +242,8 @@ lemma _root_.MeasureTheory.MemLp.integrable_inner {f g : Ω → E}
   · exact (hf.norm.aemeasurable.pow_const _).aestronglyMeasurable
   · exact (hg.norm.aemeasurable.pow_const _).aestronglyMeasurable
   rw [ENNReal.add_lt_top]
-  exact ⟨hf.eLpNorm_rpow_two_norm_lt_top, hg.eLpNorm_rpow_two_norm_lt_top⟩
+  exact ⟨hf.eLpNorm_rpow_norm_lt_top (by simp) (by simp),
+    hg.eLpNorm_rpow_norm_lt_top (by simp) (by simp)⟩
 
 lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
     (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)

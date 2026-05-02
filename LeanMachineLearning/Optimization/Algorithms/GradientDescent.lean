@@ -208,6 +208,14 @@ lemma sfdsf (hη : 0 < η)
     sorry
   _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 
+lemma sfdsf' (hη : 0 < η)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
+    (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
+    (y : E) (n : ℕ) :
+    ∫⁻ ω, ‖∇ (f n) (X n ω)‖ₑ ^ 2 ∂P ≤ ∫⁻ ω, ‖G n ω‖ₑ ^ 2 ∂P := by
+  simp_rw [← h_unbiased]
+  sorry
+
 omit [IsProbabilityMeasure P] [InnerProductSpace ℝ E] [CompleteSpace E]
   [SecondCountableTopology E] in
 theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_two_norm_lt_top {f : Ω → E}
@@ -238,8 +246,9 @@ lemma _root_.MeasureTheory.MemLp.integrable_inner {f g : Ω → E}
 
 lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
     (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
+    (h_memLp : ∀ n, MemLp (G n) 2 P)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ f n (X n ω) - f n y] ≤ P[fun ω ↦ ⟪X n ω - y, G n ω⟫] := by
   rw [sfdsf hη h h_unbiased y n]
@@ -252,16 +261,18 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
   · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y
 
 lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
+    (h_memLp : ∀ n, MemLp (G n) 2 P)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ ∑ i ∈ Finset.range n, f n (X n ω) - f n y] ≤
       (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
   sorry
 
 lemma qsfqgzr {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hη : 0 < η)
-    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
+    (h_memLp : ∀ n, MemLp (G n) 2 P)
+    (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X n ω) - f y] ≤
       (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +

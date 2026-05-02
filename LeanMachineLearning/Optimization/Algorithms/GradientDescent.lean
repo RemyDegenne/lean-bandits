@@ -107,7 +107,7 @@ lemma _root_.ConvexOn.le_add_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .
     f x ≤ f y + ⟪x - y, ∇ f x⟫ := by
   have h_add_le := hf.add_inner_gradient_le hfx y
   have h_neg : ⟪x - y, ∇ f x⟫ = -⟪y - x, ∇ f x⟫ := by
-    rw [show x - y = -(y - x) from by abel, inner_neg_left]
+    rw [show x - y = -(y - x) by abel, inner_neg_left]
   grind
 
 omit [SecondCountableTopology E] in
@@ -179,10 +179,6 @@ section Stochastic
 
 variable {gradKernel : ℕ → Kernel E E} [∀ n, IsMarkovKernel (gradKernel n)]
 
--- use `obliviousEnv gradKernel` as the environment for stochastic gradient descent
-example (gradKernel : ℕ → Kernel E E) [∀ n, IsMarkovKernel (gradKernel n)] :
-    Environment E E := obliviousEnv gradKernel
-
 -- use the deterministic equality wrt any sequence
 lemma todo1 (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
@@ -212,6 +208,34 @@ lemma sfdsf (hη : 0 < η)
     sorry
   _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 
+omit [IsProbabilityMeasure P] [InnerProductSpace ℝ E] [CompleteSpace E]
+  [SecondCountableTopology E] in
+theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_two_norm_lt_top {f : Ω → E}
+    (hf : MemLp f 2 P) :
+    eLpNorm (fun x ↦ ‖f x‖ ^ (2 : ℝ)) 1 P < ∞ := by
+  simpa [eLpNorm_one_eq_lintegral_enorm] using
+    (hf.integrable_enorm_rpow (by simp) (by simp)).hasFiniteIntegral
+
+omit [IsProbabilityMeasure P] [CompleteSpace E] [SecondCountableTopology E] in
+lemma _root_.MeasureTheory.MemLp.integrable_inner {f g : Ω → E}
+    (hf : MemLp f 2 P) (hg : MemLp g 2 P) :
+    Integrable (fun ω ↦ ⟪f ω, g ω⟫) P := by
+  rw [← memLp_one_iff_integrable]
+  constructor
+  · exact hf.aestronglyMeasurable.inner hg.aestronglyMeasurable
+  have h x : ‖⟪f x, g x⟫‖ ≤ ‖‖f x‖ ^ (2 : ℝ) + ‖g x‖ ^ (2 : ℝ)‖ := by
+    norm_cast
+    calc ‖⟪f x, g x⟫‖ ≤ ‖f x‖ * ‖g x‖ := norm_inner_le_norm _ _
+      _ ≤ 2 * ‖f x‖ * ‖g x‖ := by
+        gcongr
+        exact le_mul_of_one_le_left (norm_nonneg _) one_le_two
+      _ ≤ ‖‖f x‖ ^ 2 + ‖g x‖ ^ 2‖ := (two_mul_le_add_sq _ _).trans (le_abs_self _)
+  refine (eLpNorm_mono h).trans_lt ((eLpNorm_add_le ?_ ?_ le_rfl).trans_lt ?_)
+  · exact (hf.norm.aemeasurable.pow_const _).aestronglyMeasurable
+  · exact (hg.norm.aemeasurable.pow_const _).aestronglyMeasurable
+  rw [ENNReal.add_lt_top]
+  exact ⟨hf.eLpNorm_rpow_two_norm_lt_top, hg.eLpNorm_rpow_two_norm_lt_top⟩
+
 lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
     (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
@@ -222,8 +246,7 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
   gcongr
   · refine Integrable.sub ?_ (integrable_const _)
     sorry
-  · simp only [inner_sub_left]
-    refine Integrable.sub ?_ ?_
+  · refine MemLp.integrable_inner ?_ ?_
     · sorry
     · sorry
   · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y

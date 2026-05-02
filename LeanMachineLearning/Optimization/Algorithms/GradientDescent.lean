@@ -62,13 +62,44 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientDescent γ x₀) en
 
 section Convex
 
-lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x y : E) :
+omit [SecondCountableTopology E] in
+lemma _root_.ConvexOn.sub_le_inner_gradient {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
+    (hfx : DifferentiableAt ℝ f x) (y : E) :
     f x - f y ≤ ⟪x - y, ∇ f x⟫ := by
+  -- TODO: clean this proof (it's from Aristotle)
   simp only [tsub_le_iff_right]
   rw [add_comm]
-  sorry
+  have h_convex : ∀ t ∈ Set.Ioo (0 : ℝ) 1,
+      f (x + t • (y - x)) ≤ t * f y + (1 - t) * f x := by
+    intro t ht
+    have h1 : x + t • (y - x) = (1 - t) • x + t • y := by
+      rw [smul_sub, sub_smul, one_smul]; abel
+    rw [h1]
+    have h2 := hf.2 (Set.mem_univ x) (Set.mem_univ y)
+      (show 0 ≤ 1 - t by linarith [ht.2]) (show 0 ≤ t by linarith [ht.1])
+      (by linarith [ht.1, ht.2])
+    simp only [smul_eq_mul] at h2; linarith
+  have hfderiv : (fderiv ℝ f x) (y - x) = ⟪y - x, ∇ f x⟫ := by
+    simp [gradient, ← InnerProductSpace.toDual_symm_apply, real_inner_comm]
+  have h_path_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x)))
+      ((fderiv ℝ f x) (y - x)) 0 := by
+    have h1 : HasDerivAt (fun t : ℝ => x + t • (y - x)) (y - x) 0 := by
+      simpa using (hasDerivAt_id (0 : ℝ)).smul_const (y - x)
+    have h2 : HasFDerivAt f (fderiv ℝ f x) (x + (0 : ℝ) • (y - x)) := by
+      simp only [zero_smul, add_zero]; exact hfx.hasFDerivAt
+    exact h2.comp_hasDerivAt _ h1
+  have h_tendsto := h_path_deriv.tendsto_slope_zero_right
+  have h_combined : (fderiv ℝ f x) (y - x) ≤ f y - f x := by
+    refine le_of_tendsto h_tendsto (Filter.eventually_of_mem
+      (Ioo_mem_nhdsGT_of_mem ⟨le_rfl, zero_lt_one⟩) fun t ht => ?_)
+    simp only [zero_add, zero_smul, add_zero, smul_eq_mul, inv_mul_le_iff₀ ht.1]
+    linarith [h_convex t ht]
+  linarith [show ⟪x - y, ∇ f x⟫ = -⟪y - x, ∇ f x⟫ from by
+    rw [show x - y = -(y - x) from by abel, inner_neg_left]]
 
-lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
+omit [SecondCountableTopology E] in
+lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
+    (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
   calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
   _ ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, f (x i) - f y := by
@@ -81,12 +112,17 @@ lemma todo'2 {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (x : ℕ → E) (y : E)
     field
   _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
     gcongr
-    exact hf.sub_le_inner_gradient (x _) y
+    exact hf.sub_le_inner_gradient hdf.differentiableAt y
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
 lemma todo'' (x y g : E) (hη : 0 < η) :
     ⟪x - y, g⟫ = (2 * η)⁻¹ * (‖x - y‖ ^ 2 - ‖(x - η • g) - y‖ ^ 2) + (η / 2) * ‖g‖ ^ 2 := by
-  sorry
+  have hsub : (x - η • g) - y = (x - y) - η • g := by abel
+  rw [hsub, norm_sub_sq_real (x - y) (η • g)]
+  simp only [inner_smul_right, norm_smul, Real.norm_eq_abs, abs_of_pos hη]
+  field
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
 lemma todo (x y g : ℕ → E) (hη : ∀ n, 0 < γ n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y i, g i⟫ ≤
       ∑ i ∈ Finset.range n,
@@ -95,6 +131,7 @@ lemma todo (x y g : ℕ → E) (hη : ∀ n, 0 < γ n) (n : ℕ) :
   gcongr with i hi
   rw [todo'' (x i) (y i) (g i) (hη i)]
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
 lemma todo''' (x g : ℕ → E) (y : E)
     (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
@@ -104,8 +141,9 @@ lemma todo''' (x g : ℕ → E) (y : E)
   gcongr
   refine le_of_eq ?_
   simp_rw [← hx]
-  sorry
+  exact Finset.sum_range_sub' (fun i ↦ ‖x i - y‖ ^ 2) n
 
+omit [CompleteSpace E] [SecondCountableTopology E] in
 lemma lem14dot1 (x g : ℕ → E) (y : E) (η : ℝ)
     (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
@@ -152,7 +190,8 @@ lemma sfdsf (hη : 0 < η)
     sorry
   _ = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by simp_rw [h_unbiased n]
 
-lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
+lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n))
+    (hdf : ∀ n, Differentiable ℝ (f n)) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x)
     (y : E) (n : ℕ) :
@@ -165,7 +204,7 @@ lemma qfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
     refine Integrable.sub ?_ ?_
     · sorry
     · sorry
-  · exact fun ω ↦ (hf n).sub_le_inner_gradient (X n ω) y
+  · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y
 
 lemma qsfqqfqgs (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hη : 0 < η)
     (h : IsAlgEnvSeq X G (gradientDescent (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)

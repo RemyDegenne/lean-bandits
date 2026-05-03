@@ -9,12 +9,15 @@ public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Optimization.Algorithms.GradientDescent
 public import LeanMachineLearning.Probability.HasCondDistrib
 public import LeanMachineLearning.Probability.Independence.CondDistrib
 public import LeanMachineLearning.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.Probability.Kernel.Basic
+public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.Probability.Kernel.KernelSub
 public import LeanMachineLearning.Probability.Moments.SubGaussian
@@ -22,6 +25,7 @@ public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
